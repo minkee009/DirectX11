@@ -1,2 +1,1 @@
-﻿DX12Init.obj : error LNK2019: D3D11CreateDeviceAndSwapChain"long __cdecl InitDevices(void)" (?InitDevices@@YAJXZ) 함수에서 참조되는 확인할 수 없는 외부 기호
-C:\Users\PC\Documents\GitHub\DirectX12Int\x64\Debug\DX12Init.exe : fatal error LNK1120: 1개의 확인할 수 없는 외부 참조입니다.
+﻿  DX12Init.vcxproj -> C:\Users\PC\Documents\GitHub\DirectX12Int\x64\Debug\DX12Init.exe

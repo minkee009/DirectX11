@@ -1,1 +1,2 @@
 C:\Users\PC\source\repos\DX12Init\x64\Debug\DX12Init.exe
+C:\Users\PC\Documents\GitHub\DirectX12Int\x64\Debug\DX12Init.exe
