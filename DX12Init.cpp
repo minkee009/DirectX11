@@ -263,7 +263,7 @@ HRESULT InitDevices()
     p_immediateContext->RSSetViewports(1, &vp);
 
     ID3DBlob* pVSBlob = NULL;
-    hr = CompileShaderFromFile( L"Tutorial02.fx", "VS", "vs_4_0", &pVSBlob );
+    hr = CompileShaderFromFile( L"SimpleRed.hlsl", "VS", "vs_4_0", &pVSBlob );
     if( FAILED( hr ) )
     {
         MessageBox( NULL,
@@ -296,7 +296,7 @@ HRESULT InitDevices()
 
     // 픽셀 쉐이더 컴파일
     ID3DBlob* pPSBlob = NULL;
-    hr = CompileShaderFromFile(L"Tutorial02.fx", "PS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"SimpleRed.hlsl", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
     {
         MessageBox(NULL,
