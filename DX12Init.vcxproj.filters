@@ -45,5 +45,8 @@
     <Image Include="DX12Init.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="customAppico.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
 </Project>
