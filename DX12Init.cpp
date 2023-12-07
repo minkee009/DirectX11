@@ -33,6 +33,7 @@ ID3D11VertexShader* p_vertexShader = NULL;
 ID3D11PixelShader* p_pixelShader = NULL;
 ID3D11InputLayout* p_vertexLayout = NULL;
 ID3D11Buffer* p_vertexBuffer = NULL;
+ID3D11Buffer* p_indexBuffer = NULL;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -254,6 +255,7 @@ HRESULT InitDevices()
 
     p_immediateContext->OMSetRenderTargets(1, &p_renderTargetView, NULL);
 
+    //뷰포트 초기화
     D3D11_VIEWPORT vp;
     vp.Width = (FLOAT)width;
     vp.Height = (FLOAT)height;
@@ -263,6 +265,7 @@ HRESULT InitDevices()
     vp.TopLeftY = 0;
     p_immediateContext->RSSetViewports(1, &vp);
 
+    //정점 셰이더 컴파일
     ID3DBlob* pVSBlob = NULL;
     hr = CompileShaderFromFile( L"VertexColor.hlsl", "VS", "vs_4_0", &pVSBlob );
     if( FAILED( hr ) )
@@ -272,6 +275,7 @@ HRESULT InitDevices()
         return hr;
     }
 
+    //정점 셰이더 생성
     hr = p_d3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &p_vertexShader);
     if (FAILED(hr))
     {
@@ -279,6 +283,7 @@ HRESULT InitDevices()
         return hr;
     }
 
+    //입력 데스크 초기화
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -293,10 +298,10 @@ HRESULT InitDevices()
     if (FAILED(hr))
         return hr;
 
-    // 인풋 레이아웃 설정
+    // 입력 레이아웃 설정
     p_immediateContext->IASetInputLayout(p_vertexLayout);
 
-    // 픽셀 쉐이더 컴파일
+    // 픽셀 셰이더 컴파일
     ID3DBlob* pPSBlob = NULL;
     hr = CompileShaderFromFile(L"VertexColor.hlsl", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
@@ -306,23 +311,24 @@ HRESULT InitDevices()
         return hr;
     }
 
-    // Create the pixel shader
+    // 픽셀 셰이더 생성
     hr = p_d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &p_pixelShader);
     pPSBlob->Release();
     if (FAILED(hr))
         return hr;
 
-    // Create vertex buffer
+    // 정점 버퍼 생성
     SimpleVertex vertices[] =
     {
-        { XMFLOAT3(0.0f, 0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(0.5f , 0.5f, 0.5f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
         { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
         { XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
     };
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * 3;
+    bd.ByteWidth = sizeof(SimpleVertex) * 4;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA InitData;
@@ -332,12 +338,31 @@ HRESULT InitDevices()
     if (FAILED(hr))
         return hr;
 
-    // Set vertex buffer
+    // 정점 버퍼 설정
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
     p_immediateContext->IASetVertexBuffers(0, 1, &p_vertexBuffer, &stride, &offset);
 
-    // Set primitive topology
+    // 인덱스 버퍼 생성
+    WORD indices[] =
+    {
+        0,1,3,
+        2,3,1
+    };
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(WORD) * 6;
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    InitData.pSysMem = indices;
+    hr = p_d3dDevice->CreateBuffer(&bd, &InitData, &p_indexBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    // 인덱스 버퍼 설정
+    p_immediateContext->IASetIndexBuffer(p_indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+    // 기본 토폴로지 설정
     p_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     return hr;
@@ -351,6 +376,7 @@ void CleanupDevice()
     if (p_vertexLayout) p_vertexLayout->Release();
     if (p_vertexShader) p_vertexShader->Release();
     if (p_pixelShader) p_pixelShader->Release();
+    if (p_indexBuffer) p_indexBuffer->Release();
     if (p_renderTargetView) p_renderTargetView->Release();
     if (p_swapChain) p_swapChain->Release();
     if (p_immediateContext) p_immediateContext->Release();
@@ -434,7 +460,8 @@ void Render()
     // Render a triangle
     p_immediateContext->VSSetShader(p_vertexShader, NULL, 0);
     p_immediateContext->PSSetShader(p_pixelShader, NULL, 0);
-    p_immediateContext->Draw(3, 0);
+    p_immediateContext->DrawIndexed(6, 0, 0);
+
 
     // Present the information rendered to the back buffer to the front buffer (the screen)
     p_swapChain->Present(0, 0);
