@@ -58,4 +58,9 @@
       <Filter>셰이더 파일</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexColor.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </FxCompile>
+  </ItemGroup>
 </Project>

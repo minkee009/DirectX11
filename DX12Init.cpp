@@ -47,6 +47,7 @@ void Render();
 struct SimpleVertex
 {
     XMFLOAT3 Pos;
+    XMFLOAT4 Color;
 };
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -263,7 +264,7 @@ HRESULT InitDevices()
     p_immediateContext->RSSetViewports(1, &vp);
 
     ID3DBlob* pVSBlob = NULL;
-    hr = CompileShaderFromFile( L"SimpleRed.hlsl", "VS", "vs_4_0", &pVSBlob );
+    hr = CompileShaderFromFile( L"VertexColor.hlsl", "VS", "vs_4_0", &pVSBlob );
     if( FAILED( hr ) )
     {
         MessageBox( NULL,
@@ -281,6 +282,7 @@ HRESULT InitDevices()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     UINT numElements = ARRAYSIZE(layout);
 
@@ -296,7 +298,7 @@ HRESULT InitDevices()
 
     // 픽셀 쉐이더 컴파일
     ID3DBlob* pPSBlob = NULL;
-    hr = CompileShaderFromFile(L"SimpleRed.hlsl", "PS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"VertexColor.hlsl", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
     {
         MessageBox(NULL,
@@ -313,9 +315,9 @@ HRESULT InitDevices()
     // Create vertex buffer
     SimpleVertex vertices[] =
     {
-        XMFLOAT3(0.0f, 0.5f, 0.5f),
-        XMFLOAT3(0.5f, -0.5f, 0.5f),
-        XMFLOAT3(-0.5f, -0.5f, 0.5f),
+        { XMFLOAT3(0.0f, 0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
     };
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
