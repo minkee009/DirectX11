@@ -320,7 +320,7 @@ HRESULT InitDevices()
     if (FAILED(hr))
         return hr;
 
-    // 정점 버퍼 생성
+    // 정점 정보 생성 
     SimpleVertex vertices[] =
     {
         { XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
@@ -328,7 +328,11 @@ HRESULT InitDevices()
         { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
         { XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
     };
+
+    // 버퍼데스크 생성
     D3D11_BUFFER_DESC bd;
+
+    // 정점 버퍼 생성
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(SimpleVertex) * 4;
@@ -346,13 +350,14 @@ HRESULT InitDevices()
     UINT offset = 0;
     p_immediateContext->IASetVertexBuffers(0, 1, &p_vertexBuffer, &stride, &offset);
 
-    // 인덱스 버퍼 생성
+    // 인덱스 정보 생성
     WORD indices[] =
     {
         0,1,3,
         2,3,1
     };
 
+    // 인덱스 버퍼 생성
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(WORD) * 6;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
@@ -456,16 +461,15 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 void Render()
 {
-    // 백버퍼 그리기
+    // 백버퍼 초기화
     float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // red,green,blue,alpha
     p_immediateContext->ClearRenderTargetView(p_renderTargetView, ClearColor);
 
-    // 렌더링
+    // 렌더링, 백버퍼에 그리기
     p_immediateContext->VSSetShader(p_vertexShader, NULL, 0);
     p_immediateContext->PSSetShader(p_pixelShader, NULL, 0);
     p_immediateContext->DrawIndexed(6, 0, 0);
 
-
-    // 백버퍼와 프론트버퍼 교체 ( 화면에 픽셀 띄우기 )
+    // 백버퍼와 프론트버퍼 교체
     p_swapChain->Present(0, 0);
 }
