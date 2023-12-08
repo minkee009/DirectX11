@@ -11,12 +11,15 @@
 #include "DX12Init.h"
 #include "Resource.h"
 
-using namespace DirectX;
-
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d11")
+#pragma comment(lib, "d3dcompiler")
+#pragma comment(lib, "dxguid")
+#pragma comment(lib, "winmm")
+#pragma comment(lib, "comctl32")
 
 #define MAX_LOADSTRING 100
+
+using namespace DirectX;
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
@@ -453,16 +456,16 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 void Render()
 {
-    // Clear the back buffer 
+    // 백버퍼 그리기
     float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // red,green,blue,alpha
     p_immediateContext->ClearRenderTargetView(p_renderTargetView, ClearColor);
 
-    // Render a triangle
+    // 렌더링
     p_immediateContext->VSSetShader(p_vertexShader, NULL, 0);
     p_immediateContext->PSSetShader(p_pixelShader, NULL, 0);
     p_immediateContext->DrawIndexed(6, 0, 0);
 
 
-    // Present the information rendered to the back buffer to the front buffer (the screen)
+    // 백버퍼와 프론트버퍼 교체 ( 화면에 픽셀 띄우기 )
     p_swapChain->Present(0, 0);
 }
