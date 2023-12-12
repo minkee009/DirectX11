@@ -37,6 +37,10 @@ ID3D11PixelShader* p_pixelShader = NULL;
 ID3D11InputLayout* p_vertexLayout = NULL;
 ID3D11Buffer* p_vertexBuffer = NULL;
 ID3D11Buffer* p_indexBuffer = NULL;
+ID3D11Buffer* p_constantBuffer = NULL;
+XMMATRIX world;
+XMMATRIX view;
+XMMATRIX projection;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -53,6 +57,14 @@ struct SimpleVertex
     XMFLOAT3 Pos;
     XMFLOAT4 Color;
 };
+
+struct ConstantBuffer
+{
+    XMMATRIX mWorld;
+    XMMATRIX mView;
+    XMMATRIX mProjection;
+};
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -220,6 +232,8 @@ HRESULT InitDevices()
     };
     UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
+
+
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
     sd.BufferCount = 1;
@@ -228,6 +242,7 @@ HRESULT InitDevices()
     sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     sd.BufferDesc.RefreshRate.Numerator = 60;
     sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     sd.OutputWindow = hWnd;
     sd.SampleDesc.Count = 1;
@@ -246,6 +261,19 @@ HRESULT InitDevices()
     if (FAILED(hr))
         return hr;
 
+    UINT m4xMsaaQuality;
+
+    hr = p_d3dDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &m4xMsaaQuality);
+
+    assert(m4xMsaaQuality > 0);
+
+    if (SUCCEEDED(hr))
+    {
+        sd.SampleDesc.Count = 4;
+        sd.SampleDesc.Quality = m4xMsaaQuality - 1;
+    }
+
+    //렌더 타겟 뷰 생성
     ID3D11Texture2D* pBackBuffer = NULL;
     hr = p_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
     if (FAILED(hr))
@@ -270,7 +298,7 @@ HRESULT InitDevices()
 
     //정점 셰이더 컴파일
     ID3DBlob* pVSBlob = NULL;
-    hr = CompileShaderFromFile( L"VertexColor.hlsl", "VS", "vs_4_0", &pVSBlob );
+    hr = CompileShaderFromFile( L"PixelShader.hlsl", "VS", "vs_4_0", &pVSBlob );
     if( FAILED( hr ) )
     {
         MessageBox( NULL,
@@ -296,7 +324,7 @@ HRESULT InitDevices()
 
     // 입력 레이아웃 생성
     hr = p_d3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-        pVSBlob->GetBufferSize(), &p_vertexLayout);
+                                        pVSBlob->GetBufferSize(), &p_vertexLayout);
     pVSBlob->Release();
     if (FAILED(hr))
         return hr;
@@ -306,7 +334,7 @@ HRESULT InitDevices()
 
     // 픽셀 셰이더 컴파일
     ID3DBlob* pPSBlob = NULL;
-    hr = CompileShaderFromFile(L"VertexColor.hlsl", "PS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"PixelShader.hlsl", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
     {
         MessageBox(NULL,
@@ -323,10 +351,14 @@ HRESULT InitDevices()
     // 정점 정보 생성 
     SimpleVertex vertices[] =
     {
-        { XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(0.5f , 0.5f, 0.5f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
     };
 
     // 버퍼데스크 생성
@@ -335,7 +367,7 @@ HRESULT InitDevices()
     // 정점 버퍼 생성
     ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * 4;
+    bd.ByteWidth = sizeof(SimpleVertex) * 8;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
     D3D11_SUBRESOURCE_DATA InitData;
@@ -353,13 +385,28 @@ HRESULT InitDevices()
     // 인덱스 정보 생성
     WORD indices[] =
     {
-        0,1,3,
-        2,3,1
+        3,1,0,
+        2,1,3,
+
+        0,5,4,
+        1,5,0,
+
+        3,4,7,
+        0,4,3,
+
+        1,6,5,
+        2,6,1,
+
+        2,7,6,
+        3,7,2,
+
+        6,4,5,
+        7,4,6,
     };
 
     // 인덱스 버퍼 생성
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * 6;
+    bd.ByteWidth = sizeof(WORD) * 36;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     InitData.pSysMem = indices;
@@ -373,7 +420,24 @@ HRESULT InitDevices()
     // 기본 토폴로지 설정
     p_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    return hr;
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = p_d3dDevice->CreateBuffer(&bd, NULL, &p_constantBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    world = XMMatrixIdentity();
+
+    XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f);
+    XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    view = XMMatrixLookAtLH(Eye, At, Up);
+
+    projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / (float)height, 0.01f, 100.0f);
+
+    return S_OK;
 }
 
 void CleanupDevice()
@@ -461,14 +525,39 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 void Render()
 {
+
+    // 시간 측정
+    static float t = 0.0f;
+    if (driverType == D3D_DRIVER_TYPE_REFERENCE)
+    {
+        t += (float)XM_PI * 0.0125f;
+    }
+    else
+    {
+        static DWORD dwTimeStart = 0;
+        DWORD dwTimeCur = GetTickCount64();
+        if (dwTimeStart == 0)
+            dwTimeStart = dwTimeCur;
+        t = (dwTimeCur - dwTimeStart) / 1000.0f;
+    }
+
+    world = XMMatrixRotationX(-t);
+
     // 백버퍼 초기화
     float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // red,green,blue,alpha
     p_immediateContext->ClearRenderTargetView(p_renderTargetView, ClearColor);
 
     // 렌더링, 백버퍼에 그리기
+    ConstantBuffer cb;
+    cb.mWorld = XMMatrixTranspose(world);
+    cb.mView = XMMatrixTranspose(view);
+    cb.mProjection = XMMatrixTranspose(projection);
+    p_immediateContext->UpdateSubresource(p_constantBuffer, 0, NULL, &cb, 0, 0);
+
     p_immediateContext->VSSetShader(p_vertexShader, NULL, 0);
+    p_immediateContext->VSSetConstantBuffers(0, 1, &p_constantBuffer);
     p_immediateContext->PSSetShader(p_pixelShader, NULL, 0);
-    p_immediateContext->DrawIndexed(6, 0, 0);
+    p_immediateContext->DrawIndexed(36, 0, 0);
 
     // 백버퍼와 프론트버퍼 교체
     p_swapChain->Present(0, 0);
