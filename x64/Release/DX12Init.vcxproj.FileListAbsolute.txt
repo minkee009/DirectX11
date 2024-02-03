@@ -1,1 +1,1 @@
-C:\Users\PC\Documents\GitHub\DirectX12Int\x64\Release\DX12Init.exe
+D:\Unity Projects\GitHub\DirectX12Int\x64\Release\DX12Init.exe

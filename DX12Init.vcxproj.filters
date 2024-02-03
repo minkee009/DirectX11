@@ -54,14 +54,14 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SimpleRed.hlsl">
+    <CopyFileToFolders Include="PixelShader.hlsl">
       <Filter>셰이더 파일</Filter>
-    </None>
-    <None Include="VertexColor.hlsl">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="SimpleRed.hlsl">
       <Filter>셰이더 파일</Filter>
-    </None>
-    <None Include="PixelShader.hlsl">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="VertexColor.hlsl">
       <Filter>셰이더 파일</Filter>
-    </None>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

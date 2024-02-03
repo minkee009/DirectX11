@@ -186,8 +186,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
     RECT rc = { 0, 0, 640, 480 };
+    
+    //정확한 윈도우 사이즈를 위한 렉트 변경
+    AdjustWindowRect(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE);
 
-    hWnd = CreateWindowW(szWindowClass, L"DX12 상자그리기", WS_OVERLAPPEDWINDOW,
+    hWnd = CreateWindowW(szWindowClass, L"DX12 상자그리기", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd)
