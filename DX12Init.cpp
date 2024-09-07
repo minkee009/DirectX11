@@ -1,6 +1,7 @@
 ﻿// DX12Init.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 
+#include <thread>
 #include "framework.h"
 #include <windows.h>
 #include <d3d11_1.h>
@@ -10,6 +11,7 @@
 #include "resource.h"
 #include "DX12Init.h"
 #include "Resource.h"
+#include "MyTool.h"
 
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d3dcompiler")
@@ -65,6 +67,9 @@ struct ConstantBuffer
     XMMATRIX mProjection;
 };
 
+void RenderLoop();
+
+bool isRenderAble = false;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -75,7 +80,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 여기에 코드를 입력합니다.
-
 
     // 전역 문자열을 초기화합니다.
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -94,9 +98,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
+    isRenderAble = true;
+
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DX12INIT));
 
     MSG msg = { 0 };
+
+    //렌더 스레드 만들기
+    std::thread renderThread(
+        //인스턴스 렌더 루프
+        []() 
+        {
+            while (1)
+            {
+                Render();
+            }
+        }
+    );
 
     // 기본 메시지 루프입니다:
     while (WM_QUIT != msg.message)
@@ -105,10 +123,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
-        }
-        else
-        {
-            Render();
         }
     }
 
