@@ -204,7 +204,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     //정확한 윈도우 사이즈를 위한 렉트 변경
     AdjustWindowRect(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE);
 
-    hWnd = CreateWindowW(szWindowClass, L"DX12 상자그리기", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+    hWnd = CreateWindowW(szWindowClass, L"DX11 상자그리기", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd)
