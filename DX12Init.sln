@@ -5,7 +5,7 @@ VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DX12Init", "DX12Init.vcxproj", "{4D7076A9-A98E-4D4D-9A89-1021E956AFEA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D11 Learning", "..\D3D11 Learning\D3D11 Learning.vcxproj", "{5C76D4F1-BD9B-4650-88B2-0F41BE5EE09D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D11 Learning", "D3D11 Learning\D3D11 Learning.vcxproj", "{5C76D4F1-BD9B-4650-88B2-0F41BE5EE09D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
