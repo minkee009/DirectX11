@@ -47,7 +47,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
         if (hr == E_INVALIDARG)
         {
-            // DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
+            // DirectX 11.0 플랫폼은 D3D_FEATURE_LEVEL_11_1를 인식하지 못하기 때문에 없이 한번 더 시도
             hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
                 D3D11_SDK_VERSION, &p_d3dDevice, &m_featureLevel, &p_immediateContext);
         }
@@ -58,7 +58,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // Obtain DXGI factory from device (since we used nullptr for pAdapter above)
+    // DXGI 팩토리를 디바이스에서 부터 얻기
     IDXGIFactory1* dxgiFactory = nullptr;
     {
         IDXGIDevice* dxgiDevice = nullptr;
@@ -78,12 +78,12 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // Create swap chain
+    // 스왑체인 생성
     IDXGIFactory2* dxgiFactory2 = nullptr;
     hr = dxgiFactory->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2));
     if (dxgiFactory2)
     {
-        // DirectX 11.1 or later
+        // DirectX 11.1 이거나 이후 버전인 경우
         hr = p_d3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(&p_d3dDevice1));
         if (SUCCEEDED(hr))
         {
@@ -109,7 +109,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     }
     else
     {
-        // DirectX 11.0 systems
+        // DirectX 11.0 시스템인 경우
         DXGI_SWAP_CHAIN_DESC sd = {};
         sd.BufferCount = 1;
         sd.BufferDesc.Width = width;
@@ -126,7 +126,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         hr = dxgiFactory->CreateSwapChain(p_d3dDevice, &sd, &p_swapChain);
     }
 
-    // Note this tutorial doesn't handle full-screen swapchains so we block the ALT+ENTER shortcut
+    // 이 튜토리얼 코드는 풀스크린 스왑체인을 관리하지 않음, 따라서 ALT+ENTER 단축키를 제외시킴
     dxgiFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
 
     dxgiFactory->Release();
@@ -134,7 +134,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // Create a render target view
+    // 렌더 타겟 뷰 생성
     ID3D11Texture2D* pBackBuffer = nullptr;
     hr = p_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBuffer));
     if (FAILED(hr))
@@ -147,7 +147,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     p_immediateContext->OMSetRenderTargets(1, &p_renderTargetView, nullptr);
 
-    // Setup the viewport
+    // 뷰포트 설정
     D3D11_VIEWPORT vp;
     vp.Width = (FLOAT)width;
     vp.Height = (FLOAT)height;
