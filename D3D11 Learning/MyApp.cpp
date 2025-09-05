@@ -1,5 +1,6 @@
 #include "MyApp.h"
 #include "MyD3DContext.h"
+#include <wrl/client.h>
 
 MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 {
@@ -57,6 +58,7 @@ MyEngine::MyApp::~MyApp()
 int MyEngine::MyApp::Run()
 {
 	MSG msg = {};
+	CoInitialize(nullptr);
 	while (msg.message != WM_QUIT) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
@@ -66,5 +68,6 @@ int MyEngine::MyApp::Run()
 			m_d3dContext->Render();
 		}
 	}
+	CoUninitialize();
 	return (int)msg.wParam;
 }

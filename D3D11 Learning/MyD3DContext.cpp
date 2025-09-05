@@ -1,5 +1,4 @@
 #include "MyD3DContext.h"
-#include <wrl/client.h> // Microsoft::WRL::ComPtr
 #include <dxgi.h>
 #include <directxcolors.h>
 #include <d3dcompiler.h>
@@ -43,13 +42,13 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     {
         m_driverType = driverTypes[driverTypeIndex];
         hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, &p_d3dDevice, &m_featureLevel, &p_immediateContext);
+            D3D11_SDK_VERSION, p_d3dDevice.GetAddressOf(), &m_featureLevel, p_immediateContext.GetAddressOf());
 
         if (hr == E_INVALIDARG)
         {
             // DirectX 11.0 플랫폼은 D3D_FEATURE_LEVEL_11_1를 인식하지 못하기 때문에 없이 한번 더 시도
             hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
-                D3D11_SDK_VERSION, &p_d3dDevice, &m_featureLevel, &p_immediateContext);
+                D3D11_SDK_VERSION, p_d3dDevice.GetAddressOf(), &m_featureLevel, p_immediateContext.GetAddressOf());
         }
 
         if (SUCCEEDED(hr))
@@ -84,10 +83,10 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (dxgiFactory2)
     {
         // DirectX 11.1 이거나 이후 버전인 경우
-        hr = p_d3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(&p_d3dDevice1));
+        hr = p_d3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(p_d3dDevice1.GetAddressOf()));
         if (SUCCEEDED(hr))
         {
-            (void)p_immediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(&p_immediateContext));
+            (void)p_immediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(p_immediateContext.GetAddressOf()));
         }
 
         DXGI_SWAP_CHAIN_DESC1 sd = {};
@@ -99,10 +98,10 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         sd.BufferCount = 1;
 
-        hr = dxgiFactory2->CreateSwapChainForHwnd(p_d3dDevice, m_hWnd, &sd, nullptr, nullptr, &p_swapChain1);
+        hr = dxgiFactory2->CreateSwapChainForHwnd(p_d3dDevice.Get(), m_hWnd, &sd, nullptr, nullptr, p_swapChain1.GetAddressOf());
         if (SUCCEEDED(hr))
         {
-            hr = p_swapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(&p_swapChain));
+            hr = p_swapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(p_swapChain.GetAddressOf()));
         }
 
         dxgiFactory2->Release();
@@ -123,7 +122,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Quality = 0;
         sd.Windowed = TRUE;
 
-        hr = dxgiFactory->CreateSwapChain(p_d3dDevice, &sd, &p_swapChain);
+        hr = dxgiFactory->CreateSwapChain(p_d3dDevice.Get(), &sd, p_swapChain.GetAddressOf());
     }
 
     // 이 튜토리얼 코드는 풀스크린 스왑체인을 관리하지 않음, 따라서 ALT+ENTER 단축키를 제외시킴
@@ -140,12 +139,12 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    hr = p_d3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &p_renderTargetView);
+    hr = p_d3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, p_renderTargetView.GetAddressOf());
     pBackBuffer->Release();
     if (FAILED(hr))
         return false;
 
-    p_immediateContext->OMSetRenderTargets(1, &p_renderTargetView, nullptr);
+    p_immediateContext->OMSetRenderTargets(1, p_renderTargetView.GetAddressOf(), nullptr);
 
     // 뷰포트 설정
     D3D11_VIEWPORT vp;
@@ -164,7 +163,7 @@ void MyEngine::MyD3DContext::Clear()
 {
     float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
 
-    p_immediateContext->ClearRenderTargetView(p_renderTargetView, ClearColor);
+    p_immediateContext->ClearRenderTargetView(p_renderTargetView.Get(), ClearColor);
 }
 
 void MyEngine::MyD3DContext::Render()
@@ -172,12 +171,12 @@ void MyEngine::MyD3DContext::Render()
 	Clear();
 
     p_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    p_immediateContext->IASetVertexBuffers(0, 1, &p_vertexBuffer, &m_vertexBufferStride, &m_vertexBufferOffset);
-    p_immediateContext->IASetInputLayout(p_vertexLayout);
-    p_immediateContext->VSSetShader(p_vertexShader, nullptr, 0);
-    p_immediateContext->PSSetShader(p_pixelShader, nullptr, 0);
+    p_immediateContext->IASetVertexBuffers(0, 1, p_vertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+    p_immediateContext->IASetInputLayout(p_vertexLayout.Get());
+    p_immediateContext->VSSetShader(p_vertexShader.Get(), nullptr, 0);
+    p_immediateContext->PSSetShader(p_pixelShader.Get(), nullptr, 0);
 
-    p_immediateContext->IASetIndexBuffer(p_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    p_immediateContext->IASetIndexBuffer(p_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
     p_immediateContext->DrawIndexed(m_indexCount, 0, 0);
 
@@ -205,7 +204,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
         return false;
     }
 
-    hr = p_d3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &p_vertexShader);
+    hr = p_d3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, p_vertexShader.GetAddressOf());
     if (FAILED(hr))
     {
         pVSBlob->Release();
@@ -222,7 +221,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //인풋 레이아웃 생성
     hr = p_d3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-        pVSBlob->GetBufferSize(), &p_vertexLayout);
+        pVSBlob->GetBufferSize(), p_vertexLayout.GetAddressOf());
     pVSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -236,7 +235,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
         return false;
     }
 
-    hr = p_d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &p_pixelShader);
+    hr = p_d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, p_pixelShader.GetAddressOf());
     pPSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -261,7 +260,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //정점 버퍼 생성
     D3D11_SUBRESOURCE_DATA vbData = {};
     vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
-    hr = p_d3dDevice->CreateBuffer(&vbDesc, &vbData, &p_vertexBuffer);
+    hr = p_d3dDevice->CreateBuffer(&vbDesc, &vbData, p_vertexBuffer.GetAddressOf());
 
     if (FAILED(hr))
         return false;
@@ -287,7 +286,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     InitData.SysMemPitch = 0;
     InitData.SysMemSlicePitch = 0;
 
-    hr = p_d3dDevice->CreateBuffer(&bufferDesc, &InitData, &p_indexBuffer);
+    hr = p_d3dDevice->CreateBuffer(&bufferDesc, &InitData, p_indexBuffer.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -296,33 +295,21 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
 void MyEngine::MyD3DContext::UninitializeScene()
 {
-    if (p_vertexBuffer)
-        p_vertexBuffer->Release();
-    if (p_vertexLayout)
-        p_vertexLayout->Release();
-    if (p_vertexShader)
-        p_vertexShader->Release();
-    if (p_pixelShader)
-        p_pixelShader->Release();
+    p_vertexBuffer = nullptr;
+    p_vertexLayout = nullptr;
+    p_vertexShader = nullptr;
+    p_pixelShader = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()
 {
-	if (p_immediateContext) p_immediateContext->ClearState();
-	if (p_renderTargetView) p_renderTargetView->Release();
-	if (p_swapChain1) p_swapChain1->Release();
-	if (p_swapChain) p_swapChain->Release();
-	if (p_immediateContext) p_immediateContext->Release();
-	if (p_d3dDevice1) p_d3dDevice1->Release();
-	if (p_d3dDevice) p_d3dDevice->Release();
-
-	p_immediateContext = NULL;
-    p_d3dDevice1 = NULL;
-	p_d3dDevice = NULL;
-    p_swapChain1 = NULL;
-	p_swapChain = NULL;
-	p_renderTargetView = NULL;
-	m_hWnd = NULL;
+	p_immediateContext = nullptr;
+    p_d3dDevice1 = nullptr;
+	p_d3dDevice = nullptr;
+    p_swapChain1 = nullptr;
+	p_swapChain = nullptr;
+	p_renderTargetView = nullptr;
+	m_hWnd = nullptr;
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
