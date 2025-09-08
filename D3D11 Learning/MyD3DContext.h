@@ -25,22 +25,22 @@ namespace MyEngine {
 		int m_height = 600;
 
 		//Direct3D 관련 변수
-		ComPtr<ID3D11Device> p_d3dDevice = NULL;
-		ComPtr<ID3D11Device1> p_d3dDevice1 = NULL;
-		ComPtr<ID3D11DeviceContext> p_immediateContext = NULL;
-		ComPtr<IDXGISwapChain1> p_swapChain1 = NULL;
-		ComPtr<IDXGISwapChain> p_swapChain = NULL;
-		ComPtr<ID3D11RenderTargetView> p_renderTargetView = NULL;
+		ComPtr<ID3D11Device> p_d3dDevice = nullptr;
+		ComPtr<ID3D11Device1> p_d3dDevice1 = nullptr;
+		ComPtr<ID3D11DeviceContext> p_immediateContext = nullptr;
+		ComPtr<IDXGISwapChain1> p_swapChain1 = nullptr;
+		ComPtr<IDXGISwapChain> p_swapChain = nullptr;
+		ComPtr<ID3D11RenderTargetView> p_renderTargetView = nullptr;
 
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
 
 		//Scene 관련 변수
-		ComPtr<ID3D11VertexShader> p_vertexShader = NULL;
-		ComPtr<ID3D11PixelShader> p_pixelShader = NULL;
-		ComPtr<ID3D11InputLayout> p_vertexLayout = NULL;
-		ComPtr<ID3D11Buffer> p_vertexBuffer = NULL;
-		ComPtr<ID3D11Buffer> p_indexBuffer = NULL;
+		ComPtr<ID3D11VertexShader> p_vertexShader = nullptr;
+		ComPtr<ID3D11PixelShader> p_pixelShader = nullptr;
+		ComPtr<ID3D11InputLayout> p_vertexLayout = nullptr;
+		ComPtr<ID3D11Buffer> p_vertexBuffer = nullptr;
+		ComPtr<ID3D11Buffer> p_indexBuffer = nullptr;
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;
