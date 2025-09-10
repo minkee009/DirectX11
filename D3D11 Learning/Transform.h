@@ -1,6 +1,6 @@
 #pragma once
 #include <DirectXMath.h>
-#include <memory>
+#include <vector>
 
 using namespace DirectX;
 
@@ -13,19 +13,27 @@ namespace MyEngine
 		XMFLOAT4 m_localRot;
 		XMFLOAT3 m_localScale;
 
-		bool m_matrixIsDirty;
-		std::weak_ptr<Transform> m_parent;
+		mutable bool m_isMatrixDirty;
+
+		Transform* m_parent;
+		std::vector<Transform*> m_childs;
+
+		mutable XMMATRIX m_cachedMatrix;
+
+		void AddChild(Transform* child);
+		void RemoveChild(Transform* child);
+		void MarkDirty();
 	public:
-		XMMATRIX GetLocalMatrix();
-		XMMATRIX GetWorldMatrix();
+		XMMATRIX& GetLocalMatrix() const;
+		XMMATRIX& GetWorldMatrix() const;
 
-		XMFLOAT3 GetLocalPosition();
-		XMFLOAT4 GetLocalRotation();
-		XMFLOAT3 GetLocalScale();
+		XMFLOAT3& GetLocalPosition() const;
+		XMFLOAT4& GetLocalRotation() const;
+		XMFLOAT3& GetLocalScale() const;
 
-		XMFLOAT3 GetWorldPosition();
-		XMFLOAT4 GetWorldRotation();
-		XMFLOAT3 GetWorldScale();
+		XMFLOAT3& GetWorldPosition() const;
+		XMFLOAT4& GetWorldRotation() const;
+		XMFLOAT3& GetWorldScale() const;
 
 		void SetLocalPosition(XMFLOAT3 pos);
 		void SetLocalPosition(float x, float y, float z);
@@ -33,9 +41,13 @@ namespace MyEngine
 		void SetLocalRotation(XMFLOAT4 rot);
 		void SetLocalRotation(float w, float x, float y, float z);
 
+		void SetLocalEulerRotation(XMFLOAT3 rot); // use degree (0 ~ 360)
+		void SetLocalEulerRotation(float x, float y, float z); // use degree (0 ~ 360)
+
 		void SetLocalScale(XMFLOAT3 scale);
 		void SetLocalScale(float x, float y, float z);
 
-		void SetParent(const std::shared_ptr<Transform>& parent);
+		inline void SetParent(Transform* parent) { m_parent = parent; }
+		inline Transform* GetParent() const { return m_parent; }
 	};
 }
