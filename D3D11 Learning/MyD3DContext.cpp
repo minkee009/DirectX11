@@ -161,9 +161,6 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     // ImGui 초기화
     if (!m_imgui.Initialize(m_hWnd,m_pD3DDevice.Get(),m_pImmediateContext.Get()))
         return false;
-
-    m_imgui.SetWidth(m_width);
-    m_imgui.SetHeight(m_height);
 #endif //_DEBUG
 
     return true;
@@ -197,6 +194,64 @@ void MyEngine::MyD3DContext::Render()
 #endif //_DEBUG
 
 	Present();
+}
+
+void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
+{
+    if (!m_pSwapChain || !m_pD3DDevice || !m_pImmediateContext)
+        return;
+
+    // 멤버 변수 업데이트
+    m_width = width;
+    m_height = height;
+
+    // 현재 렌더 타겟이 설정되어 있다면 해제
+    m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+    // 기존 렌더 타겟 뷰 해제
+    m_pRenderTargetView.Reset();
+
+    // 스왑 체인 버퍼 크기 재조정
+    HRESULT hr = m_pSwapChain->ResizeBuffers(
+        1,                  // 버퍼 개수
+        width,              // 새로운 너비
+        height,             // 새로운 높이
+        DXGI_FORMAT_UNKNOWN, // 포맷 유지
+        0                   // 플래그
+    );
+
+    if (FAILED(hr)) {
+        // 오류 처리 로직 추가
+        OutputDebugStringA("스왑체인의 버퍼 사이즈를 바꾸는 데 실패했습니다.\n");
+        return;
+    }
+
+    // 새로운 렌더 타겟 뷰 생성
+    ComPtr<ID3D11Texture2D> pBackBuffer;
+    hr = m_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+    if (FAILED(hr)) {
+        OutputDebugStringA("백버퍼를 얻는 것을 실패했습니다.\n");
+        return;
+    }
+
+    hr = m_pD3DDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("렌더 타겟 뷰를 생성을 실패했습니다.\n");
+        return;
+    }
+
+    // 렌더 타겟 다시 설정
+    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
+
+    // 뷰포트 업데이트
+    D3D11_VIEWPORT vp = {};
+    vp.Width = (FLOAT)width;
+    vp.Height = (FLOAT)height;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0.0f;
+    vp.TopLeftY = 0.0f;
+    m_pImmediateContext->RSSetViewports(1, &vp);
 }
 
 void MyEngine::MyD3DContext::Present()

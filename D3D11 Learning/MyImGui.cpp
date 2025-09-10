@@ -17,11 +17,11 @@ bool MyEngine::MyImGui::Initialize(HWND hWnd, ID3D11Device* pDevice, ID3D11Devic
     }
     m_isImGuiInit = true;
 
-    //ImGuiIO& io = ImGui::GetIO();
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 키보드 내비게이션 활성화
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 키보드 내비게이션 활성화
 
     // 스타일 설정
-    //ImGui::StyleColorsDark();
+    ImGui::StyleColorsDark();
 
     // Win32 백엔드 초기화
     if (!ImGui_ImplWin32_Init(m_hWnd)) {
@@ -43,8 +43,15 @@ bool MyEngine::MyImGui::Initialize(HWND hWnd, ID3D11Device* pDevice, ID3D11Devic
 
 void MyEngine::MyImGui::BeginFrame()
 {
-    //ImGuiIO& io = ImGui::GetIO();
-    //io.DisplaySize = ImVec2(m_width, m_height);
+    RECT clientRect;
+    GetClientRect(m_hWnd,&clientRect);
+
+    // 너비와 높이를 명시적으로 계산
+    LONG width = clientRect.right - clientRect.left;
+    LONG height = clientRect.bottom - clientRect.top;
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)width, (float)height); // float으로 형변환
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
@@ -55,8 +62,16 @@ void MyEngine::MyImGui::Update()
 {
     ImGui::ShowDemoWindow(); // 데모 창 표시 (테스트용)
 
-    static float f = 0.0f;
+    RECT clientRect;
+    GetClientRect(m_hWnd, &clientRect);
+
     ImGui::Begin("Hello, ImGui!");
+    ImGui::Text("client left: %.2f", (float)clientRect.left);
+    ImGui::Text("client right: %.2f", (float)clientRect.right);
+    ImGui::Text("client top: %.2f", (float)clientRect.top);
+    ImGui::Text("client bottom: %.2f", (float)clientRect.bottom);
+
+    static float f = 0.0f;
     ImGui::Text("This is some useful text.");
     ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
     ImGui::End();

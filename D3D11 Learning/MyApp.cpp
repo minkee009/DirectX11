@@ -87,6 +87,19 @@ LRESULT MyEngine::MyApp::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, L
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_SIZE:
+		if (m_pD3DContext && (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED || wParam == SIZE_MINIMIZED)) {
+			RECT clientRect;
+			GetClientRect(hWnd, &clientRect);
+			UINT newWidth = clientRect.right - clientRect.left;
+			UINT newHeight = clientRect.bottom - clientRect.top;
+
+			// 리사이즈 로직을 D3DContext에 위임
+			if (newWidth > 0 && newHeight > 0) {
+				m_pD3DContext->Resize(newWidth, newHeight);
+			}
+		}
+		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -95,8 +108,11 @@ LRESULT MyEngine::MyApp::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, L
 
 int MyEngine::MyApp::Run()
 {
+	if (FAILED(CoInitialize(nullptr)))
+		return -1;
+
 	MSG msg = {};
-	CoInitialize(nullptr);
+
 	while (msg.message != WM_QUIT) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
@@ -106,6 +122,7 @@ int MyEngine::MyApp::Run()
 			m_pD3DContext->Render();
 		}
 	}
+
 	CoUninitialize();
 	return (int)msg.wParam;
 }

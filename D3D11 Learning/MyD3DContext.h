@@ -70,6 +70,8 @@ namespace MyEngine {
 
 		void Render();
 
+		void Resize(UINT width, UINT height);
+
 		~MyD3DContext();
 	};
 }
