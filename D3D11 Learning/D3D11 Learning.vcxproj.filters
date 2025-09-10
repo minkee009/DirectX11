@@ -16,6 +16,12 @@
     <Filter Include="셰이더 파일">
       <UniqueIdentifier>{71dafcc5-f649-4baa-b731-5ca3d171658e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\imgui">
+      <UniqueIdentifier>{92275cc3-5a59-4ea5-8245-212abc93b1c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\imgui">
+      <UniqueIdentifier>{7563ab39-4e14-4b64-a1e3-29b87bbf7894}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -25,6 +31,30 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="MyD3DContext.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui.cpp">
+      <Filter>소스 파일\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_draw.cpp">
+      <Filter>소스 파일\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_tables.cpp">
+      <Filter>소스 파일\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_widgets.cpp">
+      <Filter>소스 파일\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp">
+      <Filter>소스 파일\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp">
+      <Filter>소스 파일\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="MyImGui.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,6 +72,21 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Mesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\imconfig.h">
+      <Filter>헤더 파일\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\imgui.h">
+      <Filter>헤더 파일\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h">
+      <Filter>헤더 파일\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h">
+      <Filter>헤더 파일\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="MyImGui.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

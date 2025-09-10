@@ -5,6 +5,10 @@
 #include <directxmath.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
+#ifdef _DEBUG
+#include "MyImGui.h"
+#endif
+
 #pragma comment(lib, "d3d11.lib")
 
 using namespace DirectX;
@@ -25,22 +29,22 @@ namespace MyEngine {
 		int m_height = 600;
 
 		//Direct3D 관련 변수
-		ComPtr<ID3D11Device> p_d3dDevice = nullptr;
-		ComPtr<ID3D11Device1> p_d3dDevice1 = nullptr;
-		ComPtr<ID3D11DeviceContext> p_immediateContext = nullptr;
-		ComPtr<IDXGISwapChain1> p_swapChain1 = nullptr;
-		ComPtr<IDXGISwapChain> p_swapChain = nullptr;
-		ComPtr<ID3D11RenderTargetView> p_renderTargetView = nullptr;
+		ComPtr<ID3D11Device> m_pD3DDevice = nullptr;
+		ComPtr<ID3D11Device1> m_pD3DDevice1 = nullptr;
+		ComPtr<ID3D11DeviceContext> m_pImmediateContext = nullptr;
+		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
+		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
+		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView = nullptr;
 
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
 
 		//Scene 관련 변수
-		ComPtr<ID3D11VertexShader> p_vertexShader = nullptr;
-		ComPtr<ID3D11PixelShader> p_pixelShader = nullptr;
-		ComPtr<ID3D11InputLayout> p_vertexLayout = nullptr;
-		ComPtr<ID3D11Buffer> p_vertexBuffer = nullptr;
-		ComPtr<ID3D11Buffer> p_indexBuffer = nullptr;
+		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
+		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
+		ComPtr<ID3D11InputLayout> m_pVertexLayout = nullptr;
+		ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;
@@ -48,9 +52,13 @@ namespace MyEngine {
 
 		UINT m_indexCount = 0;
 
+#ifdef _DEBUG
+		//GUI용 코드 (디버깅 용)
+		MyImGui m_imgui;
+#endif //_DEBUG
+
 		void Clear();
 		void Present();
-
 
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 

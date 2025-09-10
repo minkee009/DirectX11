@@ -2,57 +2,95 @@
 #include "MyD3DContext.h"
 #include <wrl/client.h>
 
+#ifdef _DEBUG
+#include <imgui.h>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#endif //_DEBUG
+
+
 MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 {
 	m_hInst = hInstance;
 	// 윈도우 클래스 정의
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX) };
-	wc.lpfnWndProc = [](HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) -> LRESULT {
-		switch (message) {
-		case WM_DESTROY:
-			PostQuitMessage(0);
-			break;
-		default:
-			return DefWindowProc(hWnd, message, wParam, lParam);
-		}
-		return 0;
-		};
+	wc.lpfnWndProc = StaticWndProc;
 	wc.hInstance = hInstance;
 	wc.lpszClassName = L"MyEngineClass";
 	RegisterClassEx(&wc);
+
+	// 클라이언트 영역에 맞춰 윈도우 전체 크기 계산
+	RECT clientRect = { 0, 0, m_width, m_height };
+	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, FALSE);
+
 	// 윈도우 생성
 	m_hWnd = CreateWindowEx(
 		0,
 		wc.lpszClassName,
 		L"My 3D Engine",
 		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, m_width, m_height,
+		CW_USEDEFAULT, CW_USEDEFAULT, 
+		clientRect.right - clientRect.left,
+		clientRect.bottom - clientRect.top,
 		NULL,
 		NULL,
 		hInstance,
-		NULL
+		this
 	);
 	ShowWindow(m_hWnd, SW_SHOW);
 
-	// Direct3D 컨텍스트 초기화 (구현 필요)
-	m_d3dContext = new MyD3DContext(); // 예: Direct3D 11 컨텍스트
-	m_d3dContext->Initialize(m_hWnd, m_width, m_height);
-	bool as = m_d3dContext->InitializeScene();
+	// Direct3D 컨텍스트 초기화
+	m_pD3DContext = new MyD3DContext();
+	m_pD3DContext->Initialize(m_hWnd, m_width, m_height);
+	bool as = m_pD3DContext->InitializeScene();
 }
 
 MyEngine::MyApp::~MyApp()
 {
-	if (m_d3dContext) {
-		m_d3dContext->UninitializeScene();
+	if (m_pD3DContext) {
+		m_pD3DContext->UninitializeScene();
 
-		delete m_d3dContext;
-		m_d3dContext = nullptr;
+		delete m_pD3DContext;
+		m_pD3DContext = nullptr;
 	}
 
 	if (m_hWnd) {
 		DestroyWindow(m_hWnd);
 		m_hWnd = NULL;
 	}
+}
+
+LRESULT MyEngine::MyApp::StaticWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	if (message == WM_NCCREATE) {
+		CREATESTRUCT* pCS = reinterpret_cast<CREATESTRUCT*>(lParam);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCS->lpCreateParams));
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+
+	MyApp* pApp = reinterpret_cast<MyApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	if (pApp) {
+		return pApp->HandleMessage(hWnd, message, wParam, lParam);
+	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+LRESULT MyEngine::MyApp::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+#ifdef _DEBUG
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+		return true;
+#endif //_DEBUG
+
+	switch (message) {
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
 }
 
 int MyEngine::MyApp::Run()
@@ -65,7 +103,7 @@ int MyEngine::MyApp::Run()
 			DispatchMessage(&msg);
 		}
 		else {
-			m_d3dContext->Render();
+			m_pD3DContext->Render();
 		}
 	}
 	CoUninitialize();

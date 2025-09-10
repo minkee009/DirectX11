@@ -104,6 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)imgui-1.92.2b\backends;$(ProjectDir)imgui-1.92.2b;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,6 +119,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -127,15 +129,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui-1.92.2b\imgui.cpp" />
+    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp" />
+    <ClCompile Include="imgui-1.92.2b\imgui_draw.cpp" />
+    <ClCompile Include="imgui-1.92.2b\imgui_tables.cpp" />
+    <ClCompile Include="imgui-1.92.2b\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
+    <ClCompile Include="MyImGui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h" />
+    <ClInclude Include="imgui-1.92.2b\imconfig.h" />
+    <ClInclude Include="imgui-1.92.2b\imgui.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
+    <ClInclude Include="MyImGui.h" />
     <ClInclude Include="Transform.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
