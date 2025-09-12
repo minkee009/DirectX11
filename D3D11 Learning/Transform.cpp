@@ -235,3 +235,43 @@ void MyEngine::Transform::SetLocalScale(Vector3 scale)
 	if (m_onMatrixUpdated)
 		m_onMatrixUpdated();
 }
+
+void MyEngine::Transform::SetParent(Transform* parent, bool worldPositionStays)
+{
+	// 이미 같은 부모면 return
+	if (m_parent == parent) return;
+
+	// 현재 월드 행렬 백업
+	Matrix worldMatrixBefore = GetWorldMatrix();
+
+	// 기존 부모에서 제거
+	if (m_parent)
+		m_parent->RemoveChild(this);
+
+	// 부모 교체
+	m_parent = parent;
+
+	if (m_parent)
+		m_parent->AddChild(this);
+
+	if (worldPositionStays)
+	{
+		if (m_parent)
+		{
+			// 부모 기준 새 로컬 행렬
+			Matrix parentWorldInv = m_parent->GetWorldMatrix().Invert();
+			Matrix newLocal = worldMatrixBefore * parentWorldInv;
+
+			newLocal.Decompose(m_localScale, m_localRotation, m_localPosition);
+		}
+		else
+		{
+			// 부모가 없으면 로컬 = 월드
+			worldMatrixBefore.Decompose(m_localScale, m_localRotation, m_localPosition);
+		}
+	}
+
+	MarkDirty();
+	if (m_onMatrixUpdated)
+		m_onMatrixUpdated();
+}
