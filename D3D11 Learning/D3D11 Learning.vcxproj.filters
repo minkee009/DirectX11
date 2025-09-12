@@ -22,6 +22,12 @@
     <Filter Include="소스 파일\imgui">
       <UniqueIdentifier>{7563ab39-4e14-4b64-a1e3-29b87bbf7894}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\DirectXTK">
+      <UniqueIdentifier>{b081e733-e549-4942-99f4-41bf3bfd8d0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\DirectXTK">
+      <UniqueIdentifier>{009d5aa4-3672-4a09-8a9f-5acf79f82be9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -57,6 +63,15 @@
     <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="DirectXTK\Src\SimpleMath.cpp">
+      <Filter>소스 파일\DirectXTK</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -88,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="MyImGui.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXTK\Inc\SimpleMath.h">
+      <Filter>헤더 파일\DirectXTK</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

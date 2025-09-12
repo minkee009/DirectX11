@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)imgui-1.92.2b\backends;$(ProjectDir)imgui-1.92.2b;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)imgui-1.92.2b\backends;$(ProjectDir)imgui-1.92.2b;%(AdditionalIncludeDirectories);$(ProjectDir)DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,7 +119,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(ProjectDir)DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -129,6 +129,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="DirectXTK\Src\SimpleMath.cpp" />
     <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui-1.92.2b\imgui.cpp" />
@@ -140,9 +142,11 @@
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
+    <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="DirectXTK\Inc\SimpleMath.h" />
     <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h" />
     <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h" />
     <ClInclude Include="imgui-1.92.2b\imconfig.h" />

@@ -9,8 +9,8 @@ namespace MyEngine
 	class Transform
 	{
 	private:
-		Vector3 m_localPos;
-		Quaternion m_localRot;
+		Vector3 m_localPosition;
+		Quaternion m_localRotation;
 		Vector3 m_localScale;
 
 		mutable bool m_isMatrixDirty;
@@ -18,49 +18,55 @@ namespace MyEngine
 		Transform* m_parent;
 		std::vector<Transform*> m_childs;
 
+		std::function<void()> m_onMatrixUpdated;
+
 		mutable Matrix m_cachedMatrix;
 
 		void AddChild(Transform* child);
 		void RemoveChild(Transform* child);
 		void MarkDirty();
 	public:
+		Transform();
+		~Transform();
+
 		Matrix& GetLocalMatrix() const;
-		Matrix& GetWorldMatrix() const;
+		Matrix GetWorldMatrix() const;
 
-		Vector3& GetLocalPosition() const;
-		Quaternion& GetLocalRotation() const;
-		Vector3& GetLocalScale() const;
+		const Vector3& GetLocalPosition() const;
+		const Quaternion& GetLocalRotation() const;
+		const Vector3& GetLocalScale() const;
 
-		Vector3& GetWorldPosition() const;
-		Quaternion& GetWorldRotation() const;
-		Vector3& GetWorldScale() const;
+		const Vector3 GetWorldPosition() const;
+		const Quaternion GetWorldRotation() const;
+		const Vector3 GetWorldScale() const;
 
 		void SetWorldPosition(Vector3 pos);
-		void SetWorldPosition(float x, float y, float z);
+		inline void SetWorldPosition(float x, float y, float z) { SetWorldPosition({ x,y,z }); }
 				
 		void SetWorldRotation(Quaternion rot);
-		void SetWorldRotation(float x, float y, float z, float w);
+		inline void SetWorldRotation(float x, float y, float z, float w) { SetWorldRotation({ x,y,z,w }); }
 				
 		void SetWorldEulerRotation(Vector3 rot); // use degree (0 ~ 360)
-		void SetWorldEulerRotation(float x, float y, float z); // use degree (0 ~ 360)
+		inline void SetWorldEulerRotation(float x, float y, float z) { SetWorldEulerRotation({ x,y,z }); } // use degree (0 ~ 360)
 				
 		void SetWorldScale(Vector3 scale);
-		void SetWorldScale(float x, float y, float z);
-
+		inline void SetWorldScale(float x, float y, float z) { SetWorldScale({ x,y,z }); }
 
 		void SetLocalPosition(Vector3 pos);
-		void SetLocalPosition(float x, float y, float z);
+		inline void SetLocalPosition(float x, float y, float z) { SetLocalPosition({ x,y,z }); }
 
 		void SetLocalRotation(Quaternion rot);
-		void SetLocalRotation(float x, float y, float z, float w);
+		inline void SetLocalRotation(float x, float y, float z, float w) { SetLocalRotation({ x,y,z,w }); }
 
 		void SetLocalEulerRotation(Vector3 rot); // use degree (0 ~ 360)
-		void SetLocalEulerRotation(float x, float y, float z); // use degree (0 ~ 360)
+		inline void SetLocalEulerRotation(float x, float y, float z) { SetLocalEulerRotation({ x,y,z }); } // use degree (0 ~ 360)
 
 		void SetLocalScale(Vector3 scale);
-		void SetLocalScale(float x, float y, float z);
+		inline void SetLocalScale(float x, float y, float z) { SetLocalScale({ x,y,z }); }
 
 		inline void SetParent(Transform* parent) { m_parent = parent; }
 		inline Transform* GetParent() const { return m_parent; }
+
+		inline void SetOnMatrixUpdated(std::function<void()> func) { m_onMatrixUpdated = std::move(func); }
 	};
 }

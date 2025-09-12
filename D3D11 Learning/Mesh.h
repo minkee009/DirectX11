@@ -22,7 +22,8 @@ namespace MyEngine
 	public:
 		Mesh();
 		~Mesh();
-		std::shared_ptr<Transform> transform;
+		std::shared_ptr<Transform> pTransform;
 		static std::unique_ptr<Mesh> CreateFromFile(std::wstring path);
+		std::unique_ptr<std::vector<MeshVertex> > pMeshData;
 	};
 }
