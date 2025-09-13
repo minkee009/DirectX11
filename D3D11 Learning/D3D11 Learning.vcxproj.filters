@@ -60,9 +60,6 @@
     <ClCompile Include="MyImGui.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="DirectXTK\Src\SimpleMath.cpp">
       <Filter>소스 파일\DirectXTK</Filter>
     </ClCompile>
@@ -71,6 +68,12 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Time.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
+      <Filter>소스 파일\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +109,9 @@
     </ClInclude>
     <ClInclude Include="DirectXTK\Inc\SimpleMath.h">
       <Filter>헤더 파일\DirectXTK</Filter>
+    </ClInclude>
+    <ClInclude Include="Time.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

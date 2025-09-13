@@ -45,5 +45,7 @@ namespace MyEngine
 
 		void MarkViewMatrixDirty();
 		void MarkProjectionMatrixDirty();
+
+		void InputUpdate(float deltaTime); // WASD QE for move, mouse for rotate
 	};
 }
