@@ -1,3 +1,4 @@
+#include "Time.h"
 #include "MyApp.h"
 #include "MyD3DContext.h"
 #include <wrl/client.h>
@@ -39,6 +40,8 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 	);
 	ShowWindow(m_hWnd, SW_SHOW);
 
+	m_pTime = new Time();
+
 	// Direct3D 컨텍스트 초기화
 	m_pD3DContext = new MyD3DContext();
 	m_pD3DContext->Initialize(m_hWnd, m_width, m_height);
@@ -47,6 +50,11 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 
 MyEngine::MyApp::~MyApp()
 {
+	if (m_pTime) {
+		delete m_pTime;
+		m_pTime = nullptr;
+	}
+
 	if (m_pD3DContext) {
 		m_pD3DContext->UninitializeScene();
 
@@ -119,6 +127,7 @@ int MyEngine::MyApp::Run()
 			DispatchMessage(&msg);
 		}
 		else {
+			m_pTime->Update();
 			m_pD3DContext->Render();
 		}
 	}

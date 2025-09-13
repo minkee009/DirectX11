@@ -2,10 +2,12 @@
 #include <Windows.h>
 
 namespace MyEngine {
+	class Time;
 	class MyD3DContext;
 	class MyApp {
 	private:
 		MyD3DContext* m_pD3DContext = nullptr;
+		Time* m_pTime = nullptr;
 		HINSTANCE m_hInst;
 		HWND m_hWnd;
 		int m_width = 1024;

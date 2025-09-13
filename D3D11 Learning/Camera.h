@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include <d3d11.h>
 #include <SimpleMath.h>
 #include "Transform.h"
 

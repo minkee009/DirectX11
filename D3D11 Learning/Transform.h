@@ -42,7 +42,7 @@ namespace MyEngine
 
 		void SetWorldPosition(Vector3 pos);
 		inline void SetWorldPosition(float x, float y, float z) { SetWorldPosition({ x,y,z }); }
-				
+	
 		void SetWorldRotation(Quaternion rot);
 		inline void SetWorldRotation(float x, float y, float z, float w) { SetWorldRotation({ x,y,z,w }); }
 				
