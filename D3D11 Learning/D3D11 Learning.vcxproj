@@ -130,6 +130,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="DirectXTK\Src\Keyboard.cpp" />
+    <ClCompile Include="DirectXTK\Src\Mouse.cpp" />
     <ClCompile Include="DirectXTK\Src\SimpleMath.cpp" />
     <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp" />
@@ -147,6 +149,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="DirectXTK\Inc\Keyboard.h" />
+    <ClInclude Include="DirectXTK\Inc\Mouse.h" />
     <ClInclude Include="DirectXTK\Inc\SimpleMath.h" />
     <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h" />
     <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h" />

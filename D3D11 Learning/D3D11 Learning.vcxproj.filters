@@ -75,6 +75,12 @@
     <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
       <Filter>소스 파일\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="DirectXTK\Src\Keyboard.cpp">
+      <Filter>소스 파일\DirectXTK</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectXTK\Src\Mouse.cpp">
+      <Filter>소스 파일\DirectXTK</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -112,6 +118,12 @@
     </ClInclude>
     <ClInclude Include="Time.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXTK\Inc\Keyboard.h">
+      <Filter>헤더 파일\DirectXTK</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXTK\Inc\Mouse.h">
+      <Filter>헤더 파일\DirectXTK</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
