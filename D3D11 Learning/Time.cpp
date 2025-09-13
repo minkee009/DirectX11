@@ -12,3 +12,12 @@ MyEngine::Time::~Time()
 {
 
 }
+
+void MyEngine::Time::Update()
+{
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	m_deltaTime = std::chrono::duration<float>(currentTime - m_lastTime).count();
+	m_totalTime = std::chrono::duration<float>(currentTime - m_startTime).count();
+	m_lastTime = currentTime;
+}
+

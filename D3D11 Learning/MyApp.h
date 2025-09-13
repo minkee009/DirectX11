@@ -1,10 +1,12 @@
 #pragma once
 #include <Windows.h>
 
-namespace MyEngine {
+namespace MyEngine 
+{
 	class Time;
 	class MyD3DContext;
-	class MyApp {
+	class MyApp 
+	{
 	private:
 		MyD3DContext* m_pD3DContext = nullptr;
 		Time* m_pTime = nullptr;
