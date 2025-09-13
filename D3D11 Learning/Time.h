@@ -11,6 +11,7 @@ namespace MyEngine
 		float m_deltaTime; // in seconds
 		float m_totalTime; // in seconds
 	public:
+		static Time* instance;
 		Time();
 		~Time();
 		void Update();

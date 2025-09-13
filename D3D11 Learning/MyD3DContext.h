@@ -53,6 +53,7 @@ namespace MyEngine {
 		ComPtr<ID3D11InputLayout> m_pVertexLayout = nullptr;
 		ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
 
@@ -64,6 +65,7 @@ namespace MyEngine {
 
 #ifdef _DEBUG
 		//GUI용 코드 (디버깅 용)
+		friend class MyImGui;
 		MyImGui m_imgui;
 #endif //_DEBUG
 

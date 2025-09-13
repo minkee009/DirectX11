@@ -1,4 +1,5 @@
 #include "MyImGui.h"
+#include "MyD3DContext.h"
 
 #include <imgui.h>
 #include <imgui_impl_win32.h>
@@ -6,11 +7,13 @@
 #include "Time.h"
 
 
-bool MyEngine::MyImGui::Initialize(HWND hWnd, ID3D11Device* pDevice, ID3D11DeviceContext* pImmediateContext)
+bool MyEngine::MyImGui::Initialize(MyD3DContext* myContext)
 {
-    this->m_hWnd = hWnd;
-    this->m_pDevice = pDevice;
-    this->m_pImmediateContext = pImmediateContext;
+	m_d3dContext = myContext;
+
+    this->m_hWnd = m_d3dContext->m_hWnd;
+    this->m_pDevice = m_d3dContext->m_pD3DDevice.Get();
+    this->m_pImmediateContext = m_d3dContext->m_pImmediateContext.Get();
 
     // 코어 컨텍스트 생성
     if (!ImGui::CreateContext()) {
@@ -63,18 +66,22 @@ void MyEngine::MyImGui::Update()
 {
     ImGui::ShowDemoWindow(); // 데모 창 표시 (테스트용)
 
-    RECT clientRect;
-    GetClientRect(m_hWnd, &clientRect);
+    ImGui::Begin("Camera State");
+    ImGui::Text("Pos X - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
+    ImGui::Text("Pos Y - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
+    ImGui::Text("Pos Z - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
 
-    ImGui::Begin("Hello, ImGui!");
-    ImGui::Text("client left: %.2f", (float)clientRect.left);
-    ImGui::Text("client right: %.2f", (float)clientRect.right);
-    ImGui::Text("client top: %.2f", (float)clientRect.top);
-    ImGui::Text("client bottom: %.2f", (float)clientRect.bottom);
+	Vector3 euler = m_d3dContext->m_pCamera->GetTransform()->GetLocalRotation().ToEuler();
 
-    static float f = 0.0f;
-    ImGui::Text("This is some useful text.");
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+    ImGui::Text("=-= Rot X - %f", XMConvertToDegrees(euler.x));
+    ImGui::Text("=-= Rot Y - %f", XMConvertToDegrees(euler.y));
+    ImGui::Text("=-= Rot z - %f", XMConvertToDegrees(euler.z));
+
+    static float fov = 75.0f;
+    //ImGui::Text("This is some useful text.");
+    ImGui::SliderFloat("Field Of View", &fov, 60.0f, 120.0f);
+	m_d3dContext->m_pCamera->SetFOV(fov);
+
     ImGui::End();
 }
 

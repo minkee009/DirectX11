@@ -6,9 +6,11 @@
 
 namespace MyEngine 
 {
+	class MyD3DContext;
 	class MyImGui
 	{
 	private:
+		MyD3DContext* m_d3dContext;
 		HWND m_hWnd;
 		ID3D11Device* m_pDevice;
 		ID3D11DeviceContext* m_pImmediateContext;
@@ -17,7 +19,7 @@ namespace MyEngine
 		bool m_isWin32BackendInit = false;
 		bool m_isD3D11BackendInit = false;
 	public:
-		bool Initialize(HWND hWnd, ID3D11Device* pDevice, ID3D11DeviceContext* pImmediateContext);
+		bool Initialize(MyD3DContext* myContext);
 		void BeginFrame();
 		void Update();
 		void Render();

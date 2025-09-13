@@ -1,3 +1,4 @@
+#include "Time.h"
 #include "MyD3DContext.h"
 #include <dxgi.h>
 #include <directxcolors.h>
@@ -157,15 +158,184 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     vp.TopLeftY = 0;
     m_pImmediateContext->RSSetViewports(1, &vp);
 
-	m_pCamera = std::make_unique<Camera>();
-
-    m_pCamera->GetTransform()->SetWorldPosition(0.0f, -0.5f, -10.0f);
-
 #ifdef _DEBUG
     // ImGui 초기화
-    if (!m_imgui.Initialize(m_hWnd,m_pD3DDevice.Get(),m_pImmediateContext.Get()))
+    if (!m_imgui.Initialize(this))
         return false;
 #endif //_DEBUG
+
+    return true;
+}
+
+bool MyEngine::MyD3DContext::InitializeScene()
+{
+    HRESULT hr = S_OK;
+
+    //컴파일 정보 저장용 객체
+    ID3DBlob* pVSBlob = nullptr;
+
+    //셰이더 컴파일링
+    hr = CompileShaderFromFile(L"testVS.hlsl", "VS", "vs_4_0", &pVSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
+    if (FAILED(hr))
+    {
+        pVSBlob->Release();
+        return false;
+    }
+
+    //인풋 레이아웃 (셰이더 코드 바인딩) 설정
+    D3D11_INPUT_ELEMENT_DESC layout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    UINT numElements = ARRAYSIZE(layout);
+
+    //인풋 레이아웃 생성
+    hr = m_pD3DDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+        pVSBlob->GetBufferSize(), m_pVertexLayout.GetAddressOf());
+    pVSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    ID3DBlob* pPSBlob = nullptr;
+    hr = CompileShaderFromFile(L"testPS.hlsl", "PS", "ps_4_0", &pPSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf());
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    //정점 정의
+    MyVertex vertices[] = 
+    {
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) },
+    };
+    //{
+    //    {XMFLOAT3(-0.5f,-0.5f,0.5f), XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},    // v0
+    //    {XMFLOAT3(-0.5f,0.5f,0.5f), XMFLOAT4(0.0f,1.0f,0.0f,1.0f)},     // v1
+    //    {XMFLOAT3(0.5f,0.5f,0.5f), XMFLOAT4(0.0f,0.0f,1.0f,1.0f)},      // v2
+    //    {XMFLOAT3(0.5f,-0.5f,0.5f), XMFLOAT4(1.0f,1.0f,0.0f,1.0f)},     // v3
+    //};
+
+    //정점 버퍼 정의
+    D3D11_BUFFER_DESC vbDesc = {};
+    m_vertexCount = ARRAYSIZE(vertices);
+    vbDesc.ByteWidth = sizeof(MyVertex) * m_vertexCount;
+    vbDesc.CPUAccessFlags = 0;
+    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vbDesc.MiscFlags = 0;
+    vbDesc.Usage = D3D11_USAGE_DEFAULT;
+
+    //정점 버퍼 생성
+    D3D11_SUBRESOURCE_DATA vbData = {};
+    vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
+    hr = m_pD3DDevice->CreateBuffer(&vbDesc, &vbData, m_pVertexBuffer.GetAddressOf());
+
+    if (FAILED(hr))
+        return false;
+
+    m_vertexBufferStride = sizeof(MyVertex);
+    m_vertexBufferOffset = 0;
+
+    //인덱스 정의
+    UINT indices[] = 
+    {
+        3,1,0,
+        2,1,3,
+
+        0,5,4,
+        1,5,0,
+
+        3,4,7,
+        0,4,3,
+
+        1,6,5,
+        2,6,1,
+
+        2,7,6,
+        3,7,2,
+
+        6,4,5,
+        7,4,6,
+    };
+    //{ 0, 1, 2, 3, 0, 2 };
+
+    //인덱스 버퍼 정의
+    D3D11_BUFFER_DESC ibDesc;
+    m_indexCount = ARRAYSIZE(indices);
+    ibDesc.Usage = D3D11_USAGE_DEFAULT;
+    ibDesc.ByteWidth = sizeof(UINT) * m_indexCount;
+    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    ibDesc.CPUAccessFlags = 0;
+    ibDesc.MiscFlags = 0;
+
+    //인덱스 버퍼 생성
+    D3D11_SUBRESOURCE_DATA InitData;
+    InitData.pSysMem = indices;
+    InitData.SysMemPitch = 0;
+    InitData.SysMemSlicePitch = 0;
+
+    hr = m_pD3DDevice->CreateBuffer(&ibDesc, &InitData, m_pIndexBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+	//상수 버퍼 생성
+    D3D11_BUFFER_DESC cbDesc;
+    ZeroMemory(&cbDesc, sizeof(cbDesc));
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.ByteWidth = sizeof(MyConstantBuffer);
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = 0;
+
+    hr = m_pD3DDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    // 래스터라이저 상태 생성 및 설정
+    D3D11_RASTERIZER_DESC rastDesc = {};
+    rastDesc.FillMode = D3D11_FILL_SOLID;
+    rastDesc.CullMode = D3D11_CULL_BACK;
+    rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
+    rastDesc.DepthBias = 0;
+    rastDesc.DepthBiasClamp = 0.0f;
+    rastDesc.SlopeScaledDepthBias = 0.0f;
+    rastDesc.DepthClipEnable = TRUE;
+    rastDesc.ScissorEnable = FALSE;
+    rastDesc.MultisampleEnable = FALSE;
+    rastDesc.AntialiasedLineEnable = FALSE;
+
+    ComPtr<ID3D11RasterizerState> rasterizerState;
+    hr = m_pD3DDevice->CreateRasterizerState(&rastDesc, rasterizerState.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    //래스터라이저 상태 설정
+    m_pImmediateContext->RSSetState(rasterizerState.Get());
+
+    m_pCamera = std::make_unique<Camera>();
+    m_pCamera->GetTransform()->SetWorldPosition(0.0f, 1.0f, 5.0f);
+	m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
     return true;
 }
@@ -179,17 +349,61 @@ void MyEngine::MyD3DContext::Clear()
 
 void MyEngine::MyD3DContext::Render()
 {
-	Clear();
+    //추후에 변경할 예정이지만 일단 씬 내용을 업데이트
+    m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
+
+    Clear();
+
+    //// Update our time
+    //static float t = 0.0f;
+    //if (m_driverType == D3D_DRIVER_TYPE_REFERENCE)
+    //{
+    //    t += (float)XM_PI * 0.0125f;
+    //}
+    //else
+    //{
+    //    static ULONGLONG timeStart = 0;
+    //    ULONGLONG timeCur = GetTickCount64();
+    //    if (timeStart == 0)
+    //        timeStart = timeCur;
+    //    t = (timeCur - timeStart) / 1000.0f;
+    //}
+
+    //// Initialize the world matrix
+    //auto g_World = XMMatrixRotationY(t);
+
+    //// Initialize the view matrix
+    //XMVECTOR Eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
+    //XMVECTOR At = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    //XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    //auto g_View = XMMatrixLookAtLH(Eye, At, Up);
+
+    //// Initialize the projection matrix
+    //auto g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, m_width / (FLOAT)m_height, 0.01f, 100.0f);
+
+    //MyConstantBuffer cb;
+    //cb.mWorld = XMMatrixTranspose(g_World);
+    //cb.mView = XMMatrixTranspose(g_View);
+    //cb.mProjection = XMMatrixTranspose(g_Projection);
+
+    MyConstantBuffer cb;
+    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+    cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
+    cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
+
+
+    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
     m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
     m_pImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
     m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
     m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
+    
     m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-    m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+    m_pImmediateContext->DrawIndexed(36, 0, 0);
 
 #ifdef _DEBUG
     m_imgui.BeginFrame();
@@ -197,7 +411,70 @@ void MyEngine::MyD3DContext::Render()
     m_imgui.Render();
 #endif //_DEBUG
 
-	Present();
+    Present();
+}
+
+
+void MyEngine::MyD3DContext::Present()
+{
+    m_pSwapChain->Present(0, 0);
+}
+
+void MyEngine::MyD3DContext::UninitializeScene()
+{
+    m_pVertexBuffer = nullptr;
+    m_pIndexBuffer = nullptr;
+    m_pConstantBuffer = nullptr;
+    m_pVertexLayout = nullptr;
+    m_pVertexShader = nullptr;
+    m_pPixelShader = nullptr;
+}
+
+MyEngine::MyD3DContext::~MyD3DContext()
+{
+#ifdef _DEBUG
+    m_imgui.Uninitialize();
+#endif //_DEBUG
+    m_pImmediateContext = nullptr;
+    m_pD3DDevice1 = nullptr;
+    m_pD3DDevice = nullptr;
+    m_pSwapChain1 = nullptr;
+    m_pSwapChain = nullptr;
+    m_pRenderTargetView = nullptr;
+    m_hWnd = nullptr;
+}
+
+HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
+{
+    HRESULT hr = S_OK;
+
+    DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+    // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+    // Setting this flag improves the shader debugging experience, but still allows 
+    // the shaders to be optimized and to run exactly the way they will run in 
+    // the release configuration of this program.
+    dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+    // Disable optimizations to further improve shader debugging
+    dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+    ID3DBlob* pErrorBlob = nullptr;
+    hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
+        dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
+    if (FAILED(hr))
+    {
+        if (pErrorBlob)
+        {
+            OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+            pErrorBlob->Release();
+        }
+        return hr;
+    }
+    if (pErrorBlob) pErrorBlob->Release();
+
+    return S_OK;
 }
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
@@ -208,6 +485,8 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     // 멤버 변수 업데이트
     m_width = width;
     m_height = height;
+
+	m_pCamera->SetAspectRatio((float)width / (float)height);
 
     // 현재 렌더 타겟이 설정되어 있다면 해제
     m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
@@ -256,170 +535,5 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     vp.TopLeftX = 0.0f;
     vp.TopLeftY = 0.0f;
     m_pImmediateContext->RSSetViewports(1, &vp);
-}
-
-void MyEngine::MyD3DContext::Present()
-{
-    m_pSwapChain->Present(0, 0);
-}
-
-bool MyEngine::MyD3DContext::InitializeScene()
-{
-    HRESULT hr = S_OK;
-
-    //컴파일 정보 저장용 객체
-    ID3DBlob* pVSBlob = nullptr;
-
-    //셰이더 컴파일링
-    hr = CompileShaderFromFile(L"Tutorial02_VS.hlsl", "VS", "vs_4_0", &pVSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
-    if (FAILED(hr))
-    {
-        pVSBlob->Release();
-        return false;
-    }
-
-    //인풋 레이아웃 (셰이더 코드 바인딩) 설정
-    D3D11_INPUT_ELEMENT_DESC layout[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
-    UINT numElements = ARRAYSIZE(layout);
-
-    //인풋 레이아웃 생성
-    hr = m_pD3DDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-        pVSBlob->GetBufferSize(), m_pVertexLayout.GetAddressOf());
-    pVSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
-    ID3DBlob* pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"Tutorial02_PS.hlsl", "PS", "ps_4_0", &pPSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf());
-    pPSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
-    //정점 정의
-    MyVertex vertices[] = {
-        {XMFLOAT3(-0.5f,-0.5f,0.5f), XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},    // v0
-        {XMFLOAT3(-0.5f,0.5f,0.5f), XMFLOAT4(0.0f,1.0f,0.0f,1.0f)},     // v1
-        {XMFLOAT3(0.5f,0.5f,0.5f), XMFLOAT4(0.0f,0.0f,1.0f,1.0f)},      // v2
-        {XMFLOAT3(0.5f,-0.5f,0.5f), XMFLOAT4(1.0f,1.0f,0.0f,1.0f)},     // v3
-    };
-
-    //정점 버퍼 정의
-    D3D11_BUFFER_DESC vbDesc = {};
-    m_vertexCount = ARRAYSIZE(vertices);
-    vbDesc.ByteWidth = sizeof(MyVertex) * m_vertexCount;
-    vbDesc.CPUAccessFlags = 0;
-    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vbDesc.MiscFlags = 0;
-    vbDesc.Usage = D3D11_USAGE_DEFAULT;
-
-    //정점 버퍼 생성
-    D3D11_SUBRESOURCE_DATA vbData = {};
-    vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
-    hr = m_pD3DDevice->CreateBuffer(&vbDesc, &vbData, m_pVertexBuffer.GetAddressOf());
-
-    if (FAILED(hr))
-        return false;
-
-    m_vertexBufferStride = sizeof(MyVertex);
-    m_vertexBufferOffset = 0;
-
-    //인덱스 정의
-    UINT indices[] = { 0, 1, 2, 3, 0, 2 };
-
-    //인덱스 버퍼 정의
-    D3D11_BUFFER_DESC bufferDesc;
-    m_indexCount = ARRAYSIZE(indices);
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.ByteWidth = sizeof(UINT) * m_indexCount;
-    bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    bufferDesc.CPUAccessFlags = 0;
-    bufferDesc.MiscFlags = 0;
-
-    //인덱스 버퍼 생성
-    D3D11_SUBRESOURCE_DATA InitData;
-    InitData.pSysMem = indices;
-    InitData.SysMemPitch = 0;
-    InitData.SysMemSlicePitch = 0;
-
-    hr = m_pD3DDevice->CreateBuffer(&bufferDesc, &InitData, m_pIndexBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    return true;
-}
-
-void MyEngine::MyD3DContext::UninitializeScene()
-{
-    m_pVertexBuffer = nullptr;
-    m_pVertexLayout = nullptr;
-    m_pVertexShader = nullptr;
-    m_pPixelShader = nullptr;
-}
-
-MyEngine::MyD3DContext::~MyD3DContext()
-{
-#ifdef _DEBUG
-    m_imgui.Uninitialize();
-#endif //_DEBUG
-	m_pImmediateContext = nullptr;
-    m_pD3DDevice1 = nullptr;
-	m_pD3DDevice = nullptr;
-    m_pSwapChain1 = nullptr;
-	m_pSwapChain = nullptr;
-	m_pRenderTargetView = nullptr;
-	m_hWnd = nullptr;
-}
-
-HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
-{
-    HRESULT hr = S_OK;
-
-    DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-    // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
-    // Setting this flag improves the shader debugging experience, but still allows 
-    // the shaders to be optimized and to run exactly the way they will run in 
-    // the release configuration of this program.
-    dwShaderFlags |= D3DCOMPILE_DEBUG;
-
-    // Disable optimizations to further improve shader debugging
-    dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-
-    ID3DBlob* pErrorBlob = nullptr;
-    hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
-        dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
-    if (FAILED(hr))
-    {
-        if (pErrorBlob)
-        {
-            OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
-            pErrorBlob->Release();
-        }
-        return hr;
-    }
-    if (pErrorBlob) pErrorBlob->Release();
-
-    return S_OK;
 }
 

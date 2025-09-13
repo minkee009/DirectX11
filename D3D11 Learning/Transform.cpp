@@ -134,7 +134,7 @@ void MyEngine::Transform::SetWorldPosition(Vector3 pos)
 	{
 		//부모의 역행렬로 돌아간뒤 pos값을 적용해야 함
 		auto parentInvWorldMat = m_parent->GetWorldMatrix().Invert();
-		m_localPosition = Vector3::Transform(m_localPosition, m_parent->GetWorldMatrix());
+		m_localPosition = Vector3::Transform(pos, parentInvWorldMat);  // pos를 역변환
 	}
 	else
 	{
@@ -173,7 +173,7 @@ void MyEngine::Transform::SetWorldEulerRotation(Vector3 rot) // use degree (0 ~ 
 	auto radRotZ = DirectX::XMConvertToRadians(rot.z);
 
 	// 라디안 오일러 각으로 쿼터니언 생성
-	Quaternion worldRot = Quaternion::CreateFromYawPitchRoll(radRotX ,radRotY, radRotZ);
+	Quaternion worldRot = Quaternion::CreateFromYawPitchRoll(radRotY ,radRotX, radRotZ);
 
 	SetWorldRotation(worldRot);
 }
@@ -223,14 +223,14 @@ void MyEngine::Transform::SetLocalEulerRotation(Vector3 rot)
 	auto radRotZ = DirectX::XMConvertToRadians(rot.z);
 
 	// 라디안 오일러 각으로 쿼터니언 생성
-	Quaternion worldRot = Quaternion::CreateFromYawPitchRoll(radRotX, radRotY, radRotZ);
+	Quaternion worldRot = Quaternion::CreateFromYawPitchRoll(radRotY, radRotX, radRotZ);
 
 	SetLocalRotation(worldRot);
 }
 
 void MyEngine::Transform::SetLocalScale(Vector3 scale)
 {
-	m_localPosition = scale;
+	m_localScale = scale;
 	MarkDirty();
 	if (m_onMatrixUpdated)
 		m_onMatrixUpdated();

@@ -9,7 +9,6 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif //_DEBUG
 
-
 MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 {
 	m_hInst = hInstance;
@@ -46,6 +45,11 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 	m_pD3DContext = new MyD3DContext();
 	m_pD3DContext->Initialize(m_hWnd, m_width, m_height);
 	bool as = m_pD3DContext->InitializeScene();
+
+	m_keyboard = std::make_unique<DirectX::Keyboard>();
+	m_mouse = std::make_unique<Mouse>();
+
+	Mouse::Get().SetWindow(m_hWnd);
 }
 
 MyEngine::MyApp::~MyApp()
@@ -107,6 +111,44 @@ LRESULT MyEngine::MyApp::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, L
 				m_pD3DContext->Resize(newWidth, newHeight);
 			}
 		}
+		break;
+	case WM_ACTIVATE:
+	case WM_ACTIVATEAPP:
+		DirectX::Keyboard::ProcessMessage(message, wParam, lParam);
+		DirectX::Mouse::ProcessMessage(message, wParam, lParam);
+		break;
+
+	case WM_SYSKEYDOWN:
+		if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
+		{
+			// This is where you'd implement the classic ALT+ENTER hotkey for fullscreen toggle
+			// 알트 엔터 이벤트 처리
+		}
+		DirectX::Keyboard::ProcessMessage(message, wParam, lParam);
+		break;
+
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		DirectX::Keyboard::ProcessMessage(message, wParam, lParam);
+		break;
+	case WM_MENUCHAR:
+		// A menu is active and the user presses a key that does not correspond
+		// to any mnemonic or accelerator key. Ignore so we don't produce an error beep.
+		return MAKELRESULT(0, MNC_CLOSE);
+	case WM_INPUT:
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_MOUSEWHEEL:
+	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
+	case WM_MOUSEHOVER:
+		DirectX::Mouse::ProcessMessage(message, wParam, lParam);
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);

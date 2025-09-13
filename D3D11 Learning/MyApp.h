@@ -1,5 +1,8 @@
 #pragma once
 #include <Windows.h>
+#include <memory>
+#include <Keyboard.h>
+#include <Mouse.h>
 
 namespace MyEngine 
 {
@@ -14,6 +17,9 @@ namespace MyEngine
 		HWND m_hWnd;
 		int m_width = 1024;
 		int m_height = 768;
+
+		std::unique_ptr<DirectX::Keyboard> m_keyboard;
+		std::unique_ptr<DirectX::Mouse> m_mouse;
 	public:
 		MyApp(HINSTANCE hInstance);
 		~MyApp();

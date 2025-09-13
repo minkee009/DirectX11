@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 #include <SimpleMath.h>
+#include <Keyboard.h>
+#include <Mouse.h>
 #include "Transform.h"
 
 using namespace DirectX::SimpleMath;
@@ -16,19 +18,25 @@ namespace MyEngine
 		float m_far; // far plane
 		float m_aspect; // { width / height } ratio
 
-		bool m_isProjMatrixDirty;
-		bool m_isViewMatrixDirty;
+		mutable bool m_isProjMatrixDirty;
+		mutable bool m_isViewMatrixDirty;
 
-		Matrix m_cachedViewMatrix; // view Matrix
-		Matrix m_cachedProjMatrix; // projection Matrix
+		mutable Matrix m_cachedViewMatrix; // view Matrix
+		mutable Matrix m_cachedProjMatrix; // projection Matrix
+
+		DirectX::Mouse::ButtonStateTracker m_mouseTracker;
+		DirectX::Keyboard::KeyboardStateTracker m_keyboardTracker;
+		int m_lastMouseX = 0;
+		int m_lastMouseY = 0;
+		bool m_firstMouseUpdate = true;
 
 	public:
 		Camera();
 		~Camera();
 
-		Matrix GetCameraMatrix();  // view * projection Matrix
-		Matrix& GetViewMatrix();
-		Matrix& GetProjMatrix();
+		const Matrix GetCameraMatrix();  // view * projection Matrix
+		const Matrix& GetViewMatrix();
+		const Matrix& GetProjMatrix();
 
 		inline const float& GetFOV() const { return m_fov; }
 		inline const float& GetNearPlane() const { return m_near; }
