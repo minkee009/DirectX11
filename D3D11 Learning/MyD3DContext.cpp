@@ -157,6 +157,10 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     vp.TopLeftY = 0;
     m_pImmediateContext->RSSetViewports(1, &vp);
 
+	m_pCamera = std::make_unique<Camera>();
+
+    m_pCamera->GetTransform()->SetWorldPosition(0.0f, -0.5f, -10.0f);
+
 #ifdef _DEBUG
     // ImGui √ ±‚»≠
     if (!m_imgui.Initialize(m_hWnd,m_pD3DDevice.Get(),m_pImmediateContext.Get()))

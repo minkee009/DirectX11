@@ -64,7 +64,7 @@ namespace MyEngine
 		void SetLocalScale(Vector3 scale);
 		inline void SetLocalScale(float x, float y, float z) { SetLocalScale({ x,y,z }); }
 
-		inline void SetParent(Transform* parent) { m_parent = parent; }
+		void SetParent(Transform* parent, bool worldPositionStays = true);
 		inline Transform* GetParent() const { return m_parent; }
 
 		inline void SetOnMatrixUpdated(std::function<void()> func) { m_onMatrixUpdated = std::move(func); }

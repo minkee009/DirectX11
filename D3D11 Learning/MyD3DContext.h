@@ -5,6 +5,8 @@
 #include <directxmath.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
+#include "Camera.h"
+
 #ifdef _DEBUG
 #include "MyImGui.h"
 #endif
@@ -19,6 +21,12 @@ namespace MyEngine {
 	struct MyVertex {
 		XMFLOAT3 pos;
 		XMFLOAT4 color;
+	};
+
+	struct MyConstantBuffer {
+		XMMATRIX mWorld;
+		XMMATRIX mView;
+		XMMATRIX mProjection;
 	};
 
 	class MyD3DContext {
@@ -45,6 +53,8 @@ namespace MyEngine {
 		ComPtr<ID3D11InputLayout> m_pVertexLayout = nullptr;
 		ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;
+
+		std::unique_ptr<Camera> m_pCamera;
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;

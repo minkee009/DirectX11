@@ -4,7 +4,7 @@ MyEngine::Camera::Camera()
 {
     m_pTransform = std::make_unique<Transform>();
     m_pTransform->SetOnMatrixUpdated([this] {
-        this->MarkCameraMatrixDirty();
+        this->MarkViewMatrixDirty();
         });
 
     m_fov = 75;
@@ -12,7 +12,8 @@ MyEngine::Camera::Camera()
     m_far = 1000.0f;
     m_aspect = 4 / 3;
 
-    m_isCamMatrixDirty = true;
+    MarkViewMatrixDirty();
+	MarkProjectionMatrixDirty();
 }
 
 MyEngine::Camera::~Camera()
@@ -20,19 +21,41 @@ MyEngine::Camera::~Camera()
 
 }
 
-Matrix& MyEngine::Camera::GetCameraMatrix()
+Matrix MyEngine::Camera::GetCameraMatrix()
 {
-    if (m_isCamMatrixDirty)
-    {
-        //view * projection 매트릭스 생성
+	return GetViewMatrix() * GetProjMatrix();
+}
 
-        m_isCamMatrixDirty = false;
+Matrix& MyEngine::Camera::GetViewMatrix()
+{
+    if (m_isViewMatrixDirty)
+    {
+		m_cachedViewMatrix = m_pTransform->GetWorldMatrix().Invert();
+        m_isViewMatrixDirty = false;
     }
 
-    return m_cachedCameraMatrix;
+    return m_cachedViewMatrix;
 }
 
-void MyEngine::Camera::MarkCameraMatrixDirty()
+Matrix& MyEngine::Camera::GetProjMatrix()
 {
-    m_isCamMatrixDirty = true;
+    if (m_isProjMatrixDirty)
+    {
+		m_cachedProjMatrix = Matrix::CreatePerspectiveFieldOfView(m_fov, m_aspect, m_near, m_far);
+        m_isProjMatrixDirty = false;
+    }
+
+    return m_cachedProjMatrix;
 }
+
+void MyEngine::Camera::MarkViewMatrixDirty()
+{
+	m_isViewMatrixDirty = true;
+}
+
+void MyEngine::Camera::MarkProjectionMatrixDirty()
+{
+    m_isProjMatrixDirty = true;
+}
+
+
