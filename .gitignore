@@ -436,3 +436,5 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio
+D3D11 Learning/imgui.ini
+x64/Debug/D3D11 Learning.pdb
