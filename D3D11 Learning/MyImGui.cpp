@@ -25,6 +25,7 @@ bool MyEngine::MyImGui::Initialize(MyD3DContext* myContext)
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 키보드 내비게이션 활성화
+	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\malgun.ttf", 16.0f, NULL, io.Fonts->GetGlyphRangesKorean()); // 한글 폰트 설정
 
     // 스타일 설정
     ImGui::StyleColorsDark();
@@ -66,24 +67,37 @@ void MyEngine::MyImGui::BeginFrame()
 
 void MyEngine::MyImGui::Update()
 {
-    ImGui::Begin("Camera State");
+    ImGui::Begin(u8"카메라 상태");
 
-    ImGui::Text("Right Click -> Rotate Cam \nRight Click + W,A,S,D,Q,E -> Move Cam\n\n");
+    ImGui::Text(u8"마우스 우클릭 -> 카메라 회전 \n마우스 우클릭 + W,A,S,D,Q,E -> 카메라 이동");
 
-    ImGui::Text("Pos X - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
-    ImGui::Text("Pos Y - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
-    ImGui::Text("Pos Z - %f\n\n", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
+    ImGui::NewLine();
+
+    ImGui::Text(u8"위치");
+    ImGui::Text("  X - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
+    ImGui::Text("  Y - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
+    ImGui::Text("  Z - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
+
+    ImGui::NewLine();
 
 	Vector3 euler = m_d3dContext->m_pCamera->GetTransform()->GetLocalRotation().ToEuler();
 
-    ImGui::Text("Rot X - %f", XMConvertToDegrees(euler.x));
-    ImGui::Text("Rot Y - %f", XMConvertToDegrees(euler.y));
-    ImGui::Text("Rot z - %f\n\n", XMConvertToDegrees(euler.z));
+    ImGui::Text(u8"회전");
+    ImGui::Text("  X - %f", XMConvertToDegrees(euler.x));
+    ImGui::Text("  Y - %f", XMConvertToDegrees(euler.y));
+    ImGui::Text("  z - %f", XMConvertToDegrees(euler.z));
 
-    static float fov = 75.0f;
-    //ImGui::Text("This is some useful text.");
-    ImGui::SliderFloat("Field Of View", &fov, 60.0f, 120.0f);
+    ImGui::NewLine();
+
+	constexpr float defFov = 75.0f;
+    static float fov = defFov;
+    ImGui::Text(u8"시야각");
+    ImGui::SliderFloat("##FOV", &fov, 60.0f, 120.0f);
 	m_d3dContext->m_pCamera->SetFOV(fov);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기화")) {
+        fov = defFov;
+    }
 
     ImGui::End();
 }
