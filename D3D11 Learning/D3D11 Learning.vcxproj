@@ -117,7 +117,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;IMGUI_DISABLE;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(ProjectDir)DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
@@ -133,13 +133,27 @@
     <ClCompile Include="DirectXTK\Src\Keyboard.cpp" />
     <ClCompile Include="DirectXTK\Src\Mouse.cpp" />
     <ClCompile Include="DirectXTK\Src\SimpleMath.cpp" />
-    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp" />
-    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="imgui-1.92.2b\imgui.cpp" />
-    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp" />
-    <ClCompile Include="imgui-1.92.2b\imgui_draw.cpp" />
-    <ClCompile Include="imgui-1.92.2b\imgui_tables.cpp" />
-    <ClCompile Include="imgui-1.92.2b\imgui_widgets.cpp" />
+    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_draw.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_tables.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="imgui-1.92.2b\imgui_widgets.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
@@ -152,16 +166,36 @@
     <ClInclude Include="DirectXTK\Inc\Keyboard.h" />
     <ClInclude Include="DirectXTK\Inc\Mouse.h" />
     <ClInclude Include="DirectXTK\Inc\SimpleMath.h" />
-    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h" />
-    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h" />
-    <ClInclude Include="imgui-1.92.2b\imconfig.h" />
-    <ClInclude Include="imgui-1.92.2b\imgui.h" />
+    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\imconfig.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="imgui-1.92.2b\imgui.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Transform.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="testPS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="testVS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

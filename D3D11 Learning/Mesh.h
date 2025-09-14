@@ -3,6 +3,8 @@
 #include <memory>
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include <wrl/client.h> // Microsoft::WRL::ComPtr
+
 #include "Transform.h"
 
 

@@ -1,3 +1,5 @@
+#ifdef _DEBUG
+
 #include "MyImGui.h"
 #include "MyD3DContext.h"
 
@@ -12,7 +14,7 @@ bool MyEngine::MyImGui::Initialize(MyD3DContext* myContext)
 	m_d3dContext = myContext;
 
     this->m_hWnd = m_d3dContext->m_hWnd;
-    this->m_pDevice = m_d3dContext->m_pD3DDevice.Get();
+    this->m_pDevice = m_d3dContext->m_pd3dDevice.Get();
     this->m_pImmediateContext = m_d3dContext->m_pImmediateContext.Get();
 
     // 코어 컨텍스트 생성
@@ -64,18 +66,19 @@ void MyEngine::MyImGui::BeginFrame()
 
 void MyEngine::MyImGui::Update()
 {
-    ImGui::ShowDemoWindow(); // 데모 창 표시 (테스트용)
-
     ImGui::Begin("Camera State");
+
+    ImGui::Text("Right Click -> Rotate Cam \nRight Click + W,A,S,D,Q,E -> Move Cam\n\n");
+
     ImGui::Text("Pos X - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
     ImGui::Text("Pos Y - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
-    ImGui::Text("Pos Z - %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
+    ImGui::Text("Pos Z - %f\n\n", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
 
 	Vector3 euler = m_d3dContext->m_pCamera->GetTransform()->GetLocalRotation().ToEuler();
 
-    ImGui::Text("=-= Rot X - %f", XMConvertToDegrees(euler.x));
-    ImGui::Text("=-= Rot Y - %f", XMConvertToDegrees(euler.y));
-    ImGui::Text("=-= Rot z - %f", XMConvertToDegrees(euler.z));
+    ImGui::Text("Rot X - %f", XMConvertToDegrees(euler.x));
+    ImGui::Text("Rot Y - %f", XMConvertToDegrees(euler.y));
+    ImGui::Text("Rot z - %f\n\n", XMConvertToDegrees(euler.z));
 
     static float fov = 75.0f;
     //ImGui::Text("This is some useful text.");
@@ -104,3 +107,5 @@ void MyEngine::MyImGui::Uninitialize()
     m_isWin32BackendInit = false;
     m_isD3D11BackendInit = false;
 }
+
+#endif //_DEBUG

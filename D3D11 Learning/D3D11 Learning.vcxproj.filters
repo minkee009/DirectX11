@@ -126,4 +126,12 @@
       <Filter>헤더 파일\DirectXTK</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="testPS.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="testVS.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
 </Project>

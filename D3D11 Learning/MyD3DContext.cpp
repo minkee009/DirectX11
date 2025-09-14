@@ -44,13 +44,13 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     {
         m_driverType = driverTypes[driverTypeIndex];
         hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, m_pD3DDevice.GetAddressOf(), &m_featureLevel, m_pImmediateContext.GetAddressOf());
+            D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pImmediateContext.GetAddressOf());
 
         if (hr == E_INVALIDARG)
         {
             // DirectX 11.0 플랫폼은 D3D_FEATURE_LEVEL_11_1를 인식하지 못하기 때문에 없이 한번 더 시도
             hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
-                D3D11_SDK_VERSION, m_pD3DDevice.GetAddressOf(), &m_featureLevel, m_pImmediateContext.GetAddressOf());
+                D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pImmediateContext.GetAddressOf());
         }
 
         if (SUCCEEDED(hr))
@@ -63,7 +63,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     IDXGIFactory1* dxgiFactory = nullptr;
     {
         IDXGIDevice* dxgiDevice = nullptr;
-        hr = m_pD3DDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
+        hr = m_pd3dDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
         if (SUCCEEDED(hr))
         {
             IDXGIAdapter* adapter = nullptr;
@@ -85,7 +85,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (dxgiFactory2)
     {
         // DirectX 11.1 이거나 이후 버전인 경우
-        hr = m_pD3DDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(m_pD3DDevice1.GetAddressOf()));
+        hr = m_pd3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(m_pd3dDevice1.GetAddressOf()));
         if (SUCCEEDED(hr))
         {
             (void)m_pImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(m_pImmediateContext.GetAddressOf()));
@@ -100,7 +100,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         sd.BufferCount = 1;
 
-        hr = dxgiFactory2->CreateSwapChainForHwnd(m_pD3DDevice.Get(), m_hWnd, &sd, nullptr, nullptr, m_pSwapChain1.GetAddressOf());
+        hr = dxgiFactory2->CreateSwapChainForHwnd(m_pd3dDevice.Get(), m_hWnd, &sd, nullptr, nullptr, m_pSwapChain1.GetAddressOf());
         if (SUCCEEDED(hr))
         {
             hr = m_pSwapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(m_pSwapChain.GetAddressOf()));
@@ -124,7 +124,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Quality = 0;
         sd.Windowed = TRUE;
 
-        hr = dxgiFactory->CreateSwapChain(m_pD3DDevice.Get(), &sd, m_pSwapChain.GetAddressOf());
+        hr = dxgiFactory->CreateSwapChain(m_pd3dDevice.Get(), &sd, m_pSwapChain.GetAddressOf());
     }
 
     // 이 튜토리얼 코드는 풀스크린 스왑체인을 관리하지 않음, 따라서 ALT+ENTER 단축키를 제외시킴
@@ -141,12 +141,41 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    hr = m_pD3DDevice->CreateRenderTargetView(pBackBuffer, nullptr, m_pRenderTargetView.GetAddressOf());
+    hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, m_pRenderTargetView.GetAddressOf());
     pBackBuffer->Release();
     if (FAILED(hr))
         return false;
 
-    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
+    // 뎁스 스텐실 텍스쳐 생성
+    D3D11_TEXTURE2D_DESC descDepth;
+    ZeroMemory(&descDepth, sizeof(descDepth));
+    descDepth.Width = width;
+    descDepth.Height = height;
+    descDepth.MipLevels = 1;
+    descDepth.ArraySize = 1;
+    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    descDepth.SampleDesc.Count = 1;
+    descDepth.SampleDesc.Quality = 0;
+    descDepth.Usage = D3D11_USAGE_DEFAULT;
+    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    descDepth.CPUAccessFlags = 0;
+    descDepth.MiscFlags = 0;
+    hr = m_pd3dDevice->CreateTexture2D(&descDepth, NULL, m_pDepthStencil.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    // 뎁스 스텐실 뷰 생성
+    D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+    ZeroMemory(&descDSV, sizeof(descDSV));
+    descDSV.Format = descDepth.Format;
+    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    descDSV.Texture2D.MipSlice = 0;
+    hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+
+    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
 
     // 뷰포트 설정
     D3D11_VIEWPORT vp;
@@ -183,7 +212,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
         return false;
     }
 
-    hr = m_pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
+    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
     if (FAILED(hr))
     {
         pVSBlob->Release();
@@ -199,7 +228,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     UINT numElements = ARRAYSIZE(layout);
 
     //인풋 레이아웃 생성
-    hr = m_pD3DDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+    hr = m_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
         pVSBlob->GetBufferSize(), m_pVertexLayout.GetAddressOf());
     pVSBlob->Release();
     if (FAILED(hr))
@@ -214,7 +243,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
         return false;
     }
 
-    hr = m_pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf());
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf());
     pPSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -250,7 +279,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //정점 버퍼 생성
     D3D11_SUBRESOURCE_DATA vbData = {};
     vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
-    hr = m_pD3DDevice->CreateBuffer(&vbDesc, &vbData, m_pVertexBuffer.GetAddressOf());
+    hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pVertexBuffer.GetAddressOf());
 
     if (FAILED(hr))
         return false;
@@ -296,7 +325,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     InitData.SysMemPitch = 0;
     InitData.SysMemSlicePitch = 0;
 
-    hr = m_pD3DDevice->CreateBuffer(&ibDesc, &InitData, m_pIndexBuffer.GetAddressOf());
+    hr = m_pd3dDevice->CreateBuffer(&ibDesc, &InitData, m_pIndexBuffer.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -308,7 +337,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbDesc.CPUAccessFlags = 0;
 
-    hr = m_pD3DDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
+    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -326,7 +355,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     rastDesc.AntialiasedLineEnable = FALSE;
 
     ComPtr<ID3D11RasterizerState> rasterizerState;
-    hr = m_pD3DDevice->CreateRasterizerState(&rastDesc, rasterizerState.GetAddressOf());
+    hr = m_pd3dDevice->CreateRasterizerState(&rastDesc, rasterizerState.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -334,8 +363,24 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pImmediateContext->RSSetState(rasterizerState.Get());
 
     m_pCamera = std::make_unique<Camera>();
-    m_pCamera->GetTransform()->SetWorldPosition(0.0f, 1.0f, 5.0f);
+    m_pCamera->GetTransform()->SetWorldPosition(1.9f, 5.7f, 14.0f);
+    m_pCamera->GetTransform()->SetWorldEulerRotation(-20.0f, 9.0f, 0.0f);
 	m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
+
+	m_sceneObjects.push_back(std::make_unique<Transform>());
+	m_sceneObjects.push_back(std::make_unique<Transform>());
+	m_sceneObjects.push_back(std::make_unique<Transform>());
+
+	auto obj1 = m_sceneObjects[0].get();
+	auto obj2 = m_sceneObjects[1].get();
+	auto obj3 = m_sceneObjects[2].get();
+
+	obj1->SetWorldPosition(0.0f, 0.0f, 0.0f);
+	obj2->SetWorldPosition(8.0f, 0.0f, 0.0f);
+	obj3->SetWorldPosition(12.0f, 0.0f, 0.0f);
+
+	obj2->SetParent(obj1);
+	obj3->SetParent(obj2);
 
     return true;
 }
@@ -345,65 +390,55 @@ void MyEngine::MyD3DContext::Clear()
     float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
 
     m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView.Get(), ClearColor);
+    m_pImmediateContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void MyEngine::MyD3DContext::Render()
 {
-    //추후에 변경할 예정이지만 일단 씬 내용을 업데이트
+    // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
     m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
 
+    // 오브젝트 업데이트
+    for (auto& obj : m_sceneObjects)
+    {
+        // 회전 넣기
+        
+        //-- 현재 오일러 각도 저장
+        XMFLOAT3 currentRot = obj->GetLocalRotation().ToEuler();
+		currentRot.x = XMConvertToDegrees(currentRot.x);
+		currentRot.y = XMConvertToDegrees(currentRot.y);
+		currentRot.z = XMConvertToDegrees(currentRot.z);
+
+        //-- Y축으로 초당 45도씩 회전 (도 -> 라디안 변환)
+        currentRot.y += 45.0f * Time::instance->GetDeltaTime();
+
+        //-- 다시 쿼터니언으로 변환하여 설정
+		obj->SetLocalEulerRotation(currentRot);
+    }
+
     Clear();
-
-    //// Update our time
-    //static float t = 0.0f;
-    //if (m_driverType == D3D_DRIVER_TYPE_REFERENCE)
-    //{
-    //    t += (float)XM_PI * 0.0125f;
-    //}
-    //else
-    //{
-    //    static ULONGLONG timeStart = 0;
-    //    ULONGLONG timeCur = GetTickCount64();
-    //    if (timeStart == 0)
-    //        timeStart = timeCur;
-    //    t = (timeCur - timeStart) / 1000.0f;
-    //}
-
-    //// Initialize the world matrix
-    //auto g_World = XMMatrixRotationY(t);
-
-    //// Initialize the view matrix
-    //XMVECTOR Eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
-    //XMVECTOR At = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    //XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    //auto g_View = XMMatrixLookAtLH(Eye, At, Up);
-
-    //// Initialize the projection matrix
-    //auto g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, m_width / (FLOAT)m_height, 0.01f, 100.0f);
-
-    //MyConstantBuffer cb;
-    //cb.mWorld = XMMatrixTranspose(g_World);
-    //cb.mView = XMMatrixTranspose(g_View);
-    //cb.mProjection = XMMatrixTranspose(g_Projection);
 
     MyConstantBuffer cb;
     cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
 
+    for(auto& obj : m_sceneObjects)
+    {
+		cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
-    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+        m_pImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
+        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+        m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
-    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-    m_pImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
-    m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-    m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-    
-    m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-    m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+        m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-    m_pImmediateContext->DrawIndexed(36, 0, 0);
+        m_pImmediateContext->DrawIndexed(36, 0, 0);
+	}
 
 #ifdef _DEBUG
     m_imgui.BeginFrame();
@@ -422,6 +457,7 @@ void MyEngine::MyD3DContext::Present()
 
 void MyEngine::MyD3DContext::UninitializeScene()
 {
+    m_sceneObjects.clear();
     m_pVertexBuffer = nullptr;
     m_pIndexBuffer = nullptr;
     m_pConstantBuffer = nullptr;
@@ -436,11 +472,13 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_imgui.Uninitialize();
 #endif //_DEBUG
     m_pImmediateContext = nullptr;
-    m_pD3DDevice1 = nullptr;
-    m_pD3DDevice = nullptr;
+    m_pd3dDevice1 = nullptr;
+    m_pd3dDevice = nullptr;
     m_pSwapChain1 = nullptr;
     m_pSwapChain = nullptr;
     m_pRenderTargetView = nullptr;
+    m_pDepthStencil = nullptr;
+	m_pDepthStencilView = nullptr;
     m_hWnd = nullptr;
 }
 
@@ -479,7 +517,7 @@ HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, L
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 {
-    if (!m_pSwapChain || !m_pD3DDevice || !m_pImmediateContext)
+    if (!m_pSwapChain || !m_pd3dDevice || !m_pImmediateContext)
         return;
 
     // 멤버 변수 업데이트
@@ -493,6 +531,9 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 
     // 기존 렌더 타겟 뷰 해제
     m_pRenderTargetView.Reset();
+
+    // 기존 뎁스 스텐실 뷰 해제
+	m_pDepthStencilView.Reset();
 
     // 스왑 체인 버퍼 크기 재조정
     HRESULT hr = m_pSwapChain->ResizeBuffers(
@@ -517,14 +558,43 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
         return;
     }
 
-    hr = m_pD3DDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf());
+    hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf());
     if (FAILED(hr)) {
         OutputDebugStringA("렌더 타겟 뷰를 생성을 실패했습니다.\n");
         return;
     }
 
+	// 새로운 뎁스 스텐실 버퍼 및 뷰 생성
+	D3D11_TEXTURE2D_DESC descDepth = {};
+	descDepth.Width = width;
+	descDepth.Height = height;
+	descDepth.MipLevels = 1;
+	descDepth.ArraySize = 1;
+	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	descDepth.SampleDesc.Count = 1;
+	descDepth.SampleDesc.Quality = 0;
+	descDepth.Usage = D3D11_USAGE_DEFAULT;
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	descDepth.CPUAccessFlags = 0;
+	descDepth.MiscFlags = 0;
+	hr = m_pd3dDevice->CreateTexture2D(&descDepth, nullptr, m_pDepthStencil.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("뎁스 스텐실 버퍼를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+	descDSV.Format = descDepth.Format;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0;
+	hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("뎁스 스텐실 뷰를 생성하는 데 실패했습니다.\n");
+        return;
+    }
+
     // 렌더 타겟 다시 설정
-    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
+    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
 
     // 뷰포트 업데이트
     D3D11_VIEWPORT vp = {};

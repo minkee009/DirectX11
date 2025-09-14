@@ -37,12 +37,14 @@ namespace MyEngine {
 		int m_height = 600;
 
 		//Direct3D 관련 변수
-		ComPtr<ID3D11Device> m_pD3DDevice = nullptr;
-		ComPtr<ID3D11Device1> m_pD3DDevice1 = nullptr;
+		ComPtr<ID3D11Device> m_pd3dDevice = nullptr;
+		ComPtr<ID3D11Device1> m_pd3dDevice1 = nullptr;
 		ComPtr<ID3D11DeviceContext> m_pImmediateContext = nullptr;
 		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
 		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
 		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView = nullptr;
+		ComPtr<ID3D11Texture2D> m_pDepthStencil = nullptr;
+		ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr;
 
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
@@ -56,6 +58,7 @@ namespace MyEngine {
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
+		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;

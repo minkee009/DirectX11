@@ -74,7 +74,7 @@ Matrix& MyEngine::Transform::GetLocalMatrix() const
 Matrix MyEngine::Transform::GetWorldMatrix() const
 {
 	if (m_parent)
-		return m_parent->GetWorldMatrix() * GetLocalMatrix();
+		return GetLocalMatrix() * m_parent->GetWorldMatrix();
 	else
 		return GetLocalMatrix();
 }
@@ -98,8 +98,9 @@ const Vector3 MyEngine::Transform::GetWorldPosition() const
 {
 	if (m_parent)
 	{
-		// 부모의 월드 행렬을 적용
-		return Vector3::Transform(m_localPosition, m_parent->GetWorldMatrix());
+		//월드 행렬에서 위치값 추출
+		Matrix worldMatrix = GetWorldMatrix();
+		return Vector3(worldMatrix._41, worldMatrix._42, worldMatrix._43);
 	}
 
 	return m_localPosition;
@@ -183,10 +184,11 @@ void MyEngine::Transform::SetWorldScale(Vector3 scale)
 	if (m_parent)
 	{
 		Vector3 parentScale = m_parent->GetWorldScale();
+		const float epsilon = 1e-6f;
 		m_localScale = Vector3(
-			scale.x / parentScale.x,
-			scale.y / parentScale.y,
-			scale.z / parentScale.z
+			(abs(parentScale.x) > epsilon) ? scale.x / parentScale.x : scale.x,
+			(abs(parentScale.y) > epsilon) ? scale.y / parentScale.y : scale.y,
+			(abs(parentScale.z) > epsilon) ? scale.z / parentScale.z : scale.z
 		);
 	}
 	else
@@ -238,8 +240,18 @@ void MyEngine::Transform::SetLocalScale(Vector3 scale)
 
 void MyEngine::Transform::SetParent(Transform* parent, bool worldPositionStays)
 {
-	// 이미 같은 부모면 return
-	if (m_parent == parent) return;
+	// 자기 자신이거나 이미 같은 부모면 return
+	if (m_parent == parent || this == parent) return;
+
+	Transform* current = parent;
+	while (current != nullptr)
+	{
+		if (current == this)  // 순환 참조 발견
+		{
+			return;  // 부모 설정 거부
+		}
+		current = current->m_parent;
+	}
 
 	// 현재 월드 행렬 백업
 	Matrix worldMatrixBefore = GetWorldMatrix();
@@ -260,7 +272,7 @@ void MyEngine::Transform::SetParent(Transform* parent, bool worldPositionStays)
 		{
 			// 부모 기준 새 로컬 행렬
 			Matrix parentWorldInv = m_parent->GetWorldMatrix().Invert();
-			Matrix newLocal = worldMatrixBefore * parentWorldInv;
+			Matrix newLocal = parentWorldInv * worldMatrixBefore;
 
 			newLocal.Decompose(m_localScale, m_localRotation, m_localPosition);
 		}
