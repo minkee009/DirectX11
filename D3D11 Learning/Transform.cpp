@@ -89,6 +89,15 @@ const Quaternion& MyEngine::Transform::GetLocalRotation() const
 	return m_localRotation;
 }
 
+const Vector3 MyEngine::Transform::GetLocalEulerRotation() const
+{
+	auto euler = m_localRotation.ToEuler();
+	euler.x = DirectX::XMConvertToDegrees(euler.x);
+	euler.y = DirectX::XMConvertToDegrees(euler.y);
+	euler.z = DirectX::XMConvertToDegrees(euler.z);
+	return euler;
+}
+
 const Vector3& MyEngine::Transform::GetLocalScale() const
 {
 	return m_localScale;
@@ -113,6 +122,16 @@ const Quaternion MyEngine::Transform::GetWorldRotation() const
 		return m_parent->GetWorldRotation() * m_localRotation;
 	}
 	return m_localRotation;
+}
+
+const Vector3 MyEngine::Transform::GetWorldEulerRotation() const
+{
+	auto worldRot = GetWorldRotation();
+	auto euler = worldRot.ToEuler();
+	euler.x = DirectX::XMConvertToDegrees(euler.x);
+	euler.y = DirectX::XMConvertToDegrees(euler.y);
+	euler.z = DirectX::XMConvertToDegrees(euler.z);
+	return euler;
 }
 
 const Vector3 MyEngine::Transform::GetWorldScale() const

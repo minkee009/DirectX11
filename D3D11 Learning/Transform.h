@@ -34,10 +34,12 @@ namespace MyEngine
 
 		const Vector3& GetLocalPosition() const;
 		const Quaternion& GetLocalRotation() const;
+		const Vector3 GetLocalEulerRotation() const; // return degree (0 ~ 360)
 		const Vector3& GetLocalScale() const;
 
 		const Vector3 GetWorldPosition() const;
 		const Quaternion GetWorldRotation() const;
+		const Vector3 GetWorldEulerRotation() const; // return degree (0 ~ 360)
 		const Vector3 GetWorldScale() const;
 
 		void SetWorldPosition(Vector3 pos);

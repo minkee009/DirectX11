@@ -260,12 +260,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
         { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
         { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) },
     };
-    //{
-    //    {XMFLOAT3(-0.5f,-0.5f,0.5f), XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},    // v0
-    //    {XMFLOAT3(-0.5f,0.5f,0.5f), XMFLOAT4(0.0f,1.0f,0.0f,1.0f)},     // v1
-    //    {XMFLOAT3(0.5f,0.5f,0.5f), XMFLOAT4(0.0f,0.0f,1.0f,1.0f)},      // v2
-    //    {XMFLOAT3(0.5f,-0.5f,0.5f), XMFLOAT4(1.0f,1.0f,0.0f,1.0f)},     // v3
-    //};
 
     //정점 버퍼 정의
     D3D11_BUFFER_DESC vbDesc = {};
@@ -308,7 +302,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
         6,4,5,
         7,4,6,
     };
-    //{ 0, 1, 2, 3, 0, 2 };
 
     //인덱스 버퍼 정의
     D3D11_BUFFER_DESC ibDesc;
@@ -404,12 +397,9 @@ void MyEngine::MyD3DContext::Render()
         // 회전 넣기
         
         //-- 현재 오일러 각도 저장
-        XMFLOAT3 currentRot = obj->GetLocalRotation().ToEuler();
-		currentRot.x = XMConvertToDegrees(currentRot.x);
-		currentRot.y = XMConvertToDegrees(currentRot.y);
-		currentRot.z = XMConvertToDegrees(currentRot.z);
+        XMFLOAT3 currentRot = obj->GetLocalEulerRotation();
 
-        //-- Y축으로 초당 45도씩 회전 (도 -> 라디안 변환)
+        //-- Y축으로 초당 45도씩 회전
         currentRot.y += 45.0f * Time::instance->GetDeltaTime();
 
         //-- 다시 쿼터니언으로 변환하여 설정
