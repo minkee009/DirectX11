@@ -407,6 +407,8 @@ bool MyEngine::MyD3DContext::InitializeScene()
 	//obj2->SetWorldPosition(8.0f, 0.0f, 0.0f);
 	//obj3->SetWorldPosition(12.0f, 0.0f, 0.0f);
 
+	obj1->SetLocalScale(2.0f, 1.0f, 1.0f);
+
 	//obj2->SetParent(obj1);
 	//obj3->SetParent(obj2);
 
@@ -444,7 +446,7 @@ void MyEngine::MyD3DContext::Render()
     Clear();
 
     MyConstantBuffer cb;
-    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+    cb.mWorld = XMMatrixIdentity();
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
     for (int i = 0; i < 2; i++)
@@ -456,6 +458,7 @@ void MyEngine::MyD3DContext::Render()
 
     for(auto& obj : m_sceneObjects)
     {
+
 		cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
