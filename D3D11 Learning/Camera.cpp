@@ -87,7 +87,6 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
                 auto rot = m_pTransform->GetLocalRotation().ToEuler();
                 float pitch = DirectX::XMConvertToDegrees(rot.x);
                 float yaw = DirectX::XMConvertToDegrees(rot.y);
-                float roll = DirectX::XMConvertToDegrees(rot.z);
 
                 // 마우스 델타로 회전 적용
                 yaw -= deltaX * rotSpeed;
@@ -97,7 +96,7 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
                 pitch = std::max(-89.0f, std::min(89.0f, pitch));
 
                 // 새 회전값 설정 (도 단위)
-                m_pTransform->SetLocalEulerRotation(Vector3(pitch, yaw, roll));
+                m_pTransform->SetLocalEulerRotation(Vector3(pitch, yaw, 0));
             }
         }
         else

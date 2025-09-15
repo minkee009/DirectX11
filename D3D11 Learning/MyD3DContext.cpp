@@ -223,7 +223,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     UINT numElements = ARRAYSIZE(layout);
 
@@ -248,17 +248,52 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    pPSBlob = nullptr;
+    hr = CompileShaderFromFile(L"testPS.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"단일 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShaderSolid.GetAddressOf());
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
     //정점 정의
     MyVertex vertices[] = 
     {
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
     };
 
     //정점 버퍼 정의
@@ -287,20 +322,20 @@ bool MyEngine::MyD3DContext::InitializeScene()
         3,1,0,
         2,1,3,
 
-        0,5,4,
-        1,5,0,
-
-        3,4,7,
-        0,4,3,
-
-        1,6,5,
-        2,6,1,
-
-        2,7,6,
-        3,7,2,
-
         6,4,5,
         7,4,6,
+
+        11,9,8,
+        10,9,11,
+
+        14,12,13,
+        15,12,14,
+
+        19,17,16,
+        18,17,19,
+
+        22,20,21,
+        23,20,22
     };
 
     //인덱스 버퍼 정의
@@ -361,19 +396,19 @@ bool MyEngine::MyD3DContext::InitializeScene()
 	m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
 	m_sceneObjects.push_back(std::make_unique<Transform>());
-	m_sceneObjects.push_back(std::make_unique<Transform>());
-	m_sceneObjects.push_back(std::make_unique<Transform>());
+	//m_sceneObjects.push_back(std::make_unique<Transform>());
+	//m_sceneObjects.push_back(std::make_unique<Transform>());
 
 	auto obj1 = m_sceneObjects[0].get();
-	auto obj2 = m_sceneObjects[1].get();
-	auto obj3 = m_sceneObjects[2].get();
+	//auto obj2 = m_sceneObjects[1].get();
+	//auto obj3 = m_sceneObjects[2].get();
 
 	obj1->SetWorldPosition(0.0f, 0.0f, 0.0f);
-	obj2->SetWorldPosition(8.0f, 0.0f, 0.0f);
-	obj3->SetWorldPosition(12.0f, 0.0f, 0.0f);
+	//obj2->SetWorldPosition(8.0f, 0.0f, 0.0f);
+	//obj3->SetWorldPosition(12.0f, 0.0f, 0.0f);
 
-	obj2->SetParent(obj1);
-	obj3->SetParent(obj2);
+	//obj2->SetParent(obj1);
+	//obj3->SetParent(obj2);
 
     return true;
 }
@@ -392,19 +427,19 @@ void MyEngine::MyD3DContext::Render()
     m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
 
     // 오브젝트 업데이트
-    for (auto& obj : m_sceneObjects)
-    {
-        // 회전 넣기
+    //for (auto& obj : m_sceneObjects)
+    //{
+        //// 회전 넣기
         
-        //-- 현재 오일러 각도 저장
-        XMFLOAT3 currentRot = obj->GetLocalEulerRotation();
+        ////-- 현재 오일러 각도 저장
+        //XMFLOAT3 currentRot = obj->GetLocalEulerRotation();
 
-        //-- Y축으로 초당 45도씩 회전
-        currentRot.y += 45.0f * Time::instance->GetDeltaTime();
+        ////-- Y축으로 초당 45도씩 회전
+        //currentRot.y += 45.0f * Time::instance->GetDeltaTime();
 
         //-- 다시 쿼터니언으로 변환하여 설정
-		obj->SetLocalEulerRotation(currentRot);
-    }
+		//obj->SetLocalEulerRotation(currentRot);
+    //}
 
     Clear();
 
@@ -412,6 +447,12 @@ void MyEngine::MyD3DContext::Render()
     cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
+    for (int i = 0; i < 2; i++)
+    {
+        cb.lightDir[i] = m_lightDirs[i];
+        cb.lightColor[i] = m_lightColors[i];
+    }
+    cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);
 
     for(auto& obj : m_sceneObjects)
     {
@@ -425,10 +466,26 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
         m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-        m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());	
+        m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
         m_pImmediateContext->DrawIndexed(36, 0, 0);
 	}
+
+    for (int m = 0; m < 2; m++)
+    {
+        XMMATRIX mLight = XMMatrixTranslationFromVector(5.0f * XMLoadFloat4(&m_lightDirs[m]));
+        XMMATRIX mLightScale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+        mLight = mLightScale * mLight;
+
+        // Update the world variable to reflect the current light
+        cb.mWorld = XMMatrixTranspose(mLight);
+        cb.vOutputColor = m_lightColors[m];
+        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        m_pImmediateContext->PSSetShader(m_pPixelShaderSolid.Get(), nullptr, 0);
+        m_pImmediateContext->DrawIndexed(36, 0, 0);
+    }
 
 #ifdef _DEBUG
     m_imgui.BeginFrame();
@@ -454,6 +511,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pVertexLayout = nullptr;
     m_pVertexShader = nullptr;
     m_pPixelShader = nullptr;
+    m_pPixelShaderSolid = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()

@@ -20,13 +20,16 @@ namespace MyEngine {
 
 	struct MyVertex {
 		XMFLOAT3 pos;
-		XMFLOAT4 color;
+		XMFLOAT3 normal;
 	};
 
 	struct MyConstantBuffer {
 		XMMATRIX mWorld;
 		XMMATRIX mView;
 		XMMATRIX mProjection;
+		XMFLOAT4 lightDir[2];
+		XMFLOAT4 lightColor[2];
+		XMFLOAT4 vOutputColor;
 	};
 
 	class MyD3DContext {
@@ -52,6 +55,7 @@ namespace MyEngine {
 		//Scene 관련 변수
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
+		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;
 		ComPtr<ID3D11InputLayout> m_pVertexLayout = nullptr;
 		ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;
@@ -59,6 +63,9 @@ namespace MyEngine {
 
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
+
+		XMFLOAT4 m_lightDirs[2] = { {1,0,0,1},{0,1,0,1} };
+		XMFLOAT4 m_lightColors[2] = { {1,1,1,1},{1,0,0,1} };
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;

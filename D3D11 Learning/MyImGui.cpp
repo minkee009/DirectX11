@@ -144,8 +144,8 @@ void MyEngine::MyImGui::Update()
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
     auto obj1 = m_d3dContext->m_sceneObjects[0].get();
-    auto obj2 = m_d3dContext->m_sceneObjects[1].get();
-    auto obj3 = m_d3dContext->m_sceneObjects[2].get();
+    //auto obj2 = m_d3dContext->m_sceneObjects[1].get();
+    //auto obj3 = m_d3dContext->m_sceneObjects[2].get();
 
 
     constexpr Vector3 obj1_defpos = { 0.0f, 0.0f, 0.0f };
@@ -171,7 +171,32 @@ void MyEngine::MyImGui::Update()
         obj1->SetLocalPosition(obj1_defpos);
     }
 
-    ImGui::Text(u8"오브젝트 2 로컬 위치");
+    ImGui::Text(u8"오브젝트 1 회전 값 (오일러)");
+    constexpr Vector3 obj1_defEulerRot = { 0,0,0 };
+    static Vector3 obj1_rot = obj1->GetLocalEulerRotation();
+    if (ImGui::DragFloat3("##obj1_rot", &obj1_rot.x))
+    {
+        obj1->SetLocalEulerRotation(obj1_rot);
+    }
+    if (ImGui::IsItemDeactivatedAfterEdit())
+    {
+        obj1->SetLocalEulerRotation(obj1_rot);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##2")) {
+        obj1_rot = obj1_defEulerRot;
+        obj1->SetLocalEulerRotation(obj1_defEulerRot);
+    }
+
+    //XMFLOAT3 currentRot = obj->GetLocalEulerRotation();
+
+    ////-- Y축으로 초당 45도씩 회전
+    //currentRot.y += 45.0f * Time::instance->GetDeltaTime();
+
+    //-- 다시 쿼터니언으로 변환하여 설정
+    //obj->SetLocalEulerRotation(currentRot);
+
+    /*ImGui::Text(u8"오브젝트 2 로컬 위치");
     if (ImGui::DragFloat3("##obj2_pos", &obj2_pos.x))
     {
         obj2->SetLocalPosition(obj2_pos);
@@ -199,7 +224,7 @@ void MyEngine::MyImGui::Update()
     if (ImGui::Button(u8"초기값##3")) {
         obj3_pos = obj3_defpos;
         obj3->SetLocalPosition(obj3_defpos);
-    }
+    }*/
 
     ImGui::End();
 }

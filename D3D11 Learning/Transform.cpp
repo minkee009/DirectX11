@@ -238,15 +238,15 @@ void MyEngine::Transform::SetLocalRotation(Quaternion rot)
 
 void MyEngine::Transform::SetLocalEulerRotation(Vector3 rot)
 {
-	// 오일러 각(도 단위)을 라디안 단위로 변환
+	// 도 단위를 라디안으로 변환
 	auto radRotX = DirectX::XMConvertToRadians(rot.x);
 	auto radRotY = DirectX::XMConvertToRadians(rot.y);
 	auto radRotZ = DirectX::XMConvertToRadians(rot.z);
 
-	// 라디안 오일러 각으로 쿼터니언 생성
-	Quaternion worldRot = Quaternion::CreateFromYawPitchRoll(radRotY, radRotX, radRotZ);
+	// DirectX 방식으로 로컬 회전 쿼터니언 생성
+	Quaternion localRot = Quaternion::CreateFromYawPitchRoll(radRotY, radRotX, radRotZ);
 
-	SetLocalRotation(worldRot);
+	SetLocalRotation(localRot);
 }
 
 void MyEngine::Transform::SetLocalScale(Vector3 scale)
