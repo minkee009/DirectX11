@@ -139,14 +139,11 @@ void MyEngine::MyImGui::Update()
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(5, 390), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(220, 180), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(220, 270), ImGuiCond_Once);
 
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
     auto obj1 = m_d3dContext->m_sceneObjects[0].get();
-    //auto obj2 = m_d3dContext->m_sceneObjects[1].get();
-    //auto obj3 = m_d3dContext->m_sceneObjects[2].get();
-
 
     constexpr Vector3 obj1_defpos = { 0.0f, 0.0f, 0.0f };
     constexpr Vector3 obj2_defpos = { 8.0f, 0.0f, 0.0f };
@@ -157,7 +154,7 @@ void MyEngine::MyImGui::Update()
     static Vector3 obj3_pos = { 4.0f, 0.0f, 0.0f };
 
     ImGui::Text(u8"오브젝트 1 월드 위치");
-    if (ImGui::DragFloat3("##obj1_pos", &obj1_pos.x))
+    if (ImGui::DragFloat3("##obj1_pos", &obj1_pos.x,0.05f))
     {
         obj1->SetLocalPosition(obj1_pos);
     }
@@ -174,7 +171,7 @@ void MyEngine::MyImGui::Update()
     ImGui::Text(u8"오브젝트 1 회전 값 (오일러)");
     constexpr Vector3 obj1_defEulerRot = { 0,0,0 };
     static Vector3 obj1_rot = obj1->GetLocalEulerRotation();
-    if (ImGui::DragFloat3("##obj1_rot", &obj1_rot.x))
+    if (ImGui::DragFloat3("##obj1_rot", &obj1_rot.x,0.1f))
     {
         obj1->SetLocalEulerRotation(obj1_rot);
     }
@@ -188,43 +185,48 @@ void MyEngine::MyImGui::Update()
         obj1->SetLocalEulerRotation(obj1_defEulerRot);
     }
 
-    //XMFLOAT3 currentRot = obj->GetLocalEulerRotation();
+    ImGui::Text(u8"빛 1");
 
-    ////-- Y축으로 초당 45도씩 회전
-    //currentRot.y += 45.0f * Time::instance->GetDeltaTime();
-
-    //-- 다시 쿼터니언으로 변환하여 설정
-    //obj->SetLocalEulerRotation(currentRot);
-
-    /*ImGui::Text(u8"오브젝트 2 로컬 위치");
-    if (ImGui::DragFloat3("##obj2_pos", &obj2_pos.x))
-    {
-        obj2->SetLocalPosition(obj2_pos);
-    }
-    if (ImGui::IsItemDeactivatedAfterEdit())
-    {
-        obj2->SetLocalPosition(obj2_pos);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##2")) {
-        obj2_pos = obj2_defpos;
-        obj2->SetLocalPosition(obj2_defpos);
-    }
-
-    ImGui::Text(u8"오브젝트 3 로컬 위치");
-    if (ImGui::DragFloat3("##obj3_pos", &obj3_pos.x))
-    {
-        obj3->SetLocalPosition(obj3_pos);
-    }
-    if (ImGui::IsItemDeactivatedAfterEdit())
-    {
-        obj3->SetLocalPosition(obj3_pos);
-    }
+	ImGui::ColorEdit3("##Light1Color", &m_d3dContext->m_lightColors[0].x);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##3")) {
-        obj3_pos = obj3_defpos;
-        obj3->SetLocalPosition(obj3_defpos);
-    }*/
+		m_d3dContext->m_lightColors[0] = { 1,1,1,1 };
+    }
+
+    constexpr Vector3 light1_defEulerRot = { 90,90,0 };
+    static Vector3 light1_rot = { 90,90,0 };
+	ImGui::DragFloat3("##Light1Dir", &light1_rot.x, 0.1f);
+    auto light1_angleRot = Vector3{ XMConvertToRadians(light1_rot.x),XMConvertToRadians(light1_rot.z) ,XMConvertToRadians(light1_rot.y) };
+    auto light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_angleRot.y, light1_angleRot.x, light1_angleRot.z));
+	m_d3dContext->m_lightDirs[0] = { light1_dir.x, light1_dir.y, light1_dir.z, 1 };
+
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##4")) {
+		light1_rot = light1_defEulerRot;
+        light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_rot.y, light1_rot.x, light1_rot.z));
+		m_d3dContext->m_lightDirs[0] = { 1,0,0,1 };
+    }
+
+	ImGui::Text(u8"빛 2");
+	ImGui::ColorEdit3("##Light2Color", &m_d3dContext->m_lightColors[1].x);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##5")) {
+        m_d3dContext->m_lightColors[1] = { 1,0,0,1 };
+    }
+
+    constexpr Vector3 light2_defEulerRot = { 0,0,0 };
+    static Vector3 light2_rot = { 0,0,0 };
+	ImGui::DragFloat3("##Light2Dir", &light2_rot.x, 0.1f);
+    auto light2_angleRot = Vector3{ XMConvertToRadians(light2_rot.x),XMConvertToRadians(light2_rot.z) ,XMConvertToRadians(light2_rot.y) };
+    auto light2_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light2_angleRot.y, light2_angleRot.x, light2_angleRot.z));
+    m_d3dContext->m_lightDirs[1] = { light2_dir.x, light2_dir.y, light2_dir.z, 1 };
+
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##6")) {
+        light2_rot = light2_defEulerRot;
+        light2_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light2_rot.y, light2_rot.x, light2_rot.z));
+        m_d3dContext->m_lightDirs[1] = { 0,1,0,1 };
+    }
 
     ImGui::End();
 }

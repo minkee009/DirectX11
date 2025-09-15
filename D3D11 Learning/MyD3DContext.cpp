@@ -391,8 +391,8 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pImmediateContext->RSSetState(rasterizerState.Get());
 
     m_pCamera = std::make_unique<Camera>();
-    m_pCamera->GetTransform()->SetWorldPosition(1.9f, 5.7f, 14.0f);
-    m_pCamera->GetTransform()->SetWorldEulerRotation(-20.0f, 9.0f, 0.0f);
+    m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
+    m_pCamera->GetTransform()->SetWorldEulerRotation(-17.0f, -20.0f, 0.0f);
 	m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
 	m_sceneObjects.push_back(std::make_unique<Transform>());
