@@ -12,7 +12,7 @@ MyEngine::Camera::Camera()
 
     m_fov = 75;
     m_near = 0.001f;
-    m_far = 1000.0f;
+    m_far = 50.0f;
     m_aspect = 4 / 3;
 
     MarkViewMatrixDirty();
