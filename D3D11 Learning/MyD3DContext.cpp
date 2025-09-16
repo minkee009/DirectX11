@@ -428,21 +428,6 @@ void MyEngine::MyD3DContext::Render()
     // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
     m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
 
-    // 오브젝트 업데이트
-    //for (auto& obj : m_sceneObjects)
-    //{
-        //// 회전 넣기
-        
-        ////-- 현재 오일러 각도 저장
-        //XMFLOAT3 currentRot = obj->GetLocalEulerRotation();
-
-        ////-- Y축으로 초당 45도씩 회전
-        //currentRot.y += 45.0f * Time::instance->GetDeltaTime();
-
-        //-- 다시 쿼터니언으로 변환하여 설정
-		//obj->SetLocalEulerRotation(currentRot);
-    //}
-
     Clear();
 
     MyConstantBuffer cb;
