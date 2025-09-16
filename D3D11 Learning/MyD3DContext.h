@@ -3,6 +3,7 @@
 #include <d3d11.h>
 #include <d3d11_1.h>
 #include <directxmath.h>
+#include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
 #include "Camera.h"
@@ -18,18 +19,19 @@ using namespace Microsoft::WRL;
 
 namespace MyEngine {
 
+	struct SkyBoxVertex {
+		XMFLOAT3 pos;
+	};
+
 	struct MyVertex {
 		XMFLOAT3 pos;
-		XMFLOAT3 normal;
+		XMFLOAT2 uv;
 	};
 
 	struct MyConstantBuffer {
 		XMMATRIX mWorld;
 		XMMATRIX mView;
 		XMMATRIX mProjection;
-		XMFLOAT4 lightDir[2];
-		XMFLOAT4 lightColor[2];
-		XMFLOAT4 vOutputColor;
 	};
 
 	class MyD3DContext {
@@ -52,14 +54,27 @@ namespace MyEngine {
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
 
+		ComPtr<ID3D11RasterizerState> m_pDefRasterizerState = nullptr;			//시계방향 컬링 (기본)
+		ComPtr<ID3D11RasterizerState> m_pClockWiseRasterizerState = nullptr;		//반시계방향 컬링 (스카이 박스용)
+		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
+
 		//Scene 관련 변수
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
-		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;
-		ComPtr<ID3D11InputLayout> m_pVertexLayout = nullptr;
+		ComPtr<ID3D11VertexShader> m_pSkyBoxVShader = nullptr;
+		ComPtr<ID3D11PixelShader> m_pSkyBoxPShader = nullptr;
+		ComPtr<ID3D11InputLayout> m_pCubeInputLayout = nullptr;
+		ComPtr<ID3D11InputLayout> m_pSkyBoxInputLayout = nullptr;
+
 		ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;
+
+		ComPtr<ID3D11Buffer> m_pSkyBoxVertexBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pSkyBoxIndexBuffer = nullptr;
+
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pCubeTextureRV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
@@ -71,7 +86,12 @@ namespace MyEngine {
 		UINT m_vertexBufferStride = 0;
 		UINT m_vertexBufferOffset = 0;
 
+		UINT m_skyBoxVertexCount = 0;
+		UINT m_skyBoxVertexBufferStride = 0;
+		UINT m_skyBoxVertexBufferOffset = 0;
+
 		UINT m_indexCount = 0;
+		UINT m_skyBoxIndexCount = 0;
 
 #ifdef _DEBUG
 		//GUI용 코드 (디버깅 용)

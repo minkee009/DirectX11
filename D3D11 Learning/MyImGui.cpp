@@ -184,50 +184,6 @@ void MyEngine::MyImGui::Update()
         obj1_rot = obj1_defEulerRot;
         obj1->SetLocalEulerRotation(obj1_defEulerRot);
     }
-
-    ImGui::Text(u8"빛 1");
-
-	ImGui::ColorEdit3("##Light1Color", &m_d3dContext->m_lightColors[0].x);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##3")) {
-		m_d3dContext->m_lightColors[0] = { 1,1,1,1 };
-    }
-
-    constexpr Vector3 light1_defEulerRot = { 90,90,0 };
-    static Vector3 light1_rot = { 90,90,0 };
-	ImGui::DragFloat3("##Light1Dir", &light1_rot.x, 0.1f);
-    auto light1_angleRot = Vector3{ XMConvertToRadians(light1_rot.x),XMConvertToRadians(light1_rot.z) ,XMConvertToRadians(light1_rot.y) };
-    auto light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_angleRot.y, light1_angleRot.x, light1_angleRot.z));
-	m_d3dContext->m_lightDirs[0] = { light1_dir.x, light1_dir.y, light1_dir.z, 1 };
-
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##4")) {
-		light1_rot = light1_defEulerRot;
-        light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_rot.y, light1_rot.x, light1_rot.z));
-		m_d3dContext->m_lightDirs[0] = { 1,0,0,1 };
-    }
-
-	ImGui::Text(u8"빛 2");
-	ImGui::ColorEdit3("##Light2Color", &m_d3dContext->m_lightColors[1].x);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##5")) {
-        m_d3dContext->m_lightColors[1] = { 1,0,0,1 };
-    }
-
-    constexpr Vector3 light2_defEulerRot = { 0,0,0 };
-    static Vector3 light2_rot = { 0,0,0 };
-	ImGui::DragFloat3("##Light2Dir", &light2_rot.x, 0.1f);
-    auto light2_angleRot = Vector3{ XMConvertToRadians(light2_rot.x),XMConvertToRadians(light2_rot.z) ,XMConvertToRadians(light2_rot.y) };
-    auto light2_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light2_angleRot.y, light2_angleRot.x, light2_angleRot.z));
-    m_d3dContext->m_lightDirs[1] = { light2_dir.x, light2_dir.y, light2_dir.z, 1 };
-
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##6")) {
-        light2_rot = light2_defEulerRot;
-        light2_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light2_rot.y, light2_rot.x, light2_rot.z));
-        m_d3dContext->m_lightDirs[1] = { 0,1,0,1 };
-    }
-
     ImGui::End();
 }
 

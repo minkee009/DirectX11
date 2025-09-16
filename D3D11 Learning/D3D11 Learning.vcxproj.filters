@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="리소스 파일">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="셰이더 파일">
       <UniqueIdentifier>{71dafcc5-f649-4baa-b731-5ca3d171658e}</UniqueIdentifier>
     </Filter>
@@ -33,6 +29,10 @@
     </Filter>
     <Filter Include="소스 파일\DirectXTex">
       <UniqueIdentifier>{b31d7976-a9fe-4170-8a93-e0b90e55d61b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="텍스쳐 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -217,16 +217,46 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="testPS.hlsl">
-      <Filter>셰이더 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="testVS.hlsl">
-      <Filter>셰이더 파일</Filter>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="DirectXTex\DirectXTex.inl">
       <Filter>헤더 파일\DirectXTex</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Shaders\testVS.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Shaders\testPS.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\negx.bmp">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\negy.bmp">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\negz.bmp">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\posx.bmp">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\posy.bmp">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\posz.bmp">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\skybox.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\seafloor.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Shaders\SkyBoxPS.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Shaders\SkyBoxVS.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

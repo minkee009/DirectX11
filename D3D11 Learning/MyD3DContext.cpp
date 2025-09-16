@@ -187,6 +187,55 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     vp.TopLeftY = 0;
     m_pImmediateContext->RSSetViewports(1, &vp);
 
+    // 래스터라이저 상태 생성 및 설정
+    D3D11_RASTERIZER_DESC rastDesc = {};
+    rastDesc.FillMode = D3D11_FILL_SOLID;
+    rastDesc.CullMode = D3D11_CULL_BACK;
+    rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
+    rastDesc.DepthBias = 0;
+    rastDesc.DepthBiasClamp = 0.0f;
+    rastDesc.SlopeScaledDepthBias = 0.0f;
+    rastDesc.DepthClipEnable = TRUE;
+    rastDesc.ScissorEnable = FALSE;
+    rastDesc.MultisampleEnable = FALSE;
+    rastDesc.AntialiasedLineEnable = FALSE;
+
+    hr = m_pd3dDevice->CreateRasterizerState(&rastDesc, m_pDefRasterizerState.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    rastDesc.FillMode = D3D11_FILL_SOLID;
+    rastDesc.CullMode = D3D11_CULL_BACK;
+    rastDesc.FrontCounterClockwise = FALSE;  // 스카이박스용
+    rastDesc.DepthBias = 0;
+    rastDesc.DepthBiasClamp = 0.0f;
+    rastDesc.SlopeScaledDepthBias = 0.0f;
+    rastDesc.DepthClipEnable = TRUE;
+    rastDesc.ScissorEnable = FALSE;
+    rastDesc.MultisampleEnable = FALSE;
+    rastDesc.AntialiasedLineEnable = FALSE;
+
+    hr = m_pd3dDevice->CreateRasterizerState(&rastDesc, m_pClockWiseRasterizerState.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    //래스터라이저 상태 설정
+    m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get());
+
+	// 샘플러 상태 생성
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	hr = m_pd3dDevice->CreateSamplerState(&sampDesc, m_pSamplerLinear.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+
 #ifdef _DEBUG
     // ImGui 초기화
     if (!m_imgui.Initialize(this))
@@ -203,8 +252,8 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //컴파일 정보 저장용 객체
     ID3DBlob* pVSBlob = nullptr;
 
-    //셰이더 컴파일링
-    hr = CompileShaderFromFile(L"testVS.hlsl", "VS", "vs_4_0", &pVSBlob);
+	// === 기본 셰이더 로드 ===
+    hr = CompileShaderFromFile(L"Resources/Shaders/testVS.hlsl", "VS", "vs_4_0", &pVSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -223,19 +272,19 @@ bool MyEngine::MyD3DContext::InitializeScene()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     UINT numElements = ARRAYSIZE(layout);
 
     //인풋 레이아웃 생성
     hr = m_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-        pVSBlob->GetBufferSize(), m_pVertexLayout.GetAddressOf());
+        pVSBlob->GetBufferSize(), m_pCubeInputLayout.GetAddressOf());
     pVSBlob->Release();
     if (FAILED(hr))
         return false;
 
     ID3DBlob* pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"testPS.hlsl", "PS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"Resources/Shaders/testPS.hlsl", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -248,16 +297,47 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
-    pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"testPS.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
+
+	// === 스카이박스 셰이더 로드 ===
+    hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxVS.hlsl", "VS", "vs_4_0", &pVSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-            L"단일 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+            L"스카이박스 정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
         return false;
     }
 
-    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShaderSolid.GetAddressOf());
+    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pSkyBoxVShader.GetAddressOf());
+    if (FAILED(hr))
+    {
+        pVSBlob->Release();
+        return false;
+    }
+
+    //인풋 레이아웃 (셰이더 코드 바인딩) 설정
+    D3D11_INPUT_ELEMENT_DESC skyBoxlayout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+    };
+    numElements = ARRAYSIZE(skyBoxlayout);
+
+    //인풋 레이아웃 생성
+    hr = m_pd3dDevice->CreateInputLayout(skyBoxlayout, numElements, pVSBlob->GetBufferPointer(),
+        pVSBlob->GetBufferSize(), m_pSkyBoxInputLayout.GetAddressOf());
+    pVSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    pPSBlob = nullptr;
+    hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxPS.hlsl", "PS", "ps_4_0", &pPSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"스카이박스 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pSkyBoxPShader.GetAddressOf());
     pPSBlob->Release();
     if (FAILED(hr))
         return false;
@@ -265,35 +345,35 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //정점 정의
     MyVertex vertices[] = 
     {
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
 
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
 
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
 
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
 
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
 
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
     };
 
     //정점 버퍼 정의
@@ -315,6 +395,43 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_vertexBufferStride = sizeof(MyVertex);
     m_vertexBufferOffset = 0;
+
+    //스카이박스 정점 정의
+    SkyBoxVertex skyboxVertices[] =
+    {
+        // 상단 (+Y)
+        { XMFLOAT3(-1.0f,  1.0f, -1.0f) },
+        { XMFLOAT3(1.0f,  1.0f, -1.0f) },
+        { XMFLOAT3(1.0f,  1.0f,  1.0f) },
+        { XMFLOAT3(-1.0f,  1.0f,  1.0f) },
+
+        // 하단 (-Y)
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f) },
+        { XMFLOAT3(1.0f, -1.0f, -1.0f) },
+        { XMFLOAT3(1.0f, -1.0f,  1.0f) },
+        { XMFLOAT3(-1.0f, -1.0f,  1.0f) }
+    };
+
+    //스카이박스 정점 버퍼 정의
+    vbDesc = {};
+    m_skyBoxVertexCount = ARRAYSIZE(skyboxVertices);
+    vbDesc.ByteWidth = sizeof(MyVertex) * m_vertexCount;
+    vbDesc.CPUAccessFlags = 0;
+    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vbDesc.MiscFlags = 0;
+    vbDesc.Usage = D3D11_USAGE_DEFAULT;
+
+    //스카이박스 정점 버퍼 생성
+    vbData = {};
+    vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
+    hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pSkyBoxVertexBuffer.GetAddressOf());
+
+    if (FAILED(hr))
+        return false;
+
+    m_skyBoxVertexBufferStride = sizeof(MyVertex);
+    m_skyBoxVertexBufferOffset = 0;
+
 
     //인덱스 정의
     UINT indices[] = 
@@ -357,6 +474,53 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    //인덱스 정의
+    UINT skyboxIndices[] =
+    {
+        // 상단 (+Y)
+        0, 1, 2,
+        0, 2, 3,
+
+        // 하단 (-Y)
+        4, 6, 5,
+        4, 7, 6,
+
+        // 왼쪽 (-X)
+        4, 0, 3,
+        4, 3, 7,
+
+        // 오른쪽 (+X)
+        1, 5, 6,
+        1, 6, 2,
+
+        // 앞면 (+Z)
+        3, 2, 6,
+        3, 6, 7,
+
+        // 뒷면 (-Z)
+        4, 5, 1,
+        4, 1, 0
+    };
+
+    //스카이박스 인덱스 버퍼 정의
+    ibDesc = {};
+    m_skyBoxIndexCount = ARRAYSIZE(skyboxIndices);
+    ibDesc.Usage = D3D11_USAGE_DEFAULT;
+    ibDesc.ByteWidth = sizeof(UINT) * m_skyBoxIndexCount;
+    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    ibDesc.CPUAccessFlags = 0;
+    ibDesc.MiscFlags = 0;
+
+    //스카이박스 인덱스 버퍼 생성
+    InitData = {};
+    InitData.pSysMem = indices;
+    InitData.SysMemPitch = 0;
+    InitData.SysMemSlicePitch = 0;
+
+    hr = m_pd3dDevice->CreateBuffer(&ibDesc, &InitData, m_pSkyBoxIndexBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
 	//상수 버퍼 생성
     D3D11_BUFFER_DESC cbDesc;
     ZeroMemory(&cbDesc, sizeof(cbDesc));
@@ -369,48 +533,43 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
-    // 래스터라이저 상태 생성 및 설정
-    D3D11_RASTERIZER_DESC rastDesc = {};
-    rastDesc.FillMode = D3D11_FILL_SOLID;
-    rastDesc.CullMode = D3D11_CULL_BACK;
-    rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
-    rastDesc.DepthBias = 0;
-    rastDesc.DepthBiasClamp = 0.0f;
-    rastDesc.SlopeScaledDepthBias = 0.0f;
-    rastDesc.DepthClipEnable = TRUE;
-    rastDesc.ScissorEnable = FALSE;
-    rastDesc.MultisampleEnable = FALSE;
-    rastDesc.AntialiasedLineEnable = FALSE;
+    ScratchImage image;
 
-    ComPtr<ID3D11RasterizerState> rasterizerState;
-    hr = m_pd3dDevice->CreateRasterizerState(&rastDesc, rasterizerState.GetAddressOf());
+	//텍스쳐 로드
+    hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
+    if (FAILED(hr)) 
+        return false;
+	hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeTextureRV.GetAddressOf());
     if (FAILED(hr))
         return false;
 
-    //래스터라이저 상태 설정
-    m_pImmediateContext->RSSetState(rasterizerState.Get());
+    DirectX::TexMetadata metadata;
+	hr = LoadFromDDSFile(L"Resources/Textures/skybox.dds", DDS_FLAGS_NONE, &metadata, image);
+	if (FAILED(hr))
+		return false;
+    if (!metadata.IsCubemap())
+    {
+        MessageBox(nullptr,
+            L"스카이박스 텍스쳐가 큐브맵이 아닙니다.", L"오류", MB_OK);
+        return false;
+    }
 
+	hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pSkyBoxTextureRV.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+
+    //카메라 생성
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
     m_pCamera->GetTransform()->SetWorldEulerRotation(-17.0f, -20.0f, 0.0f);
 	m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
+    //오브젝트 생성
 	m_sceneObjects.push_back(std::make_unique<Transform>());
-	//m_sceneObjects.push_back(std::make_unique<Transform>());
-	//m_sceneObjects.push_back(std::make_unique<Transform>());
 
 	auto obj1 = m_sceneObjects[0].get();
-	//auto obj2 = m_sceneObjects[1].get();
-	//auto obj3 = m_sceneObjects[2].get();
-
 	obj1->SetWorldPosition(0.0f, 0.0f, 0.0f);
-	//obj2->SetWorldPosition(8.0f, 0.0f, 0.0f);
-	//obj3->SetWorldPosition(12.0f, 0.0f, 0.0f);
-
 	obj1->SetLocalScale(2.0f, 1.0f, 1.0f);
-
-	//obj2->SetParent(obj1);
-	//obj3->SetParent(obj2);
 
     return true;
 }
@@ -434,12 +593,9 @@ void MyEngine::MyD3DContext::Render()
     cb.mWorld = XMMatrixIdentity();
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
-    for (int i = 0; i < 2; i++)
-    {
-        cb.lightDir[i] = m_lightDirs[i];
-        cb.lightColor[i] = m_lightColors[i];
-    }
-    cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);
+
+    m_pImmediateContext->PSSetShaderResources(0, 1, m_pCubeTextureRV.GetAddressOf());
+    m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 
     for(auto& obj : m_sceneObjects)
     {
@@ -448,32 +604,34 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
         m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
         m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-        m_pImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
+        m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
         m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
         m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
-        m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());	
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pImmediateContext->DrawIndexed(36, 0, 0);
+        m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
 	}
 
-    for (int m = 0; m < 2; m++)
-    {
-        XMMATRIX mLight = XMMatrixTranslationFromVector(5.0f * XMLoadFloat4(&m_lightDirs[m]));
-        XMMATRIX mLightScale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        mLight = mLightScale * mLight;
+    //스카이박스 드로우
+    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
+    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
+    m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-        // Update the world variable to reflect the current light
-        cb.mWorld = XMMatrixTranspose(mLight);
-        cb.vOutputColor = m_lightColors[m];
-        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+	cb.mWorld = XMMatrixTranspose(XMMatrixScaling(20.0f, 20.0f, 20.0f) * XMMatrixTranslationFromVector(m_pCamera->GetTransform()->GetWorldPosition()));
+    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
-        m_pImmediateContext->PSSetShader(m_pPixelShaderSolid.Get(), nullptr, 0);
-        m_pImmediateContext->DrawIndexed(36, 0, 0);
-    }
+    m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
+    m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
+	m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+	m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
 #ifdef _DEBUG
     m_imgui.BeginFrame();
@@ -495,11 +653,17 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_sceneObjects.clear();
     m_pVertexBuffer = nullptr;
     m_pIndexBuffer = nullptr;
+    m_pSkyBoxVertexBuffer = nullptr;
+    m_pSkyBoxIndexBuffer = nullptr;
     m_pConstantBuffer = nullptr;
-    m_pVertexLayout = nullptr;
+    m_pCubeInputLayout = nullptr;
+    m_pSkyBoxInputLayout = nullptr;
     m_pVertexShader = nullptr;
     m_pPixelShader = nullptr;
-    m_pPixelShaderSolid = nullptr;
+    m_pSkyBoxVShader = nullptr;
+    m_pSkyBoxPShader = nullptr;
+	m_pCubeTextureRV = nullptr;
+	m_pSkyBoxTextureRV = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()
@@ -516,6 +680,8 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pDepthStencil = nullptr;
 	m_pDepthStencilView = nullptr;
     m_hWnd = nullptr;
+	m_pDefRasterizerState = nullptr;
+	m_pClockWiseRasterizerState = nullptr;
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
