@@ -623,7 +623,7 @@ void MyEngine::MyD3DContext::Render()
     m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
     m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-	cb.mWorld = XMMatrixTranspose(XMMatrixScaling(20.0f, 20.0f, 20.0f) * XMMatrixTranslationFromVector(m_pCamera->GetTransform()->GetWorldPosition()));
+	cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(m_pCamera->GetTransform()->GetWorldPosition()));
     m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
     m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
