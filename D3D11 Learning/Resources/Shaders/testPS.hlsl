@@ -1,5 +1,4 @@
 Texture2D txDiffuse : register(t0);
-TextureCube txCube : register(t1);
 SamplerState samLinear : register(s0);
 
 cbuffer ConstantBuffer : register(b0)
