@@ -594,6 +594,20 @@ void MyEngine::MyD3DContext::Render()
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
 
+
+    //스카이박스 드로우
+    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
+    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
+    m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
+    m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
+    m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+    m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
     m_pImmediateContext->PSSetShaderResources(0, 1, m_pCubeTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 
@@ -617,21 +631,6 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
 	}
 
-    //스카이박스 드로우
-    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
-    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
-    m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-	cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(m_pCamera->GetTransform()->GetWorldPosition()));
-    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-    m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
-    m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
-    m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
-	m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
-	m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
 #ifdef _DEBUG
     m_imgui.BeginFrame();
