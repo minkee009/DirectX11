@@ -400,22 +400,22 @@ bool MyEngine::MyD3DContext::InitializeScene()
     SkyBoxVertex skyboxVertices[] =
     {
         // 상단 (+Y)
-        { XMFLOAT3(-1.0f,  1.0f, -1.0f) },
-        { XMFLOAT3(1.0f,  1.0f, -1.0f) },
-        { XMFLOAT3(1.0f,  1.0f,  1.0f) },
-        { XMFLOAT3(-1.0f,  1.0f,  1.0f) },
+        { XMFLOAT3(-1.0f,  1.0f, -1.0f) }, // 0
+        { XMFLOAT3(1.0f,  1.0f, -1.0f) }, // 1
+        { XMFLOAT3(1.0f,  1.0f,  1.0f) }, // 2
+        { XMFLOAT3(-1.0f,  1.0f,  1.0f) }, // 3
 
         // 하단 (-Y)
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f) },
-        { XMFLOAT3(1.0f, -1.0f,  1.0f) },
-        { XMFLOAT3(-1.0f, -1.0f,  1.0f) }
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f) }, // 4
+        { XMFLOAT3(1.0f, -1.0f, -1.0f) }, // 5
+        { XMFLOAT3(1.0f, -1.0f,  1.0f) }, // 6
+        { XMFLOAT3(-1.0f, -1.0f,  1.0f) }, // 7
     };
 
     //스카이박스 정점 버퍼 정의
     vbDesc = {};
     m_skyBoxVertexCount = ARRAYSIZE(skyboxVertices);
-    vbDesc.ByteWidth = sizeof(MyVertex) * m_vertexCount;
+    vbDesc.ByteWidth = sizeof(SkyBoxVertex) * m_vertexCount;
     vbDesc.CPUAccessFlags = 0;
     vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     vbDesc.MiscFlags = 0;
@@ -423,13 +423,13 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //스카이박스 정점 버퍼 생성
     vbData = {};
-    vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
+    vbData.pSysMem = skyboxVertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
     hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pSkyBoxVertexBuffer.GetAddressOf());
 
     if (FAILED(hr))
         return false;
 
-    m_skyBoxVertexBufferStride = sizeof(MyVertex);
+    m_skyBoxVertexBufferStride = sizeof(SkyBoxVertex);
     m_skyBoxVertexBufferOffset = 0;
 
 
@@ -477,29 +477,29 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //인덱스 정의
     UINT skyboxIndices[] =
     {
-        // 상단 (+Y)
-        0, 1, 2,
-        0, 2, 3,
+        // 상단 (+Y) - RH 기준 CCW
+        0, 2, 1,
+        0, 3, 2,
 
         // 하단 (-Y)
-        4, 6, 5,
-        4, 7, 6,
+        4, 5, 6,
+        4, 6, 7,
 
         // 왼쪽 (-X)
-        4, 0, 3,
-        4, 3, 7,
+        4, 7, 3,
+        4, 3, 0,
 
         // 오른쪽 (+X)
-        1, 5, 6,
-        1, 6, 2,
+        1, 2, 6,
+        1, 6, 5,
 
         // 앞면 (+Z)
-        3, 2, 6,
-        3, 6, 7,
+        3, 6, 2,
+        3, 7, 6,
 
         // 뒷면 (-Z)
-        4, 5, 1,
-        4, 1, 0
+        4, 0, 1,
+        4, 1, 5
     };
 
     //스카이박스 인덱스 버퍼 정의
@@ -513,7 +513,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //스카이박스 인덱스 버퍼 생성
     InitData = {};
-    InitData.pSysMem = indices;
+    InitData.pSysMem = skyboxIndices;
     InitData.SysMemPitch = 0;
     InitData.SysMemSlicePitch = 0;
 
@@ -605,7 +605,7 @@ void MyEngine::MyD3DContext::Render()
     m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
     m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
     m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
-    m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+    m_pImmediateContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
     m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
     m_pImmediateContext->PSSetShaderResources(0, 1, m_pCubeTextureRV.GetAddressOf());
