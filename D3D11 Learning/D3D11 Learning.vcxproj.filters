@@ -264,5 +264,8 @@
     <CopyFileToFolders Include="Resources\Textures\cubemap.dds">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Shaders\common_inc.fxh">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
