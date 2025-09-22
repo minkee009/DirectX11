@@ -1,36 +1,32 @@
-cbuffer ConstantBuffer : register(b0)
-{
-    matrix World;
-    matrix View;
-    matrix Projection;
-}
+#include "common_inc.fxh"
 
 struct VS_INPUT
 {
     float3 Pos : POSITION;
 };
 
-struct VS_OUTPUT
+struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
     float3 Tex : TEXCOORD0;
 };
 
-VS_OUTPUT VS(VS_INPUT input)
+PS_INPUT VS(VS_INPUT input)
 {
-    VS_OUTPUT output = (VS_OUTPUT) 0;
-    // 뷰 이동성분을 제거
-    float4x4 viewWithoutTranslation = View;
-    viewWithoutTranslation[3][0] = 0;
-    viewWithoutTranslation[3][1] = 0;
-    viewWithoutTranslation[3][2] = 0;
+    PS_INPUT output = (PS_INPUT) 0;
+    float4x4 noTransInView = View;
+    
+    noTransInView[3][0] = 0;
+    noTransInView[3][1] = 0;
+    noTransInView[3][2] = 0;
 
-    // 정점의 위치를 투영
-    output.Pos = mul(float4(input.Pos, 1.0f), mul(viewWithoutTranslation, Projection));
-    output.Pos.z = output.Pos.w * 0.999999f;
-
-    // 픽셀 셰이더로 정점의 위치를 텍스처 좌표로 전달
-    output.Tex = input.Pos;
+    float4 viewPos = mul(float4(input.Pos.xyz, 1), noTransInView);
+    float4 clipSpacePos = mul(viewPos, Projection);
+    
+    output.Pos = clipSpacePos;
+    output.Pos.z = output.Pos.w * 0.999999f; // 깊이 버퍼의 최대값에 가깝게 설정 <-- 스카이박스가 뷰클립에 걸리지 않도록 함
+    
+    output.Tex = float3(-input.Pos.x, input.Pos.y, input.Pos.z);
     
     return output;
 }

@@ -25,6 +25,7 @@ namespace MyEngine {
 
 	struct MyVertex {
 		XMFLOAT3 pos;
+		XMFLOAT3 normal;
 		XMFLOAT2 uv;
 	};
 
@@ -32,6 +33,18 @@ namespace MyEngine {
 		XMMATRIX mWorld;
 		XMMATRIX mView;
 		XMMATRIX mProjection;
+		XMFLOAT3 CameraPos;
+		FLOAT pad1;
+		XMFLOAT3 vLightPos;
+		FLOAT pad2;
+		XMFLOAT4 vLightDir;
+		XMFLOAT4 vLightColor;
+		XMFLOAT4 vOutputColor;
+		XMFLOAT4 vAmbientColor;
+		FLOAT ambientStr;
+		FLOAT diffuseStr;
+		FLOAT specularStr;
+		UINT shininess;
 	};
 
 	class MyD3DContext {
@@ -61,6 +74,7 @@ namespace MyEngine {
 		//Scene 관련 변수
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
+		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;
 		ComPtr<ID3D11VertexShader> m_pSkyBoxVShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pSkyBoxPShader = nullptr;
 		ComPtr<ID3D11InputLayout> m_pCubeInputLayout = nullptr;
@@ -81,6 +95,12 @@ namespace MyEngine {
 
 		XMFLOAT4 m_lightDirs[2] = { {1,0,0,1},{0,1,0,1} };
 		XMFLOAT4 m_lightColors[2] = { {1,1,1,1},{1,0,0,1} };
+
+		XMFLOAT4 m_ambientColor = { 1,1,1,1 };
+		FLOAT m_ambientStrength = 0.1f;
+		FLOAT m_diffuseStrength = 1.0f;
+		FLOAT m_specularStrength = 1.0f;
+		UINT m_shininess = 256;
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;
