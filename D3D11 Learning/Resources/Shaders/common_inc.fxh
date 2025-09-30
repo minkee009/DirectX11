@@ -13,4 +13,6 @@ cbuffer ConstantBuffer : register(b0)
     float diffuseStr;
     float specularStr;
     uint shininess;
+    float reflectionFactor;
+    bool isPointLight;
 }

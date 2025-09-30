@@ -26,6 +26,8 @@ namespace MyEngine {
 	struct MyVertex {
 		XMFLOAT3 pos;
 		XMFLOAT3 normal;
+		XMFLOAT3 tangent;
+		XMFLOAT3 binormal;
 		XMFLOAT2 uv;
 	};
 
@@ -45,6 +47,9 @@ namespace MyEngine {
 		FLOAT diffuseStr;
 		FLOAT specularStr;
 		UINT shininess;
+		FLOAT reflectionFactor;
+		BOOL isPointLight;
+		XMFLOAT2 pad3;
 	};
 
 	class MyD3DContext {
@@ -88,6 +93,7 @@ namespace MyEngine {
 
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeTextureRV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pCubeNormalMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
@@ -95,12 +101,16 @@ namespace MyEngine {
 
 		XMFLOAT4 m_lightDirs[2] = { {1,0,0,1},{0,1,0,1} };
 		XMFLOAT4 m_lightColors[2] = { {1,1,1,1},{1,0,0,1} };
+		FLOAT m_lightDistance = 5.0f;
 
 		XMFLOAT4 m_ambientColor = { 1,1,1,1 };
 		FLOAT m_ambientStrength = 0.1f;
 		FLOAT m_diffuseStrength = 1.0f;
 		FLOAT m_specularStrength = 1.0f;
 		UINT m_shininess = 256;
+
+		FLOAT m_reflectionFactor = 0.6f;
+		bool m_isPointLight = false;
 
 		UINT m_vertexCount = 0;
 		UINT m_vertexBufferStride = 0;

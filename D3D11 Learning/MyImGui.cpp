@@ -200,12 +200,18 @@ void MyEngine::MyImGui::Update()
     auto light1_angleRot = Vector3{ XMConvertToRadians(light1_rot.x),XMConvertToRadians(light1_rot.z) ,XMConvertToRadians(light1_rot.y) };
     auto light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_angleRot.y, light1_angleRot.x, light1_angleRot.z));
     m_d3dContext->m_lightDirs[0] = { light1_dir.x, light1_dir.y, light1_dir.z, 1 };
-
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##4")) {
         light1_rot = light1_defEulerRot;
         light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_rot.y, light1_rot.x, light1_rot.z));
         m_d3dContext->m_lightDirs[0] = { 1,0,0,1 };
+    }
+
+
+    ImGui::SliderFloat("##LightDist", &m_d3dContext->m_lightDistance, 0.0f, 5.0f);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##5")) {
+        m_d3dContext->m_lightDistance = 5.0f;
     }
 
     //cb.diffuseStr = m_diffuseStrength;
@@ -215,40 +221,49 @@ void MyEngine::MyImGui::Update()
     ImGui::Text(u8"환경광(ambient) : 색");
     ImGui::ColorEdit3("##AmbientColor", &m_d3dContext->m_ambientColor.x);
     ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##5")) {
+    if (ImGui::Button(u8"초기값##6")) {
         m_d3dContext->m_ambientColor = { 1,1,1,1 };
     }
 
     ImGui::Text(u8"환경광(ambient) : 강도");
     ImGui::SliderFloat("##AmbientStrength", &m_d3dContext->m_ambientStrength,0.0f,1.0f);
     ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##6")) {
+    if (ImGui::Button(u8"초기값##7")) {
         m_d3dContext->m_ambientStrength = 0.1f;
     }
 
     ImGui::Text(u8"확산광(diffuse) : 강도");
     ImGui::SliderFloat("##DiffuseStrength", &m_d3dContext->m_diffuseStrength, 0.0f, 1.0f);
     ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##7")) {
+    if (ImGui::Button(u8"초기값##8")) {
         m_d3dContext->m_diffuseStrength = 1.0f;
     }
 
     ImGui::Text(u8"정반사광(specular) : 강도");
     ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 1.0f);
     ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##8")) {
+    if (ImGui::Button(u8"초기값##9")) {
         m_d3dContext->m_specularStrength = 1.0f;
     }
 
-    ImGui::Text(u8"광택지수");
-    static int shininessLevel = 8; //1~8
-    ImGui::SliderInt("##shininess", &shininessLevel, 1, 8,"");
+    ImGui::Text(u8"광택지수(shininess)");
+    static int shininessLevel = 12; //1~12
+    ImGui::SliderInt("##shininess", &shininessLevel, 1, 12,"");
     m_d3dContext->m_shininess = pow(2, shininessLevel);
     ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##9")) {
+    if (ImGui::Button(u8"초기값##10")) {
         shininessLevel = 8;
         m_d3dContext->m_shininess = pow(2,shininessLevel);
     }
+
+    ImGui::Text(u8"환경반사 강도 (cubemap reflection)");
+    ImGui::SliderFloat("##reflectionFactor", &m_d3dContext->m_reflectionFactor, 0.0f, 1.0f);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##11")) {
+        m_d3dContext->m_reflectionFactor = 0.6f;
+    }
+
+    ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
 
     std::string toStringStext = std::to_string(m_d3dContext->m_shininess);
     const char* stext = toStringStext.c_str();
@@ -256,7 +271,7 @@ void MyEngine::MyImGui::Update()
 
 
     // 별도의 숫자 표시 (항상 맨 마지막에)
-    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, 400); // 윈도우 안에서의 좌표
+    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, 426); // 윈도우 안에서의 좌표
     ImGui::SetCursorPos(pos);
     ImGui::Text("%d", m_d3dContext->m_shininess);
     
