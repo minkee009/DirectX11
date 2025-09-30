@@ -6,6 +6,7 @@
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
+#include "Mesh.h"
 #include "Camera.h"
 
 #ifdef _DEBUG
@@ -94,8 +95,10 @@ namespace MyEngine {
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeTextureRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeNormalMapRV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pCubeSpecularMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
+		std::unique_ptr<Mesh> m_pMiyuMesh;
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
 

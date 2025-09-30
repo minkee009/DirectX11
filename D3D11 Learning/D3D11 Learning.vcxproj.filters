@@ -34,6 +34,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="모델 파일">
+      <UniqueIdentifier>{b8391d77-965d-434f-97c1-f9f114712035}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -150,6 +153,9 @@
     <ClCompile Include="DirectXTex\BCDirectCompute.cpp">
       <Filter>소스 파일\DirectXTex</Filter>
     </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -264,11 +270,23 @@
     <CopyFileToFolders Include="Resources\Textures\cubemap.dds">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Shaders\common_inc.fxh">
+    <CopyFileToFolders Include="Resources\Shaders\common_inc.hlsli">
       <Filter>셰이더 파일</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
       <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\spec_mapping.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Shaders\VertexShader.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Shaders\PixelShader.hlsl">
+      <Filter>셰이더 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Models\Miyu_Akey_Rigging.obj">
+      <Filter>모델 파일</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

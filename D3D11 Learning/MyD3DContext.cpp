@@ -587,6 +587,16 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    hr = LoadFromDDSFile(L"Resources/Textures/spec_mapping.dds", DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr))
+        return false;
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pCubeSpecularMapRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    //메쉬 생성
+	m_pMiyuMesh = Mesh::CreateFromFile(m_pd3dDevice.Get(), L"Resources/Models/Miyu_Akey_Rigging.obj");
+
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
@@ -598,7 +608,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0.0f, 0.0f, 0.0f);
-    obj1->SetLocalScale(2.0f, 1.0f, 1.0f);
+    obj1->SetLocalScale(5.0f, 5.0f, 5.0f);
 
     return true;
 }
@@ -640,26 +650,44 @@ void MyEngine::MyD3DContext::Render()
     m_pImmediateContext->PSSetShaderResources(0, 1, m_pCubeTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(2, 1, m_pCubeNormalMapRV.GetAddressOf());
+    m_pImmediateContext->PSSetShaderResources(3, 1, m_pCubeSpecularMapRV.GetAddressOf());
     m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 
     for (auto& obj : m_sceneObjects)
     {
+        //미유 드로우
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
-        m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-        m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-        m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
+        
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+        m_pMiyuMesh->Draw(m_pImmediateContext.Get());
+
+        // 박스 드로우
+        //cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        //m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        //m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        //m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
+        //m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+        //m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+        //m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+        //m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+
+        //m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        //m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+        //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
     }
+
+    m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
+    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+    m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+    m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
     for (int m = 0; m < 1; m++)
     {
@@ -723,6 +751,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pSkyBoxPShader = nullptr;
     m_pCubeTextureRV = nullptr;
     m_pCubeNormalMapRV = nullptr;
+    m_pCubeSpecularMapRV = nullptr;
     m_pSkyBoxTextureRV = nullptr;
 }
 

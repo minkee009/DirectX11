@@ -1,8 +1,9 @@
-#include "common_inc.fxh"
+#include "common_inc.hlsli"
 
 Texture2D txDiffuse : register(t0);
 TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
+Texture2D specularMap : register(t3);
 SamplerState samLinear : register(s0);
 
 
@@ -42,8 +43,9 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
     float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
     
+    float specTex = specularMap.Sample(samLinear, input.Tex).r;
     float spec = pow(saturate(dot(halfDir, norm)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
-    float4 specular = specularStr * spec * vLightColor;
+    float4 specular = specularStr * specTex * spec * vLightColor;
     
     float3 baseRGB = (specular + diffuse + ambient).rgb * txDiffuse.Sample(samLinear, input.Tex).rgb;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;

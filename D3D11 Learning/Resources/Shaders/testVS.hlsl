@@ -1,4 +1,4 @@
-#include "common_inc.fxh"
+#include "common_inc.hlsli"
 
 struct VS_INPUT
 {
