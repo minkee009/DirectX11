@@ -654,6 +654,18 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_pMiyuMeshRenderer->AddMaterial(L"Ground", m_pMiyuMat_Ground.get());
 
+    m_pMiyuMat_LBS_Outline_Material = std::make_unique<Material>(L"LBS_Outline_Material");
+    m_pMiyuMat_LBS_Outline_Material->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_LBS_Outline_Material->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/OutLinePS.hlsl");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"LBS_Outline_Material", m_pMiyuMat_LBS_Outline_Material.get());
+
+    m_pMiyuMat_Miyu_Hair_LBS_Outline = std::make_unique<Material>(L"Miyu_Hair_(LBS_Outline)");
+    m_pMiyuMat_Miyu_Hair_LBS_Outline->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Miyu_Hair_LBS_Outline->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/OutLinePS.hlsl");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Hair_(LBS_Outline)", m_pMiyuMat_Miyu_Hair_LBS_Outline.get());
+
     //朝五虞 持失
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);

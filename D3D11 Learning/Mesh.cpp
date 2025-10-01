@@ -28,13 +28,13 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 	std::vector<XMFLOAT3> temp_vert_nor;
 	std::vector<XMFLOAT2> temp_vert_uv;
 	std::vector<UINT> temp_indices;
-
+	bool lastprefixIsUsemtl = false;
     while (std::getline(file, line)) 
     {
         //라인 분석
 		std::istringstream iss(line);
 		std::string prefix;
-
+		
 		iss >> prefix;
 
         if (prefix == "v") //정점 위치
@@ -118,21 +118,24 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 		}
 		else if (prefix == "o")
 		{
+			lastprefixIsUsemtl = false;
 			// 새 오브젝트 (서브메시) 시작
 			SubMesh newSubMesh;
-
-			newSubMesh.pIndexBuffer = nullptr;
-			newSubMesh.pVertexBuffer = nullptr;
 			m_subMeshes.emplace_back(newSubMesh);
 		}
 		else if (prefix == "usemtl")
 		{
+			if(lastprefixIsUsemtl == true)
+				// 이전에 usemtl이 있었는데 또 있으면 새 서브메시 시작
+				m_subMeshes.emplace_back(SubMesh());
+
 			m_subMeshes.back().materialName.clear();
 
 			std::string materialName;
 			iss >> materialName;
 
 			m_subMeshes.back().materialName = std::wstring(materialName.begin(), materialName.end());
+			lastprefixIsUsemtl = true;
 		}
     }
 
