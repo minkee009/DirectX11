@@ -236,6 +236,9 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
+    //기본 메터리얼 생성
+    Material::SetDefaultShaders(m_pd3dDevice.Get());
+
 #ifdef _DEBUG
     // ImGui 초기화
     if (!m_imgui.Initialize(this))
@@ -597,6 +600,10 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //메쉬 생성
 	m_pMiyuMesh = Mesh::CreateFromFile(m_pd3dDevice.Get(), L"Resources/Models/Miyu_Akey_Rigging.obj");
 
+    //메쉬 랜더러 생성
+	m_pMiyuMeshRenderer = std::make_unique<MeshRenderer>();
+	m_pMiyuMeshRenderer->SetMesh(m_pMiyuMesh.get());
+
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
@@ -662,7 +669,7 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pMiyuMesh->Draw(m_pImmediateContext.Get());
+		m_pMiyuMeshRenderer->Draw(m_pImmediateContext.Get());
 
         // 박스 드로우
         //cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
@@ -757,6 +764,8 @@ void MyEngine::MyD3DContext::UninitializeScene()
 
 MyEngine::MyD3DContext::~MyD3DContext()
 {
+    Material::ReleaseDefaultShaders();
+
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 #endif //_DEBUG

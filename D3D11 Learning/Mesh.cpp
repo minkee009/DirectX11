@@ -124,6 +124,15 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 			newSubMesh.pVertexBuffer = nullptr;
 			m_subMeshes.emplace_back(newSubMesh);
 		}
+		else if (prefix == "usemtl")
+		{
+			m_subMeshes.back().materialName.clear();
+
+			std::string materialName;
+			iss >> materialName;
+
+			m_subMeshes.back().materialName = std::wstring(materialName.begin(), materialName.end());
+		}
     }
 
 	// 각 서브메쉬를 돌면서 버퍼 생성 및 업로드
@@ -167,61 +176,6 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 
 	file.close();
 
-	//기본 VS, PS 로드
-	
-	//셰이더 컴파일 정보 저장용 객체
-	HRESULT hr = S_OK;
-	ID3DBlob* pVSBlob = nullptr;
-	hr = CompileShaderFromFile(L"Resources/Shaders/VertexShader.hlsl", "VS", "vs_4_0", &pVSBlob);
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"메쉬 기본 정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-		return false;
-	}
-
-	hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
-	if (FAILED(hr))
-	{
-		pVSBlob->Release();
-		return false;
-	}
-
-	ID3DBlob* pPSBlob = nullptr;
-	hr = CompileShaderFromFile(L"Resources/Shaders/PixelShader.hlsl", "PS", "ps_4_0", &pPSBlob);
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"메쉬 기본 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-		return false;
-	}
-
-	hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, m_pPixelShader.GetAddressOf());
-	if (FAILED(hr))
-	{
-		pPSBlob->Release();
-		return false;
-	}
-
-	//인풋 레이아웃 생성
-	m_inputLayout = nullptr;
-	D3D11_INPUT_ELEMENT_DESC layout[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-	UINT numElements = ARRAYSIZE(layout);
-
-	hr = device->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), m_inputLayout.GetAddressOf());
-	if (FAILED(hr))
-	{
-		pVSBlob->Release();
-		std::wcerr << L"Failed to create input layout for mesh in file: " << path << std::endl;
-		return false;
-	}
-	pVSBlob->Release();
-
     return true;
 }
 
@@ -247,25 +201,6 @@ std::unique_ptr<MyEngine::Mesh> MyEngine::Mesh::CreateFromFile(ID3D11Device* dev
 	}
 
 	return mesh; //RVNO 최적화 -> std::move(mesh);
-}
-
-void MyEngine::Mesh::Draw(ID3D11DeviceContext* ctx)
-{
-	//임시 셰이더 설정
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	ctx->IASetInputLayout(m_inputLayout.Get());
-	ctx->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-	ctx->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
-	//서브메시 단위로 그리기
-	for (auto const& sub : m_subMeshes)
-	{
-		constexpr UINT stride = sizeof(MeshVertex);
-		constexpr UINT offset = 0;
-		ctx->IASetVertexBuffers(0, 1, sub.pVertexBuffer.GetAddressOf(), &stride, &offset);
-		ctx->IASetIndexBuffer(sub.pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-		ctx->DrawIndexed(static_cast<UINT>(sub.indices.size()), 0, 0);
-	}
 }
 
 

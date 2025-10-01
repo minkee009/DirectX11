@@ -6,7 +6,7 @@
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
-#include "Mesh.h"
+#include "MeshRenderer.h"
 #include "Camera.h"
 
 #ifdef _DEBUG
@@ -98,6 +98,16 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pCubeSpecularMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
+
+		std::unique_ptr<MeshRenderer> m_pMiyuMeshRenderer;	
+		std::unique_ptr<Material> m_pMiyuMat_Ground;
+		std::unique_ptr<Material> m_pMiyuMat_LBS_Outline_Material;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Body;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Cloth;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Hair;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Hair_LBS_Outline;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Head;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Misc;
 		std::unique_ptr<Mesh> m_pMiyuMesh;
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;

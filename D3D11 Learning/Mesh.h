@@ -13,6 +13,12 @@ using namespace Microsoft::WRL;
 
 namespace MyEngine
 {
+	enum class VertexType
+	{
+		Pos = 0,
+		PosNormUV,
+	};
+
 	struct MeshVertex
 	{
 		XMFLOAT3 pos;
@@ -31,23 +37,11 @@ namespace MyEngine
 		std::wstring materialName; // usemtl에 대응
 	};
 
-	struct MaterialRef
-	{
-		std::wstring name;
-		// 실제 머티리얼 데이터 (diffuse texture, normal map 등)
-		// 추후 로드 단계에서 연결
-	};
-
 	class Mesh
 	{
 	private:
+		VertexType m_vertexType = VertexType::PosNormUV;
 		std::vector<SubMesh> m_subMeshes;
-
-		//=== 임시 머터리얼 코드 ===//
-		ComPtr<ID3D11InputLayout> m_inputLayout = nullptr;  //추후에 머터리얼 클래스에서 관리하는걸로 변경
-		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
-		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
-		//=========================//
 
 		bool LoadFromFile(ID3D11Device* device, std::wstring path);
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
@@ -56,6 +50,7 @@ namespace MyEngine
 		~Mesh();
 		static std::unique_ptr<Mesh> CreateFromFile(ID3D11Device* device, std::wstring path);
 
-		void Draw(ID3D11DeviceContext* ctx);
+		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_subMeshes; }
+		inline VertexType GetVertexType() const { return m_vertexType; }
 	};
 }

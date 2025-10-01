@@ -176,7 +176,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
@@ -208,7 +210,9 @@
     <ClInclude Include="imgui-1.92.2b\imgui.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
