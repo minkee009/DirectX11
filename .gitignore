@@ -440,3 +440,5 @@ D3D11 Learning/imgui.ini
 x64/Debug/D3D11 Learning.pdb
 /x64
 D3D11 Learning/imgui.ini
+
+!D3D11 Learning/Resources/Models/*.obj
