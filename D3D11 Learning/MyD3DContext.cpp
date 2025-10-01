@@ -237,7 +237,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
     //기본 메터리얼 생성
-    Material::SetDefaultShaders(m_pd3dDevice.Get());
+    Material::InitDefaultShaders(m_pd3dDevice.Get());
 
 #ifdef _DEBUG
     // ImGui 초기화

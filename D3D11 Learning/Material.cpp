@@ -149,7 +149,7 @@ ComPtr<ID3D11VertexShader> MyEngine::Material::s_defaultVertexShader = nullptr;
 ComPtr<ID3D11PixelShader> MyEngine::Material::s_defaultPixelShader = nullptr;
 ComPtr<ID3DBlob> MyEngine::Material::s_defaultVSBlob = nullptr;
 
-void MyEngine::Material::SetDefaultShaders(ID3D11Device* device)
+void MyEngine::Material::InitDefaultShaders(ID3D11Device* device)
 {
 	//MVP ¡§¡° ºŒ¿Ã¥ı
 	if (!s_defaultVertexShader)

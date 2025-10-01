@@ -117,10 +117,10 @@ void MyEngine::MyImGui::Update()
         fov = defFov;
     }
 
-    constexpr float defNearPlane = 0.001f;
-    static float nearPlane = 0.001f;
+    constexpr float defNearPlane = 0.01f;
+    static float nearPlane = 0.01f;
     ImGui::Text("Near Plane");
-    ImGui::SliderFloat("##Near", &nearPlane, 0.001f, 25.0f);
+    ImGui::SliderFloat("##Near", &nearPlane, 0.01f, 25.0f, "%.2f");
     m_d3dContext->m_pCamera->SetNearPlane(nearPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##2")) {
@@ -130,7 +130,7 @@ void MyEngine::MyImGui::Update()
     constexpr float defFarPlane = 50.0f;
     static float farPlane = 50.0f;
     ImGui::Text("Far Plane");
-    ImGui::SliderFloat("##Far", &farPlane, 0.01f, 50.0f);
+    ImGui::SliderFloat("##Far", &farPlane, 0.01f, 50.0f, "%.2f");
     m_d3dContext->m_pCamera->SetFarPlane(farPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##3")) {
@@ -249,11 +249,11 @@ void MyEngine::MyImGui::Update()
     ImGui::Text(u8"광택지수(shininess)");
     static int shininessLevel = 12; //1~12
     ImGui::SliderInt("##shininess", &shininessLevel, 1, 12,"");
-    m_d3dContext->m_shininess = pow(2, shininessLevel);
+    m_d3dContext->m_shininess = static_cast<UINT>(pow(2, shininessLevel));
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##10")) {
         shininessLevel = 8;
-        m_d3dContext->m_shininess = pow(2,shininessLevel);
+        m_d3dContext->m_shininess = static_cast<UINT>(pow(2, shininessLevel));
     }
 
     ImGui::Text(u8"환경반사 강도 (cubemap reflection)");

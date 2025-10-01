@@ -57,8 +57,12 @@ void MyEngine::MeshRenderer::Draw(ID3D11DeviceContext* ctx)
 		}
 	}
 
-	for (auto& subMesh : m_pMesh->GetSubMeshes())
+	auto& subMeshes = m_pMesh->GetSubMeshes();
+	for (size_t i = 0; i < subMeshes.size(); i++)
 	{
+		auto& subMesh = subMeshes[i];
+
+
 		//머터리얼 바인딩
 		auto it = m_materials.find(subMesh.materialName);
 		if (it != m_materials.end())

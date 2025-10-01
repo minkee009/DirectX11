@@ -78,7 +78,7 @@ namespace MyEngine {
 		inline ID3D11PixelShader* GetPixelShader() const { return m_pixelShader.Get(); }
 
 		//정적 기본 셰이더 설정
-		static void SetDefaultShaders(ID3D11Device* device);
+		static void InitDefaultShaders(ID3D11Device* device);
 		static void ReleaseDefaultShaders();
 		inline static ID3D11VertexShader* GetDefaultVertexShader() { return s_defaultVertexShader.Get(); }
 		inline static ID3D11PixelShader* GetDefaultPixelShader() { return s_defaultPixelShader.Get(); }
