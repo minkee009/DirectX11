@@ -99,6 +99,8 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
 
+
+
 		std::unique_ptr<MeshRenderer> m_pMiyuMeshRenderer;	
 		std::unique_ptr<Material> m_pMiyuMat_Ground;
 		std::unique_ptr<Material> m_pMiyuMat_LBS_Outline_Material;
@@ -107,6 +109,7 @@ namespace MyEngine {
 		std::unique_ptr<Material> m_pMiyuMat_Miyu_Hair;
 		std::unique_ptr<Material> m_pMiyuMat_Miyu_Hair_LBS_Outline;
 		std::unique_ptr<Material> m_pMiyuMat_Miyu_Head;
+		std::unique_ptr<Material> m_pMiyuMat_Miyu_Weapon;
 		std::unique_ptr<Material> m_pMiyuMat_Miyu_Misc;
 		std::unique_ptr<Mesh> m_pMiyuMesh;
 		std::unique_ptr<Camera> m_pCamera;

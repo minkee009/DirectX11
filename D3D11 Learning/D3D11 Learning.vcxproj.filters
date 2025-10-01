@@ -300,5 +300,25 @@
     <CopyFileToFolders Include="Resources\Models\Miyu_Akey_Rigging.obj">
       <Filter>모델 파일</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Misc.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\Textures\Character_Body.png">
+      <Filter>텍스쳐 파일</Filter>
+    </Image>
+    <Image Include="Resources\Textures\Character_Face.png">
+      <Filter>텍스쳐 파일</Filter>
+    </Image>
+    <Image Include="Resources\Textures\Cloth.png">
+      <Filter>텍스쳐 파일</Filter>
+    </Image>
+    <Image Include="Resources\Textures\Hair.png">
+      <Filter>텍스쳐 파일</Filter>
+    </Image>
+    <Image Include="Resources\Textures\Weapon.png">
+      <Filter>텍스쳐 파일</Filter>
+    </Image>
   </ItemGroup>
 </Project>

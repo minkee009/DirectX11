@@ -53,6 +53,7 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 		{
 			XMFLOAT2 uv;
 			iss >> uv.x >> uv.y;
+			uv.y = 1.0f - uv.y;  // Y축 뒤집기 (DirectX 좌표계로 변환)
 			temp_vert_uv.push_back(uv);
 		}
 		else if (prefix == "f") //면

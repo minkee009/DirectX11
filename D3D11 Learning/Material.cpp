@@ -55,6 +55,20 @@ bool MyEngine::Material::InitShader(ID3D11Device* device,ShaderType type, const 
 	return false;
 }
 
+bool MyEngine::Material::InitShader(ShaderType type, ID3D11DeviceChild* shader)
+{
+	switch (type)
+	{
+	case ShaderType::Vertex:
+		m_vertexShader = static_cast<ID3D11VertexShader*>(shader);
+		return true;
+	case ShaderType::Pixel:
+		m_pixelShader = static_cast<ID3D11PixelShader*>(shader);
+		return true;
+	}
+	return false;
+}
+
 bool MyEngine::Material::InitTexture(ID3D11DeviceContext* ctx, std::wstring&& name, UINT slot, const std::wstring& path, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode)
 {
 	//dds인지 아닌지 확인

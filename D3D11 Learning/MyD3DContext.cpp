@@ -604,6 +604,56 @@ bool MyEngine::MyD3DContext::InitializeScene()
 	m_pMiyuMeshRenderer = std::make_unique<MeshRenderer>();
 	m_pMiyuMeshRenderer->SetMesh(m_pMiyuMesh.get());
 
+    //메터리얼 생성
+	m_pMiyuMat_Miyu_Cloth = std::make_unique<Material>(L"Miyu_Cloth");
+	m_pMiyuMat_Miyu_Cloth->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+	m_pMiyuMat_Miyu_Cloth->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+	m_pMiyuMat_Miyu_Cloth->InitTexture(m_pImmediateContext.Get(), L"Cloth.png", 0,L"Resources/Textures/Cloth.png");
+   
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Cloth", m_pMiyuMat_Miyu_Cloth.get());
+
+    m_pMiyuMat_Miyu_Hair = std::make_unique<Material>(L"Miyu_Hair");
+    m_pMiyuMat_Miyu_Hair->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Miyu_Hair->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+    m_pMiyuMat_Miyu_Hair->InitTexture(m_pImmediateContext.Get(), L"Hair.png", 0, L"Resources/Textures/Hair.png");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Hair", m_pMiyuMat_Miyu_Hair.get());
+
+    m_pMiyuMat_Miyu_Head = std::make_unique<Material>(L"Miyu_Head");
+    m_pMiyuMat_Miyu_Head->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Miyu_Head->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+    m_pMiyuMat_Miyu_Head->InitTexture(m_pImmediateContext.Get(), L"Character_Face.png", 0, L"Resources/Textures/Character_Face.png");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Head", m_pMiyuMat_Miyu_Head.get());
+
+    m_pMiyuMat_Miyu_Body = std::make_unique<Material>(L"Miyu_Body");
+    m_pMiyuMat_Miyu_Body->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Miyu_Body->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+    m_pMiyuMat_Miyu_Body->InitTexture(m_pImmediateContext.Get(), L"Character_Body.png", 0, L"Resources/Textures/Character_Body.png");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Body", m_pMiyuMat_Miyu_Body.get());
+
+    m_pMiyuMat_Miyu_Misc = std::make_unique<Material>(L"Miyu_Misc");
+    m_pMiyuMat_Miyu_Misc->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Miyu_Misc->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+    m_pMiyuMat_Miyu_Misc->InitTexture(m_pImmediateContext.Get(), L"Misc.png", 0, L"Resources/Textures/Misc.png");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Misc", m_pMiyuMat_Miyu_Misc.get());
+
+    m_pMiyuMat_Miyu_Weapon = std::make_unique<Material>(L"Miyu_Weapon");
+    m_pMiyuMat_Miyu_Weapon->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Miyu_Weapon->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+    m_pMiyuMat_Miyu_Weapon->InitTexture(m_pImmediateContext.Get(), L"Weapon.png", 0, L"Resources/Textures/Weapon.png");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Weapon", m_pMiyuMat_Miyu_Weapon.get());
+
+    m_pMiyuMat_Ground = std::make_unique<Material>(L"Ground");
+    m_pMiyuMat_Ground->InitShader(m_pd3dDevice.Get(), ShaderType::Vertex, L"Resources/Shaders/VertexShader.hlsl");
+    m_pMiyuMat_Ground->InitShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/PixelShader.hlsl");
+    m_pMiyuMat_Ground->InitTexture(m_pImmediateContext.Get(), L"seafloor.png", 0, L"Resources/Textures/seafloor.dds");
+
+    m_pMiyuMeshRenderer->AddMaterial(L"Ground", m_pMiyuMat_Ground.get());
+
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);

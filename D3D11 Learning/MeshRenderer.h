@@ -35,6 +35,7 @@ namespace MyEngine
 		MeshRenderer() {}
 		~MeshRenderer() {}
 		inline void SetMesh(Mesh* mesh) { m_pMesh = mesh; }	
+		inline void AddMaterial(const std::wstring& name, Material* material) { m_materials[name] = material; }
 
 		void Draw(ID3D11DeviceContext* ctx);
 	};
