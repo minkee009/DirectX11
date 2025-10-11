@@ -98,7 +98,11 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        sd.BufferCount = 1;
+        sd.BufferCount = 2;
+        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;  
+        sd.Flags = 0; 
+
+        m_swapChainFlags = sd.Flags;
 
         hr = dxgiFactory2->CreateSwapChainForHwnd(m_pd3dDevice.Get(), m_hWnd, &sd, nullptr, nullptr, m_pSwapChain1.GetAddressOf());
         if (SUCCEEDED(hr))
@@ -112,7 +116,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     {
         // DirectX 11.0 시스템인 경우
         DXGI_SWAP_CHAIN_DESC sd = {};
-        sd.BufferCount = 1;
+        sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
         sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -123,6 +127,9 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.Windowed = TRUE;
+        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;  // 레거시 모드
+
+        m_swapChainFlags = sd.Flags;
 
         hr = dxgiFactory->CreateSwapChain(m_pd3dDevice.Get(), &sd, m_pSwapChain.GetAddressOf());
     }
@@ -814,7 +821,7 @@ void MyEngine::MyD3DContext::Render()
 
 void MyEngine::MyD3DContext::Present()
 {
-    m_pSwapChain->Present(0, 0);
+    m_pSwapChain->Present(m_vSyncInterval, 0);
 }
 
 void MyEngine::MyD3DContext::UninitializeScene()
@@ -913,11 +920,11 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 
     // 스왑 체인 버퍼 크기 재조정
     HRESULT hr = m_pSwapChain->ResizeBuffers(
-        1,                  // 버퍼 개수
+        0,                  // 버퍼 개수
         width,              // 새로운 너비
         height,             // 새로운 높이
         DXGI_FORMAT_UNKNOWN, // 포맷 유지
-        0                   // 플래그
+        m_swapChainFlags // 플래그
     );
 
     if (FAILED(hr)) {

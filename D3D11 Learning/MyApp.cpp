@@ -16,6 +16,7 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX) };
 	wc.lpfnWndProc = StaticWndProc;
 	wc.hInstance = hInstance;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.lpszClassName = L"MyEngineClass";
 	RegisterClassEx(&wc);
 
@@ -44,7 +45,7 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 	// Direct3D 컨텍스트 초기화
 	m_pD3DContext = new MyD3DContext();
 	m_pD3DContext->Initialize(m_hWnd, m_width, m_height);
-	bool as = m_pD3DContext->InitializeScene();
+	m_pD3DContext->InitializeScene();
 
 	m_keyboard = std::make_unique<DirectX::Keyboard>();
 	m_mouse = std::make_unique<Mouse>();
@@ -98,7 +99,7 @@ LRESULT MyEngine::MyApp::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, L
 	switch (message) {
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		break;
+		return 0;
 	case WM_SIZE:
 		if (m_pD3DContext && (wParam == SIZE_MAXIMIZED || wParam == SIZE_RESTORED || wParam == SIZE_MINIMIZED)) {
 			RECT clientRect;
@@ -153,7 +154,7 @@ LRESULT MyEngine::MyApp::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, L
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
-	return 0;
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 int MyEngine::MyApp::Run()

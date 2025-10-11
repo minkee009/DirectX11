@@ -72,6 +72,8 @@ namespace MyEngine {
 
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
+		UINT m_swapChainFlags = 0;
+		UINT m_vSyncInterval = 1;
 
 		ComPtr<ID3D11RasterizerState> m_pDefRasterizerState = nullptr;			//시계방향 컬링 (기본)
 		ComPtr<ID3D11RasterizerState> m_pClockWiseRasterizerState = nullptr;		//반시계방향 컬링 (스카이 박스용)
