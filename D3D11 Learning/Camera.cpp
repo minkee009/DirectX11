@@ -1,7 +1,16 @@
 #define NOMINMAX
 #include "Camera.h"
+#include "Time.h"
 #include <Keyboard.h>
 #include <Mouse.h>
+
+namespace CameraMathf
+{
+    float Lerp(float a, float b, float t)
+    {
+        return (a + (b - a) * t);
+    }
+}
 
 MyEngine::Camera::Camera()
 {
@@ -73,6 +82,15 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
     const float moveSpeed = 5.0f;
     const float rotSpeed = 0.1f;
 
+    static float targetPitch = DirectX::XMConvertToDegrees(m_pTransform->GetLocalRotation().ToEuler().x);
+    static float targetYaw = DirectX::XMConvertToDegrees(m_pTransform->GetLocalRotation().ToEuler().y);
+
+    static float pitch = DirectX::XMConvertToDegrees(m_pTransform->GetLocalRotation().ToEuler().x);
+    static float yaw = DirectX::XMConvertToDegrees(m_pTransform->GetLocalRotation().ToEuler().y);
+
+    Vector3 targetMovement = Vector3::Zero;
+    static Vector3 movement = Vector3::Zero;
+
     if (mouse.rightButton)
     {
         // 마우스 회전 처리
@@ -83,19 +101,12 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
 
             if (deltaX != 0 || deltaY != 0)
             {
-                // 현재 회전값을 도 단위로 가져오기
-                static float pitch = DirectX::XMConvertToDegrees(m_pTransform->GetLocalRotation().ToEuler().x);
-                static float yaw = DirectX::XMConvertToDegrees(m_pTransform->GetLocalRotation().ToEuler().y);
-
                 // 마우스 델타로 회전 적용
-                yaw -= deltaX * rotSpeed;
-                pitch -= deltaY * rotSpeed; // Y는 반대 방향
+                targetYaw -= deltaX * rotSpeed;
+                targetPitch -= deltaY * rotSpeed; // Y는 반대 방향
 
                 // Pitch 제한
-                //pitch = std::max( -89.0f, std::min(89.0f, pitch));
-
-                // 새 회전값 설정 (도 단위)
-                m_pTransform->SetLocalEulerRotation(Vector3(pitch, yaw, 0));
+                //targetPitch = std::max( -89.0f, std::min(89.0f, targetPitch));
             }
         }
         else
@@ -104,23 +115,14 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
         }
 
         // 이동 처리 (더 효율적으로)
-        Vector3 movement = Vector3::Zero;
         Matrix worldMat = m_pTransform->GetWorldMatrix();
 
-        if (kb.W) movement += worldMat.Forward();
-        if (kb.S) movement -= worldMat.Forward();
-        if (kb.A) movement -= worldMat.Right();
-        if (kb.D) movement += worldMat.Right();
-        if (kb.Q) movement -= worldMat.Up();
-        if (kb.E) movement += worldMat.Up();
-
-        // 정규화 후 이동 적용
-        if (movement.LengthSquared() > 0.0f)
-        {
-            movement.Normalize();
-            Vector3 currentPos = m_pTransform->GetLocalPosition();
-            m_pTransform->SetLocalPosition(currentPos + movement * moveSpeed * deltaTime);
-        }
+        if (kb.W) targetMovement += worldMat.Forward();
+        if (kb.S) targetMovement -= worldMat.Forward();
+        if (kb.A) targetMovement -= worldMat.Right();
+        if (kb.D) targetMovement += worldMat.Right();
+        if (kb.Q) targetMovement -= worldMat.Up();
+        if (kb.E) targetMovement += worldMat.Up();
     }
     else
     {
@@ -130,6 +132,23 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
             m_firstMouseUpdate = true;
         }
     }
+
+    pitch = CameraMathf::Lerp(pitch, targetPitch, 12.0f * deltaTime);
+    yaw = CameraMathf::Lerp(yaw, targetYaw, 12.0f * deltaTime);
+
+    // 새 회전값 설정 (도 단위)
+    m_pTransform->SetLocalEulerRotation(Vector3(pitch, yaw, 0));
+
+    // 정규화 후 이동 적용
+    if (targetMovement.LengthSquared() > 0.0f)
+    {
+        targetMovement.Normalize();
+    }
+
+    movement = Vector3::Lerp(movement, targetMovement, 6.0f * deltaTime);
+
+    Vector3 currentPos = m_pTransform->GetLocalPosition();
+    m_pTransform->SetLocalPosition(currentPos + movement * moveSpeed * deltaTime);
 
     // 마우스 위치 업데이트
     m_lastMouseX = mouse.x;

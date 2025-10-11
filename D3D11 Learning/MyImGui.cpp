@@ -94,16 +94,16 @@ void MyEngine::MyImGui::Update()
     ImGui::Separator();
 
     ImGui::Text(u8"위치");
-    ImGui::Text("  X : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
-    ImGui::Text("  Y : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
-    ImGui::Text("  Z : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
+    ImGui::Text("  X : %.3f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
+    ImGui::Text("  Y : %.3f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
+    ImGui::Text("  Z : %.3f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
 
     Vector3 euler = m_d3dContext->m_pCamera->GetTransform()->GetLocalRotation().ToEuler();
 
     ImGui::Text(u8"회전");
-    ImGui::Text("  X : %f", XMConvertToDegrees(euler.x));
-    ImGui::Text("  Y : %f", XMConvertToDegrees(euler.y));
-    ImGui::Text("  z : %f", XMConvertToDegrees(euler.z));
+    ImGui::Text("  X : %.3f", XMConvertToDegrees(euler.x));
+    ImGui::Text("  Y : %.3f", XMConvertToDegrees(euler.y));
+    ImGui::Text("  z : %.3f", XMConvertToDegrees(euler.z));
 
     ImGui::Separator();
 
@@ -117,8 +117,8 @@ void MyEngine::MyImGui::Update()
         fov = defFov;
     }
 
-    constexpr float defNearPlane = 0.01f;
-    static float nearPlane = 0.01f;
+    constexpr float defNearPlane = 0.3f;
+    static float nearPlane = 0.3f;
     ImGui::Text("Near Plane");
     ImGui::SliderFloat("##Near", &nearPlane, 0.01f, 25.0f, "%.2f");
     m_d3dContext->m_pCamera->SetNearPlane(nearPlane);
@@ -127,10 +127,10 @@ void MyEngine::MyImGui::Update()
         nearPlane = defNearPlane;
     }
 
-    constexpr float defFarPlane = 50.0f;
-    static float farPlane = 50.0f;
+    constexpr float defFarPlane = 1000.0f;
+    static float farPlane = 1000.0f;
     ImGui::Text("Far Plane");
-    ImGui::SliderFloat("##Far", &farPlane, 0.01f, 50.0f, "%.2f");
+    ImGui::SliderFloat("##Far", &farPlane, 0.02f, 1000.0f, "%.2f");
     m_d3dContext->m_pCamera->SetFarPlane(farPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##3")) {

@@ -318,10 +318,8 @@
     <CopyFileToFolders Include="Resources\Shaders\OutLinePS.hlsl">
       <Filter>셰이더 파일</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Resources\Textures\Weapon.png">
+    <CopyFileToFolders Include="Resources\Textures\Weapon.png">
       <Filter>텍스쳐 파일</Filter>
-    </Image>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
