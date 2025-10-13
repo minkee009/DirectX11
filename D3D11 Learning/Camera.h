@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
-#include <SimpleMath.h>
-#include <Keyboard.h>
-#include <Mouse.h>
+#include <DirectXTK/SimpleMath.h>
+#include <DirectXTK/Keyboard.h>
+#include <DirectXTK/Mouse.h>
 #include "Transform.h"
 
 using namespace DirectX::SimpleMath;

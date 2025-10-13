@@ -12,30 +12,12 @@
     <Filter Include="셰이더 파일">
       <UniqueIdentifier>{71dafcc5-f649-4baa-b731-5ca3d171658e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\imgui">
-      <UniqueIdentifier>{92275cc3-5a59-4ea5-8245-212abc93b1c1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\imgui">
-      <UniqueIdentifier>{7563ab39-4e14-4b64-a1e3-29b87bbf7894}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\DirectXTK">
-      <UniqueIdentifier>{b081e733-e549-4942-99f4-41bf3bfd8d0d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\DirectXTK">
-      <UniqueIdentifier>{009d5aa4-3672-4a09-8a9f-5acf79f82be9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\DirectXTex">
-      <UniqueIdentifier>{b19ec9d3-3336-4ec1-a239-ba91cb03216c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\DirectXTex">
-      <UniqueIdentifier>{b31d7976-a9fe-4170-8a93-e0b90e55d61b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="텍스쳐 파일">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="모델 파일">
-      <UniqueIdentifier>{b8391d77-965d-434f-97c1-f9f114712035}</UniqueIdentifier>
+      <UniqueIdentifier>{893532bc-e1bd-43b4-8c89-48b7ad564501}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,29 +30,8 @@
     <ClCompile Include="MyD3DContext.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_draw.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_tables.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_widgets.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="MyImGui.cpp">
       <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTK\Src\SimpleMath.cpp">
-      <Filter>소스 파일\DirectXTK</Filter>
     </ClCompile>
     <ClCompile Include="Transform.cpp">
       <Filter>소스 파일</Filter>
@@ -81,85 +42,10 @@
     <ClCompile Include="Time.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
-      <Filter>소스 파일\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTK\Src\Keyboard.cpp">
-      <Filter>소스 파일\DirectXTK</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTK\Src\Mouse.cpp">
-      <Filter>소스 파일\DirectXTK</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexCompress.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexCompressGPU.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexConvert.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexD3D11.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexD3D12.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexDDS.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexFlipRotate.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexHDR.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexImage.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexMipmaps.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexMisc.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexNormalMaps.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexPMAlpha.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexResize.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexTGA.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexUtil.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexWIC.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BC.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BC4BC5.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BC6HBC7.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BCDirectCompute.cpp">
-      <Filter>소스 파일\DirectXTex</Filter>
+    <ClCompile Include="FBXSceneGraph.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Mesh.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshRenderer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -176,71 +62,27 @@
     <ClInclude Include="Transform.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\imconfig.h">
-      <Filter>헤더 파일\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\imgui.h">
-      <Filter>헤더 파일\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h">
-      <Filter>헤더 파일\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h">
-      <Filter>헤더 파일\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="MyImGui.h">
       <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\SimpleMath.h">
-      <Filter>헤더 파일\DirectXTK</Filter>
     </ClInclude>
     <ClInclude Include="Time.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Keyboard.h">
-      <Filter>헤더 파일\DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Mouse.h">
-      <Filter>헤더 파일\DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\DDS.h">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\DirectXTexP.h">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\filters.h">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\scoped.h">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\BC.h">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\BCDirectCompute.h">
-      <Filter>소스 파일\DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\DirectXTex.h">
-      <Filter>헤더 파일\DirectXTex</Filter>
-    </ClInclude>
     <ClInclude Include="DebugTextRenderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MeshRenderer.h">
+    <ClInclude Include="FBXSceneGraph.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexType.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="DirectXTex\DirectXTex.inl">
-      <Filter>헤더 파일\DirectXTex</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Resources\Shaders\testVS.hlsl">
@@ -279,47 +121,62 @@
     <CopyFileToFolders Include="Resources\Shaders\SkyBoxVS.hlsl">
       <Filter>셰이더 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\cubemap.dds">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Shaders\common_inc.hlsli">
+    <CopyFileToFolders Include="Resources\Shaders\common_inc.fxh">
       <Filter>셰이더 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
+    <CopyFileToFolders Include="C:\Users\User\Documents\GitHub\DirectX11\D3D11 Learning\Resources\Textures\normal_mapping_normal_map.dds">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\spec_mapping.dds">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Shaders\VertexShader.hlsl">
-      <Filter>셰이더 파일</Filter>
+    <CopyFileToFolders Include="Resources\Textures\cubemap.dds">
+      <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Shaders\PixelShader.hlsl">
-      <Filter>셰이더 파일</Filter>
+    <CopyFileToFolders Include="Resources\Textures\misc_diff.png">
+      <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Models\Miyu_Akey_Rigging.obj">
+    <CopyFileToFolders Include="Resources\Textures\bark_0021.jpg">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\DB2X2_L01.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_diffuse.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_glow.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_normal.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_specular.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\eyes_diff.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\fire_diff.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\hair_diff.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\zelda_diff.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\setCave_diff.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Models\Character.fbx">
       <Filter>모델 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\Misc.png">
-      <Filter>텍스쳐 파일</Filter>
+    <CopyFileToFolders Include="Resources\Models\Tree.fbx">
+      <Filter>모델 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\Character_Body.png">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\Character_Face.png">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\Cloth.png">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\Hair.png">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Shaders\OutLinePS.hlsl">
-      <Filter>셰이더 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Resources\Textures\Weapon.png">
-      <Filter>텍스쳐 파일</Filter>
+    <CopyFileToFolders Include="Resources\Models\zeldaPosed001.fbx">
+      <Filter>모델 파일</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

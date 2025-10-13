@@ -1,4 +1,4 @@
-#include "common_inc.hlsli"
+#include "common_inc.fxh"
 
 Texture2D txDiffuse : register(t0);
 TextureCube skyBoxTX : register(t1);

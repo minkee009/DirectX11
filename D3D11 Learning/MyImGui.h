@@ -1,5 +1,5 @@
 #pragma once
-#ifdef _DEBUG
+//#ifdef _DEBUG
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -27,4 +27,4 @@ namespace MyEngine
 	};
 }
 
-#endif //_DEBUG
+//#endif //_DEBUG

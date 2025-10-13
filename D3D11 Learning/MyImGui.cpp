@@ -1,5 +1,4 @@
-#ifdef _DEBUG
-
+//#ifdef _DEBUG
 #include "MyImGui.h"
 #include "MyD3DContext.h"
 
@@ -94,16 +93,16 @@ void MyEngine::MyImGui::Update()
     ImGui::Separator();
 
     ImGui::Text(u8"위치");
-    ImGui::Text("  X : %.3f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
-    ImGui::Text("  Y : %.3f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
-    ImGui::Text("  Z : %.3f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
+    ImGui::Text("  X : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
+    ImGui::Text("  Y : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
+    ImGui::Text("  Z : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
 
     Vector3 euler = m_d3dContext->m_pCamera->GetTransform()->GetLocalRotation().ToEuler();
 
     ImGui::Text(u8"회전");
-    ImGui::Text("  X : %.3f", XMConvertToDegrees(euler.x));
-    ImGui::Text("  Y : %.3f", XMConvertToDegrees(euler.y));
-    ImGui::Text("  z : %.3f", XMConvertToDegrees(euler.z));
+    ImGui::Text("  X : %f", XMConvertToDegrees(euler.x));
+    ImGui::Text("  Y : %f", XMConvertToDegrees(euler.y));
+    ImGui::Text("  z : %f", XMConvertToDegrees(euler.z));
 
     ImGui::Separator();
 
@@ -117,20 +116,20 @@ void MyEngine::MyImGui::Update()
         fov = defFov;
     }
 
-    constexpr float defNearPlane = 0.3f;
-    static float nearPlane = 0.3f;
+    constexpr float defNearPlane = 0.001f;
+    static float nearPlane = 0.001f;
     ImGui::Text("Near Plane");
-    ImGui::SliderFloat("##Near", &nearPlane, 0.01f, 25.0f, "%.2f");
+    ImGui::SliderFloat("##Near", &nearPlane, 0.001f, 25.0f);
     m_d3dContext->m_pCamera->SetNearPlane(nearPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##2")) {
         nearPlane = defNearPlane;
     }
 
-    constexpr float defFarPlane = 1000.0f;
-    static float farPlane = 1000.0f;
+    constexpr float defFarPlane = 50.0f;
+    static float farPlane = 50.0f;
     ImGui::Text("Far Plane");
-    ImGui::SliderFloat("##Far", &farPlane, 0.02f, 1000.0f, "%.2f");
+    ImGui::SliderFloat("##Far", &farPlane, 0.01f, 50.0f);
     m_d3dContext->m_pCamera->SetFarPlane(farPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##3")) {
@@ -249,18 +248,18 @@ void MyEngine::MyImGui::Update()
     ImGui::Text(u8"광택지수(shininess)");
     static int shininessLevel = 12; //1~12
     ImGui::SliderInt("##shininess", &shininessLevel, 1, 12,"");
-    m_d3dContext->m_shininess = static_cast<UINT>(pow(2, shininessLevel));
+    m_d3dContext->m_shininess = pow(2, shininessLevel);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##10")) {
         shininessLevel = 8;
-        m_d3dContext->m_shininess = static_cast<UINT>(pow(2, shininessLevel));
+        m_d3dContext->m_shininess = pow(2,shininessLevel);
     }
 
     ImGui::Text(u8"환경반사 강도 (cubemap reflection)");
     ImGui::SliderFloat("##reflectionFactor", &m_d3dContext->m_reflectionFactor, 0.0f, 1.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##11")) {
-        m_d3dContext->m_reflectionFactor = 0.6f;
+        m_d3dContext->m_reflectionFactor = 0.0f;
     }
 
     ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
@@ -299,4 +298,4 @@ void MyEngine::MyImGui::Uninitialize()
     m_isD3D11BackendInit = false;
 }
 
-#endif //_DEBUG
+//#endif //_DEBUG

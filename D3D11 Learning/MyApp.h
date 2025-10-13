@@ -1,8 +1,8 @@
 #pragma once
 #include <Windows.h>
 #include <memory>
-#include <Keyboard.h>
-#include <Mouse.h>
+#include <DirectXTK/Keyboard.h>
+#include <DirectXTK/Mouse.h>
 
 namespace MyEngine 
 {
