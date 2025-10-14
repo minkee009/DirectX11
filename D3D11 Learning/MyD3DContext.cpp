@@ -249,7 +249,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
 bool MyEngine::MyD3DContext::InitializeScene()
 {
-    AssimpConverter::Initialize(m_pd3dDevice.Get());
+    AssimpConverter::Initialize(m_pImmediateContext.Get());
 
     HRESULT hr = S_OK;
 

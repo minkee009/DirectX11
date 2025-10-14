@@ -1,12 +1,13 @@
 #include "AssimpConverter.h"
 #include <stdexcept>
-
-
-#include <iostream>
+#include <filesystem>
 
 std::unique_ptr<Assimp::Importer> MyEngine::AssimpConverter::s_importer = nullptr;
 uint32_t MyEngine::AssimpConverter::s_importFlags = 0;
 ID3D11Device* MyEngine::AssimpConverter::s_pDevice = nullptr;
+ID3D11DeviceContext* MyEngine::AssimpConverter::s_pContext = nullptr;
+
+namespace fs = std::filesystem;
 
 void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes,std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
@@ -36,7 +37,6 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(std::vector<Mesh>& meshes,
 
         vertex.normal = { pMesh->mNormals[i].x,pMesh->mNormals[i].y,pMesh->mNormals[i].z};
         vertex.tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
-        //vertex.binormal = { pMesh->mBitangents[i].x, pMesh->mBitangents[i].y,  pMesh->mBitangents[i].z };
         if (pMesh->mTextureCoords[0])
         {
             vertex.uv = { (float)pMesh->mTextureCoords[0][i].x, 1.0f - (float)pMesh->mTextureCoords[0][i].y };
@@ -62,28 +62,62 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat)
     mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader(), Material::GetBlinnPhongVSBlob());
     mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongPixelShader(), nullptr);
 
-    for (UINT i = 0; i < pMat->mNumProperties; i++)
+    // ---- Texture 매핑 ---- //
+    struct TexTypeMap {
+        aiTextureType aiType;
+        TextureType myType;
+        UINT slot;
+    };
+
+    const std::vector<TexTypeMap> textureTypes = {
+        { aiTextureType_DIFFUSE, TextureType::Diffuse, 0 },
+        { aiTextureType_SPECULAR, TextureType::Specular, 3 },
+        { aiTextureType_NORMALS, TextureType::Normal, 2 },
+        { aiTextureType_EMISSIVE, TextureType::Emissive, 4 },
+        //{ aiTextureType_HEIGHT, TextureType::Height, 4 },
+        //{ aiTextureType_AMBIENT_OCCLUSION, TextureType::AmbientOcclusion, 5 },
+        //{ aiTextureType_METALNESS, TextureType::Metalness, 6 },
+        //{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::Roughness, 7 },
+    };
+
+    static fs::path base_directory = std::filesystem::current_path() / "Resources/Textures";
+
+    for (const auto& [aiType, myType, slot] : textureTypes)
     {
-        std::cout << pMat->mProperties[i]->mData << std::endl;
-        std::cout << pMat->mProperties[i]->mDataLength << std::endl;
-        std::cout << pMat->mProperties[i]->mIndex << std::endl;
-        std::cout << pMat->mProperties[i]->mSemantic << std::endl;
-        std::cout << pMat->mProperties[i]->mKey.C_Str() << std::endl;
-        std::cout << pMat->mProperties[i]->mType << std::endl;
+        const UINT count = pMat->GetTextureCount(aiType);
+        for (UINT i = 0; i < count; ++i)
+        {
+            aiString path;
+            if (pMat->GetTexture(aiType, i, &path) == AI_SUCCESS)
+            {
+                fs::path original_path(path.C_Str());
+                fs::path filename_only = original_path.filename();
+                fs::path final_texPath = base_directory / filename_only;
+
+                mat.InitAndConvertTexture(
+                    s_pContext,
+                    myType,
+                    filename_only.string(),
+                    slot,
+                    final_texPath.wstring()
+                );
+            }
+        }
     }
 
     return mat;
 }
 
-void MyEngine::AssimpConverter::Initialize(ID3D11Device* device)
+void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
 {
-    s_pDevice = device;
+    s_pContext = context;
+    s_pContext->GetDevice(&s_pDevice);
     s_importer = std::make_unique<Assimp::Importer>();
     s_importFlags = aiProcess_Triangulate |    // vertex 삼각형 으로 출력
         aiProcess_GenNormals |        // Normal 정보 생성  
         aiProcess_GenUVCoords |      // 텍스처 좌표 생성
         aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
-        //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 오른손좌표계임
+        //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
         aiProcess_PreTransformVertices;  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
 }
 
@@ -103,9 +137,8 @@ std::unique_ptr<MyEngine::FBXSceneGraph> MyEngine::AssimpConverter::LoadSceneGra
     }
 
     auto pSceneGraph = std::make_unique<FBXSceneGraph>();
-    std::vector<UINT> m_matIDX;
 
-    ProcessNode(pSceneGraph->m_meshes, m_matIDX, pScene->mRootNode, pScene);
+    ProcessNode(pSceneGraph->m_meshes, pSceneGraph->m_matIdxes, pScene->mRootNode, pScene);
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
@@ -126,11 +159,11 @@ void MyEngine::FBXSceneGraph::Draw(ID3D11DeviceContext* context)
     UINT offset = 0;
 
     //Material::BindDefaultShaders(context);
+    int matCount = 0;
     for (auto& mesh : m_meshes)
     {
         mesh.Bind(context);
-        //context->PSSetShaderResources(0, 1, &textures_[0].texture);
-
+        m_materials[m_matIdxes[matCount++]].Bind(context);
         context->DrawIndexed(static_cast<UINT>(mesh.indices.size()), 0, 0);
     }
 }

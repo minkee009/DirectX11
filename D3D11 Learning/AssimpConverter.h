@@ -14,6 +14,7 @@ namespace MyEngine
 	private:
 		friend class AssimpConverter;
 		std::vector<Mesh> m_meshes;
+		std::vector<UINT> m_matIdxes;
 		std::vector<Material> m_materials;
 	public:
 		void Draw(ID3D11DeviceContext* context);
@@ -25,13 +26,14 @@ namespace MyEngine
 		static std::unique_ptr<Assimp::Importer> s_importer;
 		static uint32_t s_importFlags;
 		static ID3D11Device* s_pDevice;
+		static ID3D11DeviceContext* s_pContext;
 
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
 		static Mesh ProcessMesh(std::vector<Mesh>& meshes, aiMesh* pMesh, const aiScene* pScene);
 		static Material ProcessMaterial(aiMaterial* pMat);
 
 	public:
-		static void Initialize(ID3D11Device* device);
+		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
 		static std::unique_ptr<FBXSceneGraph> LoadSceneGraphFromFile(std::string filePath);
 		static std::unique_ptr<StaticMeshRenderer> LoadStaticRendererFromFile(std::string filePath);

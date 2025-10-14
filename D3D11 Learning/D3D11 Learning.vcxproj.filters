@@ -42,10 +42,16 @@
     <ClCompile Include="Time.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="FBXSceneGraph.cpp">
+    <ClCompile Include="Mesh.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Mesh.cpp">
+    <ClCompile Include="AssimpConverter.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticMesh.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,9 +77,6 @@
     <ClInclude Include="DebugTextRenderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="FBXSceneGraph.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -84,6 +87,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="StaticMesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="AssimpConverter.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticMeshRenderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -126,9 +135,6 @@
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Shaders\common_inc.fxh">
       <Filter>셰이더 파일</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="C:\Users\User\Documents\GitHub\DirectX11\D3D11 Learning\Resources\Textures\normal_mapping_normal_map.dds">
-      <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\spec_mapping.dds">
       <Filter>텍스쳐 파일</Filter>
@@ -180,6 +186,9 @@
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Models\zeldaPosed001.fbx">
       <Filter>모델 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
+      <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>

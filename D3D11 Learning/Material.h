@@ -63,9 +63,9 @@ namespace MyEngine
 		std::vector<TextureBinding> m_textures;
 
 		const std::string m_name;
-
-		bool m_useZTest = true;
-		bool m_useAlphaTest = true;
+		
+		bool m_useZWrite = true;
+		bool m_useAlphaBlend = false;
 		bool m_useBackFaceCulling = true;
 
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);

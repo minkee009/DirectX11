@@ -22,7 +22,6 @@ struct MaterialCB
     float padding[3];  // 16byte align
 };
 
-#----- HLSL 코드 -----#
 void Material::Bind(ID3D11DeviceContext* context)
 {
     // 1. 셰이더 바인딩
@@ -46,4 +45,29 @@ void Material::Bind(ID3D11DeviceContext* context)
 
     context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
     context->PSSetConstantBuffers(0, 1, m_materialCB.GetAddressOf());
+}
+
+#----- HLSL 코드 -----#
+cbuffer MaterialCB : register(b0)
+{
+    uint textureFlags; // bit0=Diffuse, bit1=Specular, bit2=Normal...
+};
+
+Texture2D diffuseMap : register(t0);
+Texture2D normalMap  : register(t1);
+Texture2D specMap    : register(t2);
+SamplerState sampler0 : register(s0);
+
+float4 PSMain(PS_INPUT input) : SV_Target
+{
+    float4 baseColor = float4(1,1,1,1);
+    float3 normal = float3(0,0,1);
+    float3 specular = float3(0,0,0);
+
+    // Branchless 처리
+    baseColor = lerp(baseColor, diffuseMap.Sample(sampler0, input.uv), (textureFlags & 1) != 0);
+    normal    = lerp(normal, normalMap.Sample(sampler0, input.uv).xyz*2-1, (textureFlags & 4) != 0);
+    specular  = lerp(specular, specMap.Sample(sampler0, input.uv).xyz, (textureFlags & 2) != 0);
+
+    return baseColor;
 }
