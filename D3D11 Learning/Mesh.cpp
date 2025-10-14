@@ -28,6 +28,9 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 	std::vector<XMFLOAT3> temp_vert_nor;
 	std::vector<XMFLOAT2> temp_vert_uv;
 	std::vector<UINT> temp_indices;
+
+	std::unordered_map<MeshVertex,UINT,MeshVertexHash,MeshVertexEqual> vertex_to_index_map;
+
 	bool lastprefixIsUsemtl = false;
     while (std::getline(file, line)) 
     {
@@ -87,17 +90,11 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 				if (!temp_vert_uv.empty())
 					vertex.uv = temp_vert_uv[vtIdx];
 				// 정점이 이미 존재하는지 확인
-				auto it = std::find_if(m_subMeshes.back().vertices.begin(), m_subMeshes.back().vertices.end(),
-					[&vertex](const MeshVertex& v) {
-						return v.pos.x == vertex.pos.x && v.pos.y == vertex.pos.y && v.pos.z == vertex.pos.z &&
-							v.nor.x == vertex.nor.x && v.nor.y == vertex.nor.y && v.nor.z == vertex.nor.z &&
-							v.uv.x == vertex.uv.x && v.uv.y == vertex.uv.y;
-					});
-				if (it != m_subMeshes.back().vertices.end())
+				auto it = vertex_to_index_map.find(vertex);
+				if (it != vertex_to_index_map.end())
 				{
 					// 이미 존재하면 해당 인덱스 사용
-					UINT index = static_cast<UINT>(std::distance(m_subMeshes.back().vertices.begin(), it));
-					faceIndices.push_back(index);
+					faceIndices.push_back(it->second);
 				}
 				else
 				{
@@ -105,6 +102,8 @@ bool MyEngine::Mesh::LoadFromFile(ID3D11Device* device, std::wstring path)
 					m_subMeshes.back().vertices.push_back(vertex);
 					UINT newIndex = static_cast<UINT>(m_subMeshes.back().vertices.size() - 1);
 					faceIndices.push_back(newIndex);
+
+					vertex_to_index_map[vertex] = newIndex;
 				}
 			}
 

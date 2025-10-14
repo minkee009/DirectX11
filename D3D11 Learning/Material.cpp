@@ -8,7 +8,7 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-bool MyEngine::Material::InitShader(ID3D11Device* device,ShaderType type, const std::wstring& path)
+bool MyEngine::Material::InitAndCompileShader(ID3D11Device* device,ShaderType type, const std::wstring& path)
 {
 	switch (type)
 	{
@@ -69,7 +69,7 @@ bool MyEngine::Material::InitShader(ShaderType type, ID3D11DeviceChild* shader)
 	return false;
 }
 
-bool MyEngine::Material::InitTexture(ID3D11DeviceContext* ctx, std::wstring&& name, UINT slot, const std::wstring& path, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode)
+bool MyEngine::Material::InitTexture(ID3D11DeviceContext* ctx, const std::wstring& name, UINT slot, const std::wstring& path, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode)
 {
 	//dds인지 아닌지 확인
 	bool isDDS = false;

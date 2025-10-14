@@ -32,29 +32,39 @@ void MyEngine::MeshRenderer::Draw(ID3D11DeviceContext* ctx)
 			numElements = ARRAYSIZE(s_inputDesc_PosNormUV);
 			break;
 		}
-		if (m_materials.empty())
-		{
-			//없는 경우 기본 머터리얼로 인풋 레이아웃 생성
-			ID3D11Device* device = nullptr;
-			ctx->GetDevice(&device);
-			HRESULT hr = device->CreateInputLayout(layout, numElements,
-				Material::GetDefaultVSBlob()->GetBufferPointer(), Material::GetDefaultVSBlob()->GetBufferSize(),
-				m_inputLayout.GetAddressOf());
-			if (FAILED(hr))
-				return;
-		}
-		else
-		{
-			auto it = m_materials.begin();
-			ID3D11Device* device = nullptr;
-			ctx->GetDevice(&device);
-			HRESULT hr = device->CreateInputLayout(layout, numElements,
-				it->second->GetVSBlob()->GetBufferPointer(), it->second->GetVSBlob()->GetBufferSize(),
-				m_inputLayout.GetAddressOf());
 
-			if (FAILED(hr))
-				return;
-		}
+		//임시 blob
+		ID3D11Device* device = nullptr;
+		ctx->GetDevice(&device);
+		HRESULT hr = device->CreateInputLayout(layout, numElements,
+			Material::GetDefaultVSBlob()->GetBufferPointer(), Material::GetDefaultVSBlob()->GetBufferSize(),
+			m_inputLayout.GetAddressOf());
+		if (FAILED(hr))
+			return;
+
+		//if (m_materials.empty())
+		//{
+		//	//없는 경우 기본 머터리얼로 인풋 레이아웃 생성
+		//	ID3D11Device* device = nullptr;
+		//	ctx->GetDevice(&device);
+		//	HRESULT hr = device->CreateInputLayout(layout, numElements,
+		//		Material::GetDefaultVSBlob()->GetBufferPointer(), Material::GetDefaultVSBlob()->GetBufferSize(),
+		//		m_inputLayout.GetAddressOf());
+		//	if (FAILED(hr))
+		//		return;
+		//}
+		//else
+		//{
+		//	auto it = m_materials.begin();
+		//	ID3D11Device* device = nullptr;
+		//	ctx->GetDevice(&device);
+		//	HRESULT hr = device->CreateInputLayout(layout, numElements,
+		//		it->second->GetVSBlob()->GetBufferPointer(), it->second->GetVSBlob()->GetBufferSize(),
+		//		m_inputLayout.GetAddressOf());
+
+		//	if (FAILED(hr))
+		//		return;
+		//}
 	}
 
 	auto& subMeshes = m_pMesh->GetSubMeshes();

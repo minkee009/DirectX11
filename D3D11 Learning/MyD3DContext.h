@@ -80,6 +80,7 @@ namespace MyEngine {
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
 
 		//Scene 관련 변수
+		ComPtr<ID3DBlob> m_pDefaultVSBlob = nullptr;
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;

@@ -66,9 +66,9 @@ namespace MyEngine {
 
 		void Bind(ID3D11DeviceContext* context);
 
-		bool InitShader(ID3D11Device* device, ShaderType type, const std::wstring& path);
+		bool InitAndCompileShader(ID3D11Device* device, ShaderType type, const std::wstring& path);
 		bool InitShader(ShaderType type, ID3D11DeviceChild* shader);
-		bool InitTexture(ID3D11DeviceContext* ctx, std::wstring&& name, UINT slot, const std::wstring& path,
+		bool InitTexture(ID3D11DeviceContext* ctx, const std::wstring& name, UINT slot, const std::wstring& path,
 			D3D11_FILTER filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 			D3D11_TEXTURE_ADDRESS_MODE addressMode = D3D11_TEXTURE_ADDRESS_WRAP);
 
