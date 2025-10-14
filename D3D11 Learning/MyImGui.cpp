@@ -143,47 +143,74 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
-    auto obj1 = m_d3dContext->m_sceneObjects[0].get();
+    static std::vector<Vector3> objDefPoses{};
+    static bool objDefIsLoaded = false;
 
-    constexpr Vector3 obj1_defpos = { 0.0f, 0.0f, 0.0f };
-    constexpr Vector3 obj2_defpos = { 8.0f, 0.0f, 0.0f };
-    constexpr Vector3 obj3_defpos = { 4.0f, 0.0f, 0.0f };
-
-    static Vector3 obj1_pos = { 0.0f, 0.0f, 0.0f };
-    static Vector3 obj2_pos = { 8.0f, 0.0f, 0.0f };
-    static Vector3 obj3_pos = { 4.0f, 0.0f, 0.0f };
-
-    ImGui::Text(u8"오브젝트 1 월드 위치");
-    if (ImGui::DragFloat3("##obj1_pos", &obj1_pos.x,0.05f))
+    if (!objDefIsLoaded)
     {
-        obj1->SetLocalPosition(obj1_pos);
+        for (auto& sObj : m_d3dContext->m_sceneObjects)
+        {
+            objDefPoses.push_back(sObj->GetLocalPosition());
+        }
+        objDefIsLoaded = true;
+    }
+
+    static int objIdx = 0;
+    static bool objIdxChanged = false;
+
+    ImGui::Text(u8"오브젝트 인덱스");
+    if (ImGui::SliderInt(u8"##오브젝트 인덱스", &objIdx, 0, m_d3dContext->m_sceneObjects.size() - 1))
+    {
+        objIdxChanged = true;
+    }
+
+  
+
+    auto obj = m_d3dContext->m_sceneObjects[objIdx].get();
+    constexpr Vector3 defPos = { 0,0,0 };
+    auto obj_pos = obj->GetLocalPosition();
+
+    ImGui::Text(u8"오브젝트 월드 위치");
+    if (ImGui::DragFloat3("##obj_pos", &obj_pos.x, 0.05f))
+    {
+        obj->SetLocalPosition(obj_pos);
     }
     if (ImGui::IsItemDeactivatedAfterEdit())
     {
-        obj1->SetLocalPosition(obj1_pos);
+        obj->SetLocalPosition(obj_pos);
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값")) {
-        obj1_pos = obj1_defpos;
-        obj1->SetLocalPosition(obj1_defpos);
+        obj_pos = objDefPoses[objIdx];
+        obj->SetLocalPosition(objDefPoses[objIdx]);
     }
 
-    ImGui::Text(u8"오브젝트 1 회전 값 (오일러)");
+
+    ImGui::Text(u8"오브젝트 회전 값 (오일러)");
     constexpr Vector3 obj1_defEulerRot = { 0,0,0 };
-    static Vector3 obj1_rot = obj1->GetLocalEulerRotation();
+    static Vector3 obj1_rot = obj->GetLocalEulerRotation();
+
+    if (objIdxChanged)
+    {
+        obj1_rot = obj->GetLocalEulerRotation();
+        objIdxChanged = false;
+    }
+
     if (ImGui::DragFloat3("##obj1_rot", &obj1_rot.x,0.1f))
     {
-        obj1->SetLocalEulerRotation(obj1_rot);
+        obj->SetLocalEulerRotation(obj1_rot);
     }
     if (ImGui::IsItemDeactivatedAfterEdit())
     {
-        obj1->SetLocalEulerRotation(obj1_rot);
+        obj->SetLocalEulerRotation(obj1_rot);
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##2")) {
         obj1_rot = obj1_defEulerRot;
-        obj1->SetLocalEulerRotation(obj1_defEulerRot);
+        obj->SetLocalEulerRotation(obj1_defEulerRot);
     }
+
+    ImGui::Separator();
 
     ImGui::Text(u8"빛");
 
@@ -207,7 +234,7 @@ void MyEngine::MyImGui::Update()
     }
 
 
-    ImGui::SliderFloat("##LightDist", &m_d3dContext->m_lightDistance, 0.0f, 5.0f);
+    ImGui::SliderFloat("##LightDist", &m_d3dContext->m_lightDistance, 0.0f, 12.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##5")) {
         m_d3dContext->m_lightDistance = 5.0f;
@@ -246,7 +273,7 @@ void MyEngine::MyImGui::Update()
     }
 
     ImGui::Text(u8"광택지수(shininess)");
-    static int shininessLevel = 12; //1~12
+    static int shininessLevel = 8; //1~12
     ImGui::SliderInt("##shininess", &shininessLevel, 1, 12,"");
     m_d3dContext->m_shininess = pow(2, shininessLevel);
     ImGui::SameLine();
@@ -270,7 +297,7 @@ void MyEngine::MyImGui::Update()
 
 
     // 별도의 숫자 표시 (항상 맨 마지막에)
-    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, 426); // 윈도우 안에서의 좌표
+    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, 426 + 50); // 윈도우 안에서의 좌표
     ImGui::SetCursorPos(pos);
     ImGui::Text("%d", m_d3dContext->m_shininess);
     

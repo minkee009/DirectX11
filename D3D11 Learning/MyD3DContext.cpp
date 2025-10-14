@@ -236,6 +236,8 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
+    Material::InitDefaultShaders(m_pd3dDevice.Get());
+
 //#ifdef _DEBUG
     // ImGui ÃÊ±âÈ­
     if (!m_imgui.Initialize(this))
@@ -289,9 +291,9 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
     obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    m_pSceneGraphs.push_back(AssimpConverter::LoadFromFile("Resources/Models/Character.fbx"));
-    m_pSceneGraphs.push_back(AssimpConverter::LoadFromFile("Resources/Models/zeldaPosed001.fbx"));
-    m_pSceneGraphs.push_back(AssimpConverter::LoadFromFile("Resources/Models/Tree.fbx"));
+    m_pSceneGraphs.push_back(AssimpConverter::LoadSceneGraphFromFile("Resources/Models/Character.fbx"));
+    m_pSceneGraphs.push_back(AssimpConverter::LoadSceneGraphFromFile("Resources/Models/zeldaPosed001.fbx"));
+    m_pSceneGraphs.push_back(AssimpConverter::LoadSceneGraphFromFile("Resources/Models/Tree.fbx"));
 
     return true;
 }
@@ -784,6 +786,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
 
 MyEngine::MyD3DContext::~MyD3DContext()
 {
+    Material::ReleaseDefaultShaders();
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 #endif //_DEBUG

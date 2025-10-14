@@ -134,24 +134,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="FBXSceneGraph.cpp" />
+    <ClCompile Include="AssimpConverter.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
+    <ClCompile Include="StaticMesh.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DebugTextRenderer.h" />
-    <ClInclude Include="FBXSceneGraph.h" />
+    <ClInclude Include="AssimpConverter.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
     <ClInclude Include="StaticMesh.h" />
+    <ClInclude Include="StaticMeshRenderer.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="VertexType.h" />

@@ -1,0 +1,587 @@
+#include "Material.h"
+
+#include <DirectXTex.h>
+#include <dxgi.h>
+#include <directxcolors.h>
+#include <d3dcompiler.h>
+
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+
+bool MyEngine::Material::InitAndCompileShader(ID3D11Device* device, ShaderType type, const std::wstring& path)
+{
+	switch (type)
+	{
+	case ShaderType::Vertex:
+	{
+		ID3DBlob* pVSBlob = nullptr;
+		HRESULT hr = CompileShaderFromFile(path.c_str(), "VS", "vs_4_0", &pVSBlob);
+		if (FAILED(hr))
+		{
+			MessageBox(nullptr,
+				L"버텍스 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return false;
+		}
+		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
+		if (FAILED(hr))
+		{
+			pVSBlob->Release();
+			return false;
+		}
+		m_pVSBlob = nullptr;
+		m_pVSBlob.Attach(pVSBlob); //m_vsBlob가 pVSBlob의 소유권을 갖도록
+		return true;
+	}
+	case ShaderType::Pixel:
+	{
+		ID3DBlob* pPSBlob = nullptr;
+		HRESULT hr = CompileShaderFromFile(path.c_str(), "PS", "ps_4_0", &pPSBlob);
+		if (FAILED(hr))
+		{
+			MessageBox(nullptr,
+				L"픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return false;
+		}
+		hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, m_pPixelShader.GetAddressOf());
+		if (FAILED(hr))
+		{
+			pPSBlob->Release();
+			return false;
+		}
+		pPSBlob->Release();
+		return true;
+	}
+	}
+	return false;
+}
+
+bool MyEngine::Material::InitShader(ShaderType type, ID3D11DeviceChild* shader, ID3DBlob* vsBlob)
+{
+	switch (type)
+	{
+	case ShaderType::Vertex:
+		m_pVertexShader = static_cast<ID3D11VertexShader*>(shader);
+		m_pVSBlob = vsBlob;
+		return true;
+	case ShaderType::Pixel:
+		m_pPixelShader = static_cast<ID3D11PixelShader*>(shader);
+		return true;
+	}
+
+	return false;
+}
+
+bool MyEngine::Material::InitSampler(ID3D11Device* device,D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode)
+{
+
+	//-------샘플러 상태 생성------//
+	ComPtr<ID3D11SamplerState> pSampler;
+	D3D11_SAMPLER_DESC sampDesc;
+	ZeroMemory(&sampDesc, sizeof(sampDesc));
+	sampDesc.Filter = filter;
+	sampDesc.AddressU = addressMode;
+	sampDesc.AddressV = addressMode;
+	sampDesc.AddressW = addressMode;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sampDesc.MinLOD = 0;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	HRESULT hr = device->CreateSamplerState(&sampDesc, pSampler.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+	//----------------------------//
+
+	m_pSampler = pSampler;
+
+	return true;
+}
+
+bool MyEngine::Material::InitSampler(ID3D11SamplerState* pSampler)
+{
+	if (!pSampler)
+	{
+		m_pSampler = nullptr;
+		return false;
+	}
+
+	m_pSampler = pSampler;
+}
+
+bool MyEngine::Material::InitTexture(const std::string& name, TextureType type, UINT slot, ID3D11ShaderResourceView* textureView)
+{
+	if(!textureView)
+		return false;
+
+	m_textures.push_back(TextureBinding{ type, name, slot, textureView });
+	return true;
+}
+
+bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const std::wstring& path)
+{
+	//dds인지 아닌지 확인
+	bool isDDS = false;
+
+	size_t extPos = path.rfind(L'.');
+	if (extPos != std::wstring::npos)
+	{
+		std::wstring ext = path.substr(extPos);
+		if (ext == L".dds" || ext == L".DDS")
+			isDDS = true;
+	}
+
+	//-------- 텍스쳐 로드 --------//
+	HRESULT hr = S_OK;
+
+	DirectX::ScratchImage image;
+	if (isDDS)
+	{
+		hr = LoadFromDDSFile(path.c_str(), DDS_FLAGS_NONE, nullptr, image);
+	}
+	else
+	{
+		hr = LoadFromWICFile(path.c_str(), WIC_FLAGS_NONE, nullptr, image);
+	}
+
+	if (FAILED(hr))
+		return false;
+
+	ID3D11Device* device = nullptr;
+	context->GetDevice(&device);
+
+	ComPtr<ID3D11ShaderResourceView> pSRV;
+	hr = CreateShaderResourceView(device, image.GetImages(), image.GetImageCount(), image.GetMetadata(), pSRV.GetAddressOf());
+
+	if (FAILED(hr))
+		return false;
+
+
+	m_textures.push_back(TextureBinding{ type, name, slot, pSRV });
+
+	return true;
+}
+
+void MyEngine::Material::Bind(ID3D11DeviceContext* context)
+{
+	if (m_pVertexShader)
+		context->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+	if (m_pPixelShader)
+		context->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+
+	for (auto& tex : m_textures)
+	{
+		if (tex.pSRV)
+			context->PSSetShaderResources(tex.slot, 1, tex.pSRV.GetAddressOf());
+		if (m_pSampler)
+			context->PSSetSamplers(tex.slot, 1, m_pSampler.GetAddressOf());
+	}
+}
+
+ComPtr<ID3D11VertexShader> MyEngine::Material::s_pDefaultVertexShader = nullptr;
+ComPtr<ID3D11PixelShader> MyEngine::Material::s_pDefaultPixelShader = nullptr;
+ComPtr<ID3DBlob> MyEngine::Material::s_pDefaultVSBlob = nullptr;
+
+ComPtr<ID3D11VertexShader> MyEngine::Material::s_pBlinnPhongVertexShader = nullptr;
+ComPtr<ID3D11PixelShader> MyEngine::Material::s_pBlinnPhongPixelShader = nullptr;
+ComPtr<ID3DBlob> MyEngine::Material::s_pBlinnPhongVSBlob = nullptr;
+
+void MyEngine::Material::InitDefaultShaders(ID3D11Device* device)
+{
+	//MVP 정점 셰이더
+	if (!s_pDefaultVertexShader)
+	{
+		const char* vsCode = R"(
+struct VS_INPUT                                   
+{                                                 
+	float4 Pos : POSITION;       // float4 -> float3
+	float3 Norm : NORMAL;                         
+	float3 Tan : TANGENT;                         
+	float2 Tex : TEXCOORD0;                       
+};                                                
+			                                                   
+struct PS_INPUT                                   
+{                                                 
+	float4 Pos : SV_POSITION;                     
+};                                                
+			                                                   
+cbuffer ConstantBuffer                            
+{                                                 
+	matrix mWorld;                                
+	matrix mView;                                 
+	matrix mProjection;                           
+};                                                
+			                                                   
+PS_INPUT VS(VS_INPUT input)                       
+{                                                 
+	PS_INPUT output = (PS_INPUT)0;                
+			                                                   
+	// 변환                                        
+	float4 worldPos = mul(input.Pos, mWorld);     
+	float4 viewPos = mul(worldPos, mView);                     
+	output.Pos = mul(viewPos, mProjection);                    
+			                                                   
+	return output;                                
+}
+)";
+
+		ID3DBlob* pVSBlob = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+		HRESULT hr = D3DCompile(vsCode, strlen(vsCode), nullptr, nullptr, nullptr, "VS", "vs_4_0",
+		D3DCOMPILE_ENABLE_STRICTNESS, 0, &pVSBlob, &pErrorBlob);
+
+		if (FAILED(hr))
+		{
+			if (pErrorBlob)
+			{
+				const char* errorMsg = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+				OutputDebugStringA("버텍스 셰이더 컴파일 오류:\n");
+				OutputDebugStringA(errorMsg);
+				pErrorBlob->Release();
+			}
+			MessageBox(nullptr,
+				L"기본 버텍스 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return;
+		}
+
+		if (pErrorBlob)
+			pErrorBlob->Release();
+
+		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(),
+			nullptr, s_pDefaultVertexShader.GetAddressOf());
+
+		if (FAILED(hr))
+		{
+			pVSBlob->Release();
+			MessageBox(nullptr, L"버텍스 셰이더 생성 실패", L"오류", MB_OK);
+			return;
+		}
+
+		s_pDefaultVSBlob = nullptr;
+		s_pDefaultVSBlob.Attach(pVSBlob);
+	}
+
+	//단일 픽셀 셰이더
+	if (!s_pDefaultPixelShader)
+	{
+		const char* psCode = R"(			 
+struct PS_INPUT                                    
+{                                                 
+	float4 Pos : SV_POSITION;                     
+};                                                
+			                                                   
+float4 PS(PS_INPUT input) : SV_Target             
+{                                                 
+	return float4(1.0f, 0.0f, 1.0f, 1.0f);        
+}  
+)";
+
+		ID3DBlob* pPSBlob = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+		HRESULT hr = D3DCompile(psCode, strlen(psCode), nullptr, nullptr, nullptr, "PS", "ps_4_0",
+			D3DCOMPILE_ENABLE_STRICTNESS, 0, &pPSBlob, &pErrorBlob);
+
+		if (FAILED(hr))
+		{
+			if (pErrorBlob)
+			{
+				const char* errorMsg = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+				OutputDebugStringA("픽셀 셰이더 컴파일 오류:\n");
+				OutputDebugStringA(errorMsg);
+				pErrorBlob->Release();
+			}
+			MessageBox(nullptr,
+				L"기본 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return;
+		}
+
+		if (pErrorBlob)
+			pErrorBlob->Release();
+
+		hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(),
+			nullptr, s_pDefaultPixelShader.GetAddressOf());
+		pPSBlob->Release();
+
+		if (FAILED(hr))
+		{
+			MessageBox(nullptr, L"픽셀 셰이더 생성 실패", L"오류", MB_OK);
+			return;
+		}
+	}
+}
+
+void MyEngine::Material::ReleaseDefaultShaders()
+{
+	s_pDefaultVertexShader = nullptr;
+	s_pDefaultPixelShader = nullptr;
+	s_pDefaultVSBlob = nullptr;
+}
+
+void MyEngine::Material::BindDefaultShaders(ID3D11DeviceContext* context)
+{
+	context->VSSetShader(Material::GetDefaultVertexShader(), nullptr, 0);
+	context->PSSetShader(Material::GetDefaultPixelShader(), nullptr, 0);
+}
+
+void MyEngine::Material::InitBlinnPhongShaders(ID3D11Device* device)
+{
+	//블린 퐁 정점 셰이더
+	if (!s_pBlinnPhongVertexShader)
+	{
+		const char* vsCode = R"(
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    bool isPointLight;
+}
+
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT) 0;
+    
+    output.Pos = mul(input.Pos, World);
+    output.WorldPos = output.Pos.xyz;
+    output.Pos = mul(output.Pos, View);
+    output.Pos = mul(output.Pos, Projection);
+    
+    output.Norm = normalize(mul(input.Norm, (float3x3) World));
+    output.Tan = normalize(mul(input.Tan, (float3x3) World));
+    output.Tex = input.Tex;
+    
+    return output;
+}
+)";
+
+		ID3DBlob* pVSBlob = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+		HRESULT hr = D3DCompile(vsCode, strlen(vsCode), nullptr, nullptr, nullptr, "VS", "vs_4_0",
+			D3DCOMPILE_ENABLE_STRICTNESS, 0, &pVSBlob, &pErrorBlob);
+
+		if (FAILED(hr))
+		{
+			if (pErrorBlob)
+			{
+				const char* errorMsg = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+				OutputDebugStringA("버텍스 셰이더 컴파일 오류:\n");
+				OutputDebugStringA(errorMsg);
+				pErrorBlob->Release();
+			}
+			MessageBox(nullptr,
+				L"블린 퐁 버텍스 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return;
+		}
+
+		if (pErrorBlob)
+			pErrorBlob->Release();
+
+		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(),
+			nullptr, s_pBlinnPhongVertexShader.GetAddressOf());
+
+		if (FAILED(hr))
+		{
+			pVSBlob->Release();
+			MessageBox(nullptr, L"버텍스 셰이더 생성 실패", L"오류", MB_OK);
+			return;
+		}
+
+		s_pBlinnPhongVSBlob = nullptr;
+		s_pBlinnPhongVSBlob.Attach(pVSBlob);
+	}
+
+	//블린 퐁 픽셀 셰이더
+	if (!s_pBlinnPhongPixelShader)
+	{
+		const char* psCode = R"(
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    bool isPointLight;
+}
+
+Texture2D txDiffuse : register(t0);
+TextureCube skyBoxTX : register(t1);
+Texture2D normalMap : register(t2);
+Texture2D specularMap : register(t3);
+SamplerState samLinear : register(s0);
+
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+};
+
+float4 PS(PS_INPUT input) : SV_TARGET
+{
+    float4 ambient = ambientStr * vAmbientColor;
+    
+    float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; //정규화
+    
+    float3 Binorm = cross(input.Norm, input.Tan);
+    
+    float3x3 TBN = float3x3(
+        input.Tan.x, input.Tan.y, input.Tan.z, 
+        Binorm.x, Binorm.y, Binorm.z,
+        input.Norm.x, input.Norm.y, input.Norm.z     
+    );
+    
+    normalTex = normalize(mul(normalTex, TBN)); //TBN 행렬을 곱해서 월드공간으로 변환
+    
+    float3 norm = normalTex;
+    float3 I = normalize(input.WorldPos - CameraPos.xyz);
+    float3 R = reflect(I, norm);  //큐브맵 반사를 위한 리플렉트 벡터
+    R.x = -R.x;
+    float3 L = isPointLight ? normalize(vLightPos.xyz - input.WorldPos) : vLightDir.xyz;
+    
+    // 조명 위치와 픽셀 위치
+    float3 toLight = vLightPos - input.WorldPos;
+    float distance = length(toLight);
+
+    // 감쇠 계수 (1 / d² 형태)
+    float attenuation = 1.0f / (distance * distance);
+    
+    float lightDist = isPointLight ? attenuation : 1.0f;
+    
+    float diff = max(dot(norm, L), 0.0);
+    float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
+    
+    float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
+    float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
+    
+    float specTex = specularMap.Sample(samLinear, input.Tex).r;
+    float spec = pow(saturate(dot(halfDir, norm)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
+    float4 specular = specularStr * specTex * spec * vLightColor * lightDist;
+    
+    float3 baseRGB = (specular + diffuse + ambient).rgb * txDiffuse.Sample(samLinear, input.Tex).rgb;
+    float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
+    
+    float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
+
+    return float4(finalRGB, 1.0f);
+}
+
+float4 PSSolid(PS_INPUT input) : SV_Target
+{
+    return vOutputColor;
+}
+)";
+
+		ID3DBlob* pPSBlob = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+		HRESULT hr = D3DCompile(psCode, strlen(psCode), nullptr, nullptr, nullptr, "PS", "ps_4_0",
+			D3DCOMPILE_ENABLE_STRICTNESS, 0, &pPSBlob, &pErrorBlob);
+
+		if (FAILED(hr))
+		{
+			if (pErrorBlob)
+			{
+				const char* errorMsg = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+				OutputDebugStringA("픽셀 셰이더 컴파일 오류:\n");
+				OutputDebugStringA(errorMsg);
+				pErrorBlob->Release();
+			}
+			MessageBox(nullptr,
+				L"블린 퐁 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return;
+		}
+
+		if (pErrorBlob)
+			pErrorBlob->Release();
+
+		hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(),
+			nullptr, s_pBlinnPhongPixelShader.GetAddressOf());
+		pPSBlob->Release();
+
+		if (FAILED(hr))
+		{
+			MessageBox(nullptr, L"픽셀 셰이더 생성 실패", L"오류", MB_OK);
+			return;
+		}
+	}
+}
+
+void MyEngine::Material::ReleaseBlinnPhongShaders()
+{
+	s_pBlinnPhongVertexShader = nullptr;
+	s_pBlinnPhongPixelShader = nullptr;
+	s_pBlinnPhongVSBlob = nullptr;
+}
+
+HRESULT MyEngine::Material::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
+{
+	HRESULT hr = S_OK;
+
+	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+	// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+	// Setting this flag improves the shader debugging experience, but still allows 
+	// the shaders to be optimized and to run exactly the way they will run in 
+	// the release configuration of this program.
+	dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+	// Disable optimizations to further improve shader debugging
+	dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+	ID3DBlob* pErrorBlob = nullptr;
+	hr = D3DCompileFromFile(szFileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, szEntryPoint, szShaderModel,
+		dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
+	if (FAILED(hr))
+	{
+		if (pErrorBlob)
+		{
+			auto cr = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+
+			OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+			pErrorBlob->Release();
+		}
+		return hr;
+	}
+	if (pErrorBlob) pErrorBlob->Release();
+
+	return S_OK;
+}

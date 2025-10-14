@@ -5,9 +5,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-
-#include "Mesh.h"
-#include "Material.h"
+#include "StaticMeshRenderer.h"
 
 namespace MyEngine
 {
@@ -28,13 +26,15 @@ namespace MyEngine
 		static uint32_t s_importFlags;
 		static ID3D11Device* s_pDevice;
 
-		static void ProcessNode(std::vector<Mesh>& meshes, aiNode* pNode, const aiScene* pScene);
+		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
 		static Mesh ProcessMesh(std::vector<Mesh>& meshes, aiMesh* pMesh, const aiScene* pScene);
+		static Material ProcessMaterial(aiMaterial* pMat);
 
 	public:
 		static void Initialize(ID3D11Device* device);
 		static void Release();
-		static std::unique_ptr<FBXSceneGraph> LoadFromFile(std::string filePath);
+		static std::unique_ptr<FBXSceneGraph> LoadSceneGraphFromFile(std::string filePath);
+		static std::unique_ptr<StaticMeshRenderer> LoadStaticRendererFromFile(std::string filePath);
 	};
 
 }

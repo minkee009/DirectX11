@@ -7,7 +7,7 @@
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
 #include "Camera.h"
-#include "FBXSceneGraph.h"
+#include "AssimpConverter.h"
 
 //#ifdef _DEBUG
 #include "MyImGui.h"
