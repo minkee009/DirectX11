@@ -40,3 +40,11 @@ MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<
         throw std::runtime_error("Failed to create index buffer.");
     }
 }
+
+void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
+{
+    UINT stride = sizeof(VertexType);
+    UINT offset = 0;
+    ctx->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
+    ctx->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+}

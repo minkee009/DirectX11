@@ -16,8 +16,7 @@ namespace MyEngine
 		std::vector<VertexType> vertices;
 		std::vector<UINT> indices;
 		Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, ID3D11Device* device);
-		inline ID3D11Buffer* GetVertexBuffer() { return m_pVertexBuffer.Get(); }
-		inline ID3D11Buffer* GetIndexBuffer() { return m_pIndexBuffer.Get(); }
+		void Bind(ID3D11DeviceContext* ctx);
 	private:
 		ComPtr<ID3D11Buffer> m_pVertexBuffer, m_pIndexBuffer;
 	};

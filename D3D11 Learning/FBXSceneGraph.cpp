@@ -94,12 +94,7 @@ void MyEngine::FBXSceneGraph::Draw(ID3D11DeviceContext* context)
         /*if (meshCount == 1 || meshCount == 3)
             continue;*/
 
-        auto vbp = mesh.GetVertexBuffer();
-        auto ibp = mesh.GetIndexBuffer();
-
-        context->IASetVertexBuffers(0, 1, &vbp, &stride, &offset);
-        context->IASetIndexBuffer(ibp, DXGI_FORMAT_R32_UINT, 0);
-
+        mesh.Bind(context);
         //context->PSSetShaderResources(0, 1, &textures_[0].texture);
 
         context->DrawIndexed(static_cast<UINT>(mesh.indices.size()), 0, 0);

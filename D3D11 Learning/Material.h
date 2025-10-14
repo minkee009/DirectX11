@@ -20,5 +20,6 @@ namespace MyEngine
 		std::string diffuseFile;
 		std::string specularFile;
 		std::string normalFile;
+		void Bind(ID3D11DeviceContext* ctx);
 	};
 }
