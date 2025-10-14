@@ -28,7 +28,6 @@ namespace MyEngine {
 		XMFLOAT3 pos;
 		XMFLOAT3 normal;
 		XMFLOAT3 tangent;
-		XMFLOAT3 binormal;
 		XMFLOAT2 uv;
 	};
 
@@ -78,9 +77,7 @@ namespace MyEngine {
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
 
 		//Scene 관련 변수
-		std::unique_ptr<FBXSceneGraph> m_pSceneGraph1;
-		std::unique_ptr<FBXSceneGraph> m_pSceneGraph2;
-		std::unique_ptr<FBXSceneGraph> m_pSceneGraph3;
+		std::vector<std::unique_ptr<FBXSceneGraph>> m_pSceneGraphs;
 
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;

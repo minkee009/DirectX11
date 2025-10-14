@@ -13,8 +13,7 @@ struct PS_INPUT
     float3 WorldPos : TEXCOORD0;
     float3 Norm : TEXCOORD1;
     float3 Tan : TEXCOORD2;
-    float3 Binorm : TEXCOORD3;
-    float2 Tex : TEXCOORD4;
+    float2 Tex : TEXCOORD3;
 };
 
 float4 PS(PS_INPUT input) : SV_TARGET
@@ -23,9 +22,11 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; //정규화
     
+    float3 Binorm = cross(input.Norm, input.Tan);
+    
     float3x3 TBN = float3x3(
         input.Tan.x, input.Tan.y, input.Tan.z, 
-        input.Binorm.x, input.Binorm.y, input.Binorm.z, 
+        Binorm.x, Binorm.y, Binorm.z,
         input.Norm.x, input.Norm.y, input.Norm.z     
     );
     
@@ -37,15 +38,24 @@ float4 PS(PS_INPUT input) : SV_TARGET
     R.x = -R.x;
     float3 L = isPointLight ? normalize(vLightPos.xyz - input.WorldPos) : vLightDir.xyz;
     
+    // 조명 위치와 픽셀 위치
+    float3 toLight = vLightPos - input.WorldPos;
+    float distance = length(toLight);
+
+    // 감쇠 계수 (1 / d² 형태)
+    float attenuation = 1.0f / (distance * distance);
+    
+    float lightDist = isPointLight ? attenuation : 1.0f;
+    
     float diff = max(dot(norm, L), 0.0);
-    float4 diffuse = diffuseStr * diff * vLightColor;
+    float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
     float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
     
     float specTex = specularMap.Sample(samLinear, input.Tex).r;
     float spec = pow(saturate(dot(halfDir, norm)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
-    float4 specular = specularStr * specTex * spec * vLightColor;
+    float4 specular = specularStr * specTex * spec * vLightColor * lightDist;
     
     float3 baseRGB = (specular + diffuse + ambient).rgb * txDiffuse.Sample(samLinear, input.Tex).rgb;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;

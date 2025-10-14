@@ -1,7 +1,7 @@
 #include "Mesh.h"
 #include <stdexcept>
 
-MyEngine::Mesh::Mesh(std::string name, const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, ID3D11Device* device)
+MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, ID3D11Device* device)
     : vertices(vertices)
     , indices(indices)
 {

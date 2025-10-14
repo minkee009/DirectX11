@@ -10,7 +10,6 @@ namespace MyEngine
 		Vector3 position;
 		Vector3 normal;
 		Vector3 tangent;
-		Vector3 binormal;
 		Vector2 uv;
 	};
 }

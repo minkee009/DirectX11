@@ -32,7 +32,7 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(std::vector<Mesh>& meshes,
 
         vertex.normal = { pMesh->mNormals[i].x,pMesh->mNormals[i].y,pMesh->mNormals[i].z};
         vertex.tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
-        vertex.binormal = { pMesh->mBitangents[i].x, pMesh->mBitangents[i].y,  pMesh->mBitangents[i].z };
+        //vertex.binormal = { pMesh->mBitangents[i].x, pMesh->mBitangents[i].y,  pMesh->mBitangents[i].z };
         if (pMesh->mTextureCoords[0])
         {
             vertex.uv = { (float)pMesh->mTextureCoords[0][i].x, 1.0f - (float)pMesh->mTextureCoords[0][i].y };
@@ -47,7 +47,7 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(std::vector<Mesh>& meshes,
             indices.push_back(face.mIndices[j]);
     }
 
-    return Mesh(std::string{ pScene->mName.C_Str() }, vertices, indices, s_pDevice);
+    return Mesh(vertices, indices, s_pDevice);
 }
 
 void MyEngine::AssimpConverter::Initialize(ID3D11Device* device)
@@ -94,8 +94,11 @@ void MyEngine::FBXSceneGraph::Draw(ID3D11DeviceContext* context)
         /*if (meshCount == 1 || meshCount == 3)
             continue;*/
 
-        context->IASetVertexBuffers(0, 1, mesh.m_pVertexBuffer.GetAddressOf(), &stride, &offset);
-        context->IASetIndexBuffer(mesh.m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+        auto vbp = mesh.GetVertexBuffer();
+        auto ibp = mesh.GetIndexBuffer();
+
+        context->IASetVertexBuffers(0, 1, &vbp, &stride, &offset);
+        context->IASetIndexBuffer(ibp, DXGI_FORMAT_R32_UINT, 0);
 
         //context->PSSetShaderResources(0, 1, &textures_[0].texture);
 
