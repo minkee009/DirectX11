@@ -44,9 +44,24 @@ namespace MyEngine
 		//Compute
 	};
 
+	enum class RenderType
+	{
+		Opaque,
+		Transparent,
+	};
+
+	struct MaterialCB
+	{
+		UINT textureFlags; // bit0=Diffuse, bit1=Specular, bit2=Normal, ...
+		float padding[3];  // 16byte align
+	};
+
 	class Material
 	{
 	private:
+		UINT m_textureFlags = 0; // 각 TextureType에 해당하는 bitmask
+		ComPtr<ID3D11Buffer> m_materialCB; // 상수버퍼
+
 		static ComPtr<ID3D11VertexShader> s_pDefaultVertexShader;
 		static ComPtr<ID3D11PixelShader>  s_pDefaultPixelShader;
 		static ComPtr<ID3DBlob> s_pDefaultVSBlob;

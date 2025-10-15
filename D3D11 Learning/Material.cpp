@@ -496,12 +496,21 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float spec = pow(saturate(dot(halfDir, norm)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
     float4 specular = specularStr * specTex * spec * vLightColor * lightDist;
     
-    float3 baseRGB = (specular + diffuse + ambient).rgb * txDiffuse.Sample(samLinear, input.Tex).rgb;
+    // 알파 클리핑용 디퓨즈 샘플링
+    float4 baseTex = txDiffuse.Sample(samLinear, input.Tex);
+
+    // 알파 임계값 설정 (0.1~0.5 정도 보통 사용)
+    const float alphaCutoff = 0.3f;
+
+    // 알파가 낮으면 픽셀 폐기
+    clip(baseTex.a - alphaCutoff);
+    
+    float3 baseRGB = (specular + diffuse + ambient).rgb * baseTex.rgb;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
     
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
 
-    return float4(finalRGB, 1.0f);
+    return float4(finalRGB, baseTex.a);
 }
 
 float4 PSSolid(PS_INPUT input) : SV_Target
