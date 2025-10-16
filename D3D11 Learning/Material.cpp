@@ -111,7 +111,9 @@ bool MyEngine::Material::InitTexture(const std::string& name, TextureType type, 
 	if(!textureView)
 		return false;
 
+	m_textureFlags |= static_cast<UINT>(type);
 	m_textures.push_back(TextureBinding{ type, name, slot, textureView });
+
 	return true;
 }
 
@@ -153,7 +155,7 @@ bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, Tex
 	if (FAILED(hr))
 		return false;
 
-
+	m_textureFlags |= static_cast<UINT>(type);
 	m_textures.push_back(TextureBinding{ type, name, slot, pSRV });
 
 	return true;
@@ -161,6 +163,32 @@ bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, Tex
 
 void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 {
+	//상수버퍼 업데이트
+	if (!m_materialCB)
+	{
+		//상수 버퍼 생성
+		D3D11_BUFFER_DESC cbDesc;
+		ZeroMemory(&cbDesc, sizeof(cbDesc));
+		cbDesc.Usage = D3D11_USAGE_DEFAULT;
+		cbDesc.ByteWidth = sizeof(MaterialCB);
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = 0;
+
+		ID3D11Device* pDevice;
+		context->GetDevice(&pDevice);
+
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_materialCB.GetAddressOf());
+		if (FAILED(hr))
+			return;
+	}
+	else
+	{
+		MaterialCB cb;
+		cb.textureFlags = m_textureFlags;
+		context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
+		context->PSSetConstantBuffers(1, 1, m_materialCB.GetAddressOf());
+	}
+
 	if (m_pVertexShader)
 		context->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
 	if (m_pPixelShader)
@@ -439,6 +467,11 @@ cbuffer ConstantBuffer : register(b0)
     bool isPointLight;
 }
 
+cbuffer MaterialBuffer : register(b1)
+{
+	uint textureFlags; 
+}
+
 Texture2D txDiffuse : register(t0);
 TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
@@ -471,7 +504,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     normalTex = normalize(mul(normalTex, TBN)); //TBN 행렬을 곱해서 월드공간으로 변환
     
-    float3 norm = normalTex;
+    float3 norm = lerp(input.Norm, normalTex, (textureFlags & 2) != 0);
     float3 I = normalize(input.WorldPos - CameraPos.xyz);
     float3 R = reflect(I, norm);  //큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
@@ -593,4 +626,10 @@ HRESULT MyEngine::Material::CompileShaderFromFile(const WCHAR* szFileName, LPCST
 	if (pErrorBlob) pErrorBlob->Release();
 
 	return S_OK;
+}
+
+MyEngine::Material::Material(const std::string& name)
+	: m_name(name)
+{
+
 }

@@ -85,7 +85,7 @@ namespace MyEngine
 
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 	public:
-		Material(const std::string& name) : m_name(name) {}
+		Material(const std::string& name);
 
 		void Bind(ID3D11DeviceContext* context);
 
