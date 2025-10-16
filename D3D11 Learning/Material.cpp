@@ -476,6 +476,7 @@ Texture2D txDiffuse : register(t0);
 TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
+Texture2D emmisiveMap : register(t4);
 SamplerState samLinear : register(s0);
 
 
@@ -494,19 +495,17 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; //정규화
     
-    float3 Binorm = cross(input.Norm, input.Tan);
-    
-    float3x3 TBN = float3x3(
-        input.Tan.x, input.Tan.y, input.Tan.z, 
-        Binorm.x, Binorm.y, Binorm.z,
-        input.Norm.x, input.Norm.y, input.Norm.z     
-    );
+	float3 N = normalize(input.Norm);
+	float3 T = normalize(input.Tan);
+	T = normalize(T - dot(T, N) * N); // N에 직교하도록 조정
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
     
     normalTex = normalize(mul(normalTex, TBN)); //TBN 행렬을 곱해서 월드공간으로 변환
     
-    float3 norm = lerp(input.Norm, normalTex, (textureFlags & 2) != 0);
+    N = lerp(N, normalTex, (textureFlags & 4) != 0);
     float3 I = normalize(input.WorldPos - CameraPos.xyz);
-    float3 R = reflect(I, norm);  //큐브맵 반사를 위한 리플렉트 벡터
+    float3 R = reflect(I, N);  //큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
     float3 L = isPointLight ? normalize(vLightPos.xyz - input.WorldPos) : vLightDir.xyz;
     
@@ -519,16 +518,18 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float lightDist = isPointLight ? attenuation : 1.0f;
     
-    float diff = max(dot(norm, L), 0.0);
+    float diff = max(dot(N, L), 0.0);
     float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
     float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
     
-    float specTex = specularMap.Sample(samLinear, input.Tex).r;
-    float spec = pow(saturate(dot(halfDir, norm)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
+    float specTex = lerp(1.0f, specularMap.Sample(samLinear, input.Tex).r,(textureFlags & 2) != 0);
+    float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
     float4 specular = specularStr * specTex * spec * vLightColor * lightDist;
     
+	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
+
     // 알파 클리핑용 디퓨즈 샘플링
     float4 baseTex = txDiffuse.Sample(samLinear, input.Tex);
 
@@ -538,17 +539,12 @@ float4 PS(PS_INPUT input) : SV_TARGET
     // 알파가 낮으면 픽셀 폐기
     clip(baseTex.a - alphaCutoff);
     
-    float3 baseRGB = (specular + diffuse + ambient).rgb * baseTex.rgb;
+    float3 baseRGB = (specular + diffuse + ambient).rgb * baseTex.rgb + emmisive.rgb;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
     
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
 
     return float4(finalRGB, baseTex.a);
-}
-
-float4 PSSolid(PS_INPUT input) : SV_Target
-{
-    return vOutputColor;
 }
 )";
 
