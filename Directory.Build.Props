@@ -70,13 +70,13 @@
     <!-- Assimp DLL 자동 복사 (Release) -->
     <PostBuildEvent>
       <Command>
-        xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\assimp-vc143-mt.dll" "$(OutDir)"
-		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\kubazip.dll" "$(OutDir)"
-		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\minizip.dll" "$(OutDir)"
-		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\poly2tri.dll" "$(OutDir)"
-		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\pugixml.dll" "$(OutDir)"
-		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\zlibd1.dll" "$(OutDir)"
-      </Command>
+		  xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\assimp-vc143-mt.dll" "$(OutDir)"
+		  xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\kubazip.dll" "$(OutDir)"
+		  xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\minizip.dll" "$(OutDir)"
+		  xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\poly2tri.dll" "$(OutDir)"
+		  xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\pugixml.dll" "$(OutDir)"
+		  xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\zlib1.dll" "$(OutDir)"
+	  </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
 </Project>

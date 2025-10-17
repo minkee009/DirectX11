@@ -190,7 +190,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     // 래스터라이저 상태 생성 및 설정
     D3D11_RASTERIZER_DESC rastDesc = {};
     rastDesc.FillMode = D3D11_FILL_SOLID;
-    rastDesc.CullMode = D3D11_CULL_NONE; //양면 드로우 허용
+    rastDesc.CullMode = D3D11_CULL_BACK; //양면 드로우 허용
     rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
     rastDesc.DepthBias = 0;
     rastDesc.DepthBiasClamp = 0.0f;
@@ -315,14 +315,14 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     auto obj2 = m_sceneObjects[1].get();
     obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
-    obj2->SetLocalScale(0.06f, 0.06f, 0.06f);
+    obj2->SetLocalScale(5.0f, 5.0f, 5.0f);
 
     auto obj3 = m_sceneObjects[2].get();
     obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
     obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Tree.fbx"));
 
     return true;
@@ -499,9 +499,11 @@ bool MyEngine::MyD3DContext::InitCube()
     ScratchImage image;
 
     //텍스쳐 로드
-    hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
+    //hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
+    hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
     if (FAILED(hr))
         return false;
+
     hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeTextureRV.GetAddressOf());
     if (FAILED(hr))
         return false;
@@ -715,7 +717,7 @@ void MyEngine::MyD3DContext::Render()
     cb.vAmbientColor = m_ambientColor;
     cb.reflectionFactor = m_reflectionFactor;
 
-    m_pImmediateContext->PSSetShaderResources(0, 1, m_pCubeTextureRV.GetAddressOf());
+    m_pImmediateContext->PSSetShaderResources(5, 1, m_pCubeTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(2, 1, m_pCubeNormalMapRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(3, 1, m_pCubeSpecularMapRV.GetAddressOf());

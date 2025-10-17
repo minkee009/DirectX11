@@ -117,6 +117,8 @@ void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
         aiProcess_GenNormals |        // Normal 정보 생성  
         aiProcess_GenUVCoords |      // 텍스처 좌표 생성
         aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
+        aiProcess_JoinIdenticalVertices |  // 중복 정점 제거
+        aiProcess_ValidateDataStructure; // 구조 검증
         //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
         aiProcess_PreTransformVertices;  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
 }
@@ -126,28 +128,6 @@ void MyEngine::AssimpConverter::Release()
     s_importer.reset();
 }
 
-//std::unique_ptr<MyEngine::FBXSceneGraph> MyEngine::AssimpConverter::LoadSceneGraphFromFile(std::string filePath)
-//{
-//    Material::InitBlinnPhongShaders(s_pDevice);
-//
-//    const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
-//
-//    if (!pScene) {
-//        throw std::runtime_error("fbx load error! :: check fbx file");
-//    }
-//
-//    auto pSceneGraph = std::make_unique<FBXSceneGraph>();
-//
-//    ProcessNode(pSceneGraph->m_meshes, pSceneGraph->m_matIdxes, pScene->mRootNode, pScene);
-//
-//    for (UINT i = 0; i < pScene->mNumMaterials; i++)
-//    {
-//        pSceneGraph->m_materials.push_back(ProcessMaterial(pScene->mMaterials[i]));
-//    }
-//
-//    return pSceneGraph;
-//}
-
 std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticMeshRendererFromFile(std::string filePath)
 {
     Material::InitBlinnPhongShaders(s_pDevice);
@@ -155,7 +135,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
 
     if (!pScene) {
-        throw std::runtime_error("fbx load error! :: check fbx file");
+        throw std::runtime_error("model load error! :: check model file - " + std::string(s_importer->GetErrorString()));
     }
 
     auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
@@ -173,21 +153,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     {
         pStaticMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i]));
     }
+    pStaticMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[0]));
 
     return pStaticMeshRenderer;
 }
-
-//void MyEngine::FBXSceneGraph::Draw(ID3D11DeviceContext* context)
-//{
-//    UINT stride = sizeof(VertexType);
-//    UINT offset = 0;
-//
-//    //Material::BindDefaultShaders(context);
-//    int matCount = 0;
-//    for (auto& mesh : m_meshes)
-//    {
-//        mesh.Bind(context);
-//        m_materials[m_matIdxes[matCount++]].Bind(context);
-//        context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
-//    }
-//}

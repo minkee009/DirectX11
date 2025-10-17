@@ -196,5 +196,11 @@
     <CopyFileToFolders Include="..\..\D3D11_Tutorial\Documents\참고용\Resource\DB2X2_L01_Nor.png">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Lut.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Models\Miyu_Akey_Rigging.obj">
+      <Filter>모델 파일</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

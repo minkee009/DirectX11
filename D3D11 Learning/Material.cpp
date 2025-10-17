@@ -201,6 +201,11 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 		if (m_pSampler)
 			context->PSSetSamplers(tex.slot, 1, m_pSampler.GetAddressOf());
 	}
+
+	if (m_textures.empty())
+	{
+		BindDefaultShaders(context);
+	}
 }
 
 ComPtr<ID3D11VertexShader> MyEngine::Material::s_pDefaultVertexShader = nullptr;
@@ -477,6 +482,7 @@ TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
+Texture2D lutMap : register(t5);
 SamplerState samLinear : register(s0);
 
 
@@ -527,6 +533,9 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float lightDist = isPointLight ? attenuation : 1.0f;
     
     float diff = max(dot(N, L), 0.0);
+	//float bandLevel = 1.0f;
+	//diff = ceil(diff * bandLevel)/bandLevel;
+	diff = lutMap.Sample(samLinear, float2(diff * 0.5f + 0.5f ,0.5f)).r;
     float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
