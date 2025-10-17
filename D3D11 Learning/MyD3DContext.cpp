@@ -694,8 +694,6 @@ void MyEngine::MyD3DContext::Render()
 
     Clear();
 
-
-
     m_pImmediateContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
     MyConstantBuffer cb;
