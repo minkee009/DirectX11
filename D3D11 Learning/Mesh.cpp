@@ -2,8 +2,8 @@
 #include <stdexcept>
 
 MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, ID3D11Device* device)
-    : vertices(vertices)
-    , indices(indices)
+    : m_vertices(vertices)
+    , m_indices(indices)
 {
 	//정점 버퍼 초기화
     HRESULT hr;
@@ -41,7 +41,7 @@ MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<
     }
 }
 
-void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
+void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx) const
 {
     UINT stride = sizeof(VertexType);
     UINT offset = 0;

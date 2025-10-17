@@ -190,7 +190,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     // 래스터라이저 상태 생성 및 설정
     D3D11_RASTERIZER_DESC rastDesc = {};
     rastDesc.FillMode = D3D11_FILL_SOLID;
-    rastDesc.CullMode = D3D11_CULL_BACK;
+    rastDesc.CullMode = D3D11_CULL_NONE; //양면 드로우 허용
     rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
     rastDesc.DepthBias = 0;
     rastDesc.DepthBiasClamp = 0.0f;
@@ -235,6 +235,36 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     hr = m_pd3dDevice->CreateSamplerState(&sampDesc, m_pSamplerLinear.GetAddressOf());
     if (FAILED(hr))
         return false;
+
+    //알파 블렌드 상태 설정
+    D3D11_BLEND_DESC blendDesc = {};
+    blendDesc.RenderTarget[0].BlendEnable = TRUE;
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    m_pd3dDevice->CreateBlendState(&blendDesc, &m_pBlendState);
+
+    //뎁스 스텐실 상태 설정
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+    depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; // 깊이 버퍼 쓰기 활성화
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;      // 깊이가 작을수록 앞에 있음
+    depthStencilDesc.StencilEnable = FALSE;                  // 스텐실은 비활성화
+
+    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pOpaqueState);
+
+    depthStencilDesc = D3D11_DEPTH_STENCIL_DESC{};
+    depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // 깊이 버퍼 쓰기 비활성
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;      // 깊이가 작을수록 앞에 있음
+    depthStencilDesc.StencilEnable = FALSE;                  // 스텐실은 비활성화
+
+    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
 
     Material::InitDefaultShaders(m_pd3dDevice.Get());
 
@@ -291,9 +321,9 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
     obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    m_pSceneGraphs.push_back(AssimpConverter::LoadSceneGraphFromFile("Resources/Models/Character.fbx"));
-    m_pSceneGraphs.push_back(AssimpConverter::LoadSceneGraphFromFile("Resources/Models/zeldaPosed001.fbx"));
-    m_pSceneGraphs.push_back(AssimpConverter::LoadSceneGraphFromFile("Resources/Models/Tree.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Tree.fbx"));
 
     return true;
 }
@@ -664,6 +694,10 @@ void MyEngine::MyD3DContext::Render()
 
     Clear();
 
+
+
+    m_pImmediateContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
+
     MyConstantBuffer cb;
     cb.mWorld = XMMatrixIdentity();
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
@@ -689,6 +723,21 @@ void MyEngine::MyD3DContext::Render()
     m_pImmediateContext->PSSetShaderResources(3, 1, m_pCubeSpecularMapRV.GetAddressOf());
     m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 
+    //스카이박스 드로우
+    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
+    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
+    m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+    m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
+    m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
+    m_pImmediateContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
+    m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
 
     int modelIdx = 0;
     for (auto& obj : m_sceneObjects)
@@ -707,7 +756,7 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pSceneGraphs[modelIdx++]->Draw(m_pImmediateContext.Get());
+        m_pStaticMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
 
         //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
     }
@@ -730,20 +779,6 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->DrawIndexed(36, 0, 0);
     }
 
-    //스카이박스 드로우
-    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
-    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
-    m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-    m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
-    m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
-    m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
-    m_pImmediateContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
-    m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
 //#ifdef _DEBUG
     m_imgui.BeginFrame();
@@ -762,7 +797,7 @@ void MyEngine::MyD3DContext::Present()
 
 void MyEngine::MyD3DContext::UninitializeScene()
 {
-    m_pSceneGraphs.clear();
+    m_pStaticMeshRenderers.clear();
     AssimpConverter::Release();
 
     m_sceneObjects.clear();
@@ -801,6 +836,9 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_hWnd = nullptr;
     m_pDefRasterizerState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
+    m_pBlendState = nullptr;
+    m_pOpaqueState = nullptr;
+    m_pTransparentState = nullptr;
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)

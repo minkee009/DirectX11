@@ -144,6 +144,7 @@
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
+    <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>

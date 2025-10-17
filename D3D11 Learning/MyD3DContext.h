@@ -8,6 +8,7 @@
 
 #include "Camera.h"
 #include "AssimpConverter.h"
+#include "StaticMeshRenderer.h"
 
 //#ifdef _DEBUG
 #include "MyImGui.h"
@@ -75,9 +76,12 @@ namespace MyEngine {
 		ComPtr<ID3D11RasterizerState> m_pDefRasterizerState = nullptr;			//시계방향 컬링 (기본)
 		ComPtr<ID3D11RasterizerState> m_pClockWiseRasterizerState = nullptr;		//반시계방향 컬링 (스카이 박스용)
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
+		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
+		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
+		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
 		//Scene 관련 변수
-		std::vector<std::unique_ptr<FBXSceneGraph>> m_pSceneGraphs;
+		std::vector<std::unique_ptr<StaticMeshRenderer>> m_pStaticMeshRenderers;
 
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;

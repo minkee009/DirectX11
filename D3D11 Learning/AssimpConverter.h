@@ -9,16 +9,16 @@
 
 namespace MyEngine
 {
-	class FBXSceneGraph 
-	{
-	private:
-		friend class AssimpConverter;
-		std::vector<Mesh> m_meshes;
-		std::vector<UINT> m_matIdxes;
-		std::vector<Material> m_materials;
-	public:
-		void Draw(ID3D11DeviceContext* context);
-	};
+	//class FBXSceneGraph 
+	//{
+	//private:
+	//	friend class AssimpConverter;
+	//	std::vector<Mesh> m_meshes;
+	//	std::vector<UINT> m_matIdxes;
+	//	std::vector<Material> m_materials;
+	//public:
+	//	void Draw(ID3D11DeviceContext* context);
+	//};
 
 	class AssimpConverter
 	{
@@ -35,8 +35,8 @@ namespace MyEngine
 	public:
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
-		static std::unique_ptr<FBXSceneGraph> LoadSceneGraphFromFile(std::string filePath);
-		static std::unique_ptr<StaticMeshRenderer> LoadStaticRendererFromFile(std::string filePath);
+		//static std::unique_ptr<FBXSceneGraph> LoadSceneGraphFromFile(std::string filePath);
+		static std::unique_ptr<StaticMeshRenderer> LoadStaticMeshRendererFromFile(std::string filePath);
 	};
 
 }

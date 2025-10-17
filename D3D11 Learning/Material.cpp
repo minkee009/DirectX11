@@ -487,6 +487,7 @@ struct PS_INPUT
     float3 Norm : TEXCOORD1;
     float3 Tan : TEXCOORD2;
     float2 Tex : TEXCOORD3;
+	bool IsFrontFace : SV_IsFrontFace; 
 };
 
 float4 PS(PS_INPUT input) : SV_TARGET
@@ -494,8 +495,15 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float4 ambient = ambientStr * vAmbientColor;
     
     float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; //정규화
-    
+
+
 	float3 N = normalize(input.Norm);
+    
+	if (!input.IsFrontFace) // 시스템 값: 픽셀셰이더 입력으로 받을 수 있음
+	{
+		N = -N;
+	}
+
 	float3 T = normalize(input.Tan);
 	T = normalize(T - dot(T, N) * N); // N에 직교하도록 조정
 	float3 B = cross(N, T);
@@ -534,7 +542,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float4 baseTex = txDiffuse.Sample(samLinear, input.Tex);
 
     // 알파 임계값 설정 (0.1~0.5 정도 보통 사용)
-    const float alphaCutoff = 0.3f;
+    const float alphaCutoff = 0.5f;
 
     // 알파가 낮으면 픽셀 폐기
     clip(baseTex.a - alphaCutoff);

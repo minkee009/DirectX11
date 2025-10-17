@@ -126,7 +126,29 @@ void MyEngine::AssimpConverter::Release()
     s_importer.reset();
 }
 
-std::unique_ptr<MyEngine::FBXSceneGraph> MyEngine::AssimpConverter::LoadSceneGraphFromFile(std::string filePath)
+//std::unique_ptr<MyEngine::FBXSceneGraph> MyEngine::AssimpConverter::LoadSceneGraphFromFile(std::string filePath)
+//{
+//    Material::InitBlinnPhongShaders(s_pDevice);
+//
+//    const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
+//
+//    if (!pScene) {
+//        throw std::runtime_error("fbx load error! :: check fbx file");
+//    }
+//
+//    auto pSceneGraph = std::make_unique<FBXSceneGraph>();
+//
+//    ProcessNode(pSceneGraph->m_meshes, pSceneGraph->m_matIdxes, pScene->mRootNode, pScene);
+//
+//    for (UINT i = 0; i < pScene->mNumMaterials; i++)
+//    {
+//        pSceneGraph->m_materials.push_back(ProcessMaterial(pScene->mMaterials[i]));
+//    }
+//
+//    return pSceneGraph;
+//}
+
+std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticMeshRendererFromFile(std::string filePath)
 {
     Material::InitBlinnPhongShaders(s_pDevice);
 
@@ -136,34 +158,36 @@ std::unique_ptr<MyEngine::FBXSceneGraph> MyEngine::AssimpConverter::LoadSceneGra
         throw std::runtime_error("fbx load error! :: check fbx file");
     }
 
-    auto pSceneGraph = std::make_unique<FBXSceneGraph>();
+    auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
+    StaticMesh sMesh;
 
-    ProcessNode(pSceneGraph->m_meshes, pSceneGraph->m_matIdxes, pScene->mRootNode, pScene);
+    std::vector<Mesh> meshes;
+    std::vector<UINT> indices;
+
+    ProcessNode(meshes, indices, pScene->mRootNode, pScene);
+    sMesh.SetSubMesh(std::move(meshes));
+    sMesh.SetMatIdx(std::move(indices));
+    pStaticMeshRenderer->SetMesh(std::move(sMesh));
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pSceneGraph->m_materials.push_back(ProcessMaterial(pScene->mMaterials[i]));
+        pStaticMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i]));
     }
 
-    return pSceneGraph;
+    return pStaticMeshRenderer;
 }
 
-std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticRendererFromFile(std::string filePath)
-{
-    return std::unique_ptr<StaticMeshRenderer>();
-}
-
-void MyEngine::FBXSceneGraph::Draw(ID3D11DeviceContext* context)
-{
-    UINT stride = sizeof(VertexType);
-    UINT offset = 0;
-
-    //Material::BindDefaultShaders(context);
-    int matCount = 0;
-    for (auto& mesh : m_meshes)
-    {
-        mesh.Bind(context);
-        m_materials[m_matIdxes[matCount++]].Bind(context);
-        context->DrawIndexed(static_cast<UINT>(mesh.indices.size()), 0, 0);
-    }
-}
+//void MyEngine::FBXSceneGraph::Draw(ID3D11DeviceContext* context)
+//{
+//    UINT stride = sizeof(VertexType);
+//    UINT offset = 0;
+//
+//    //Material::BindDefaultShaders(context);
+//    int matCount = 0;
+//    for (auto& mesh : m_meshes)
+//    {
+//        mesh.Bind(context);
+//        m_materials[m_matIdxes[matCount++]].Bind(context);
+//        context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
+//    }
+//}

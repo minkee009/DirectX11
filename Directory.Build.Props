@@ -41,6 +41,11 @@
     <PostBuildEvent>
       <Command>
         xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\debug\bin\assimp-vc143-mtd.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\debug\bin\kubazip.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\debug\bin\minizip.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\debug\bin\poly2tri.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\debug\bin\pugixml.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\debug\bin\zlibd1.dll" "$(OutDir)"
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -66,6 +71,11 @@
     <PostBuildEvent>
       <Command>
         xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\assimp-vc143-mt.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\kubazip.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\minizip.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\poly2tri.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\pugixml.dll" "$(OutDir)"
+		xcopy /Y /D "$(VcpkgRoot)\installed\$(TripletDynamic)\bin\zlibd1.dll" "$(OutDir)"
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
