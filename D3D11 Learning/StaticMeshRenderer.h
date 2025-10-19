@@ -2,6 +2,16 @@
 #include <memory>
 #include "StaticMesh.h"
 
+namespace DebugStatusUI
+{
+	class StaticMeshRenderer
+	{
+	public:
+		static bool limitDrawOption;
+		static int meshNum;
+	};
+}
+
 namespace MyEngine
 {
 	class StaticMeshRenderer

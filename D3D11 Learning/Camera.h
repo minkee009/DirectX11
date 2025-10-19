@@ -45,7 +45,7 @@ namespace MyEngine
 
 		inline void SetFOV(float value) { m_fov = value; MarkProjectionMatrixDirty(); }
 		inline void SetNearPlane(float value) { m_near = value; MarkProjectionMatrixDirty(); }
-		inline void SetFarPlane(float value) { m_far = value; MarkProjectionMatrixDirty(); }
+		inline void SetFarPlane(float value) { m_far = m_near + 0.01f > value ? m_near + 0.01f : value; MarkProjectionMatrixDirty(); }
 		inline void SetAspectRatio(float value) { m_aspect = value; MarkProjectionMatrixDirty(); }
 		inline void SetAspectRatio(float width, float height) { m_aspect = width / height; MarkProjectionMatrixDirty(); }
 

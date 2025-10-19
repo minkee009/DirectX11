@@ -319,7 +319,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     auto obj3 = m_sceneObjects[2].get();
     obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
-    obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
+    obj3->SetLocalScale(7,7,7);
 
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));

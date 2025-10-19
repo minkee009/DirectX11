@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx11.h>
+#include "StaticMeshRenderer.h"
 #include "Time.h"
 
 
@@ -93,43 +94,43 @@ void MyEngine::MyImGui::Update()
     ImGui::Separator();
 
     ImGui::Text(u8"위치");
-    ImGui::Text("  X : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
-    ImGui::Text("  Y : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
-    ImGui::Text("  Z : %f", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
+    ImGui::Text("  X : %.3g", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().x);
+    ImGui::Text("  Y : %.3g", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().y);
+    ImGui::Text("  Z : %.3g", m_d3dContext->m_pCamera->GetTransform()->GetLocalPosition().z);
 
     Vector3 euler = m_d3dContext->m_pCamera->GetTransform()->GetLocalRotation().ToEuler();
 
     ImGui::Text(u8"회전");
-    ImGui::Text("  X : %f", XMConvertToDegrees(euler.x));
-    ImGui::Text("  Y : %f", XMConvertToDegrees(euler.y));
-    ImGui::Text("  z : %f", XMConvertToDegrees(euler.z));
+    ImGui::Text("  X : %.3g", XMConvertToDegrees(euler.x));
+    ImGui::Text("  Y : %.3g", XMConvertToDegrees(euler.y));
+    ImGui::Text("  z : %.2f", XMConvertToDegrees(euler.z));
 
     ImGui::Separator();
 
     constexpr float defFov = 75.0f;
     static float fov = defFov;
     ImGui::Text(u8"시야각");
-    ImGui::SliderFloat("##FOV", &fov, 60.0f, 120.0f);
+    ImGui::SliderFloat("##FOV", &fov, 60.0f, 120.0f, "%g");
     m_d3dContext->m_pCamera->SetFOV(fov);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화")) {
         fov = defFov;
     }
 
-    constexpr float defNearPlane = 0.001f;
-    static float nearPlane = 0.001f;
+    constexpr float defNearPlane = 0.3f;
+    static float nearPlane = 0.3f;
     ImGui::Text("Near Plane");
-    ImGui::SliderFloat("##Near", &nearPlane, 0.001f, 25.0f);
+    ImGui::SliderFloat("##Near", &nearPlane, 0.01f, 500.0f, "%g");
     m_d3dContext->m_pCamera->SetNearPlane(nearPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##2")) {
         nearPlane = defNearPlane;
     }
 
-    constexpr float defFarPlane = 50.0f;
-    static float farPlane = 50.0f;
+    constexpr float defFarPlane = 1000.0f;
+    static float farPlane = 1000.0f;
     ImGui::Text("Far Plane");
-    ImGui::SliderFloat("##Far", &farPlane, 0.01f, 50.0f);
+    ImGui::SliderFloat("##Far", &farPlane, nearPlane + 0.01f, 1000.0f,"%g");
     m_d3dContext->m_pCamera->SetFarPlane(farPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##3")) {
@@ -300,8 +301,14 @@ void MyEngine::MyImGui::Update()
     ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, 426 + 50); // 윈도우 안에서의 좌표
     ImGui::SetCursorPos(pos);
     ImGui::Text("%d", m_d3dContext->m_shininess);
-    
+   
 
+    ImGui::End();
+
+    ImGui::Begin(u8"렌더러 상태");
+
+    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::StaticMeshRenderer::limitDrawOption);
+    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::StaticMeshRenderer::meshNum);
     ImGui::End();
 }
 

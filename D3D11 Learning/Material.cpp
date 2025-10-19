@@ -532,10 +532,10 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float lightDist = isPointLight ? attenuation : 1.0f;
     
-    float diff = max(dot(N, L), 0.0);
+    float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
-	diff = lutMap.Sample(samLinear, float2(diff * 0.5f + 0.5f ,0.5f)).r;
+	diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;
     float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
@@ -544,7 +544,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float specTex = lerp(1.0f, specularMap.Sample(samLinear, input.Tex).r,(textureFlags & 2) != 0);
     float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- ÀÌ°É ¾²¸é shininess < 32 ¿¡¼­ ¾ÆÆ¼ÆÑÆ®°¡ »ç¶óÁü..!!! 
     
-	//spec = smoothstep(0.005, 0.01f, spec); <- Ä«Å÷·»´õ¸µ¿ë ½ºÆåÅ§·¯
+	//spec = smoothstep(0.01, 0.02f, spec); // <- Ä«Å÷·»´õ¸µ¿ë ½ºÆåÅ§·¯
 	float4 specular = specularStr * specTex * spec * vLightColor * lightDist;
     
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
