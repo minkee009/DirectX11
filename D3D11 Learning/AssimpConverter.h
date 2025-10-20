@@ -5,6 +5,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "RigidMeshRenderer.h"
 #include "StaticMeshRenderer.h"
 
 namespace MyEngine
@@ -30,12 +31,12 @@ namespace MyEngine
 
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
 		static Mesh ProcessMesh(std::vector<Mesh>& meshes, aiMesh* pMesh, const aiScene* pScene);
-		static Material ProcessMaterial(aiMaterial* pMat);
+		static Material ProcessMaterial(aiScene* pScene, aiMaterial* pMat);
 
 	public:
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
-		//static std::unique_ptr<FBXSceneGraph> LoadSceneGraphFromFile(std::string filePath);
+		static std::unique_ptr<RigidMeshRenderer> LoadRigidMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<StaticMeshRenderer> LoadStaticMeshRendererFromFile(std::string filePath);
 	};
 

@@ -202,10 +202,10 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 			context->PSSetSamplers(tex.slot, 1, m_pSampler.GetAddressOf());
 	}
 
-	if (m_textures.empty())
-	{
-		BindDefaultShaders(context);
-	}
+	//if (m_textures.empty())
+	//{
+	//	BindDefaultShaders(context);
+	//}
 }
 
 ComPtr<ID3D11VertexShader> MyEngine::Material::s_pDefaultVertexShader = nullptr;
@@ -550,7 +550,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
 
     // 알파 클리핑용 디퓨즈 샘플링
-    float4 baseTex = txDiffuse.Sample(samLinear, input.Tex);
+    float4 baseTex = lerp(float4(1, 1, 1, 1), txDiffuse.Sample(samLinear, input.Tex),(textureFlags & 1) != 0);
 
     // 알파 임계값 설정 (0.1~0.5 정도 보통 사용)
     const float alphaCutoff = 0.5f;

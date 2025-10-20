@@ -156,6 +156,7 @@
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
+    <ClInclude Include="RigidMeshRenderer.h" />
     <ClInclude Include="StaticMesh.h" />
     <ClInclude Include="StaticMeshRenderer.h" />
     <ClInclude Include="Time.h" />
