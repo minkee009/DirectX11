@@ -120,7 +120,7 @@ void MyEngine::MyImGui::Update()
     constexpr float defNearPlane = 0.3f;
     static float nearPlane = 0.3f;
     ImGui::Text("Near Plane");
-    ImGui::SliderFloat("##Near", &nearPlane, 0.01f, 500.0f, "%g");
+    ImGui::DragFloat("##Near", &nearPlane, 0.01f, 0.01f, 500.0f, "%g");
     m_d3dContext->m_pCamera->SetNearPlane(nearPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##2")) {
@@ -130,7 +130,7 @@ void MyEngine::MyImGui::Update()
     constexpr float defFarPlane = 1000.0f;
     static float farPlane = 1000.0f;
     ImGui::Text("Far Plane");
-    ImGui::SliderFloat("##Far", &farPlane, nearPlane + 0.01f, 1000.0f,"%g");
+    ImGui::DragFloat("##Far", &farPlane, 0.01f, nearPlane + 0.01f, 1000.0f,"%g");
     m_d3dContext->m_pCamera->SetFarPlane(farPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##3")) {

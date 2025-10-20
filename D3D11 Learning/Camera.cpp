@@ -144,6 +144,8 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
         targetMovement.Normalize();
     }
 
+    if (kb.LeftShift) targetMovement *= 3.0f;
+
     movement = Vector3::Lerp(movement, targetMovement, 6.0f * deltaTime);
 
     Vector3 currentPos = m_pTransform->GetLocalPosition();
