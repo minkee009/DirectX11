@@ -54,7 +54,7 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(std::vector<Mesh>& meshes,
     return Mesh(vertices, indices, s_pDevice);
 }
 
-MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat)
+MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiScene* pScene, aiMaterial* pMat)
 {
     Material mat{ { pMat->GetName().C_Str()} };
 
