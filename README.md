@@ -3,12 +3,14 @@
 
 ## 의존성
 - 빌드 파이프라인
+
 | Tool      | License     | Link |
 |-----------|-------------|------|
 | vcpkg     | MIT         |
 [Github](https://github.com/microsoft/vcpkg) |
 
 - 내부 프로젝트
+
 | Library      | License     | Link |
 |-------------|------------|------|
 | ImGui       | MIT        | [GitHub](https://github.com/ocornut/imgui) |
