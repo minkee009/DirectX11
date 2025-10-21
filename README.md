@@ -6,8 +6,7 @@
 
 | Tool      | License     | Link |
 |-----------|-------------|------|
-| vcpkg     | MIT         |
-[Github](https://github.com/microsoft/vcpkg) |
+| vcpkg     | MIT |[Github](https://github.com/microsoft/vcpkg) |
 
 - 내부 프로젝트
 
