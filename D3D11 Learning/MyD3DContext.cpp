@@ -306,23 +306,23 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(3.0f, 0.0f, 5.0f);
     obj1->SetLocalScale(0.08f, 0.08f, 0.08f);
 
-    auto obj2 = m_sceneObjects[1].get();
-    obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
-    obj2->SetLocalScale(5.0f, 5.0f, 5.0f);
+    //auto obj2 = m_sceneObjects[1].get();
+    //obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
+    //obj2->SetLocalScale(5.0f, 5.0f, 5.0f);
 
-    auto obj3 = m_sceneObjects[2].get();
-    obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
-    obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
+    //auto obj3 = m_sceneObjects[2].get();
+    //obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
+    //obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
+    //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
     return true;

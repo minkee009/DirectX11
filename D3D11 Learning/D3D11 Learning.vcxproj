@@ -143,6 +143,7 @@
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
+    <ClCompile Include="RigidMeshRenderer.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
     <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="Time.cpp" />

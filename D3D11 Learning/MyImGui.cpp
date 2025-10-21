@@ -165,10 +165,7 @@ void MyEngine::MyImGui::Update()
         objIdxChanged = true;
     }
 
-  
-
     auto obj = m_d3dContext->m_sceneObjects[objIdx].get();
-    constexpr Vector3 defPos = { 0,0,0 };
     auto obj_pos = obj->GetLocalPosition();
 
     ImGui::Text(u8"오브젝트 월드 위치");
@@ -305,11 +302,10 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
-    ImGui::Begin(u8"렌더러 상태");
-
-    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::StaticMeshRenderer::limitDrawOption);
-    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::StaticMeshRenderer::meshNum);
-    ImGui::End();
+    //ImGui::Begin(u8"렌더러 상태");
+    //ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::StaticMeshRenderer::limitDrawOption);
+    //ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::StaticMeshRenderer::meshNum);
+    //ImGui::End();
 }
 
 void MyEngine::MyImGui::Render()

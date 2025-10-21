@@ -58,18 +58,10 @@ namespace MyEngine
 
 	class Material
 	{
-	private:
+	private:	
+		std::string m_name = "";
 		UINT m_textureFlags = 0; // 각 TextureType에 해당하는 bitmask
 		ComPtr<ID3D11Buffer> m_materialCB; // 상수버퍼
-
-		static ComPtr<ID3D11VertexShader> s_pDefaultVertexShader;
-		static ComPtr<ID3D11PixelShader>  s_pDefaultPixelShader;
-		static ComPtr<ID3DBlob> s_pDefaultVSBlob;
-
-		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader;
-		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongPixelShader;
-		static ComPtr<ID3DBlob> s_pBlinnPhongVSBlob;
-
 		ComPtr<ID3D11VertexShader> m_pVertexShader;
 		ComPtr<ID3D11PixelShader>  m_pPixelShader;
 		ComPtr<ID3DBlob> m_pVSBlob;
@@ -77,14 +69,21 @@ namespace MyEngine
 
 		std::vector<TextureBinding> m_textures;
 
-		const std::string m_name;
-		
 		bool m_useZWrite = true;
 		bool m_useAlphaBlend = false;
 		bool m_useBackFaceCulling = true;
 
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
+		
+		static ComPtr<ID3D11VertexShader> s_pDefaultVertexShader;
+		static ComPtr<ID3D11PixelShader>  s_pDefaultPixelShader;
+		static ComPtr<ID3DBlob> s_pDefaultVSBlob;
+
+		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader;
+		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongPixelShader;
+		static ComPtr<ID3DBlob> s_pBlinnPhongVSBlob;
 	public:
+		Material() = default;
 		Material(const std::string& name);
 
 		void Bind(ID3D11DeviceContext* context);
@@ -100,8 +99,7 @@ namespace MyEngine
 		inline ID3DBlob* GetVSBlob() const { return m_pVSBlob.Get(); }
 		inline ID3D11VertexShader* GetVertexShader() const { return m_pVertexShader.Get(); }
 		inline ID3D11PixelShader* GetPixelShader() const { return m_pPixelShader.Get(); }
-
-		const std::string& GetName() const { return m_name; }
+		inline const std::string& GetName() const { return m_name; }
 
 		//기본 셰이더 (분홍색)
 		static void InitDefaultShaders(ID3D11Device* device);

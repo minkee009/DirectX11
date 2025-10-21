@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include "StaticMesh.h"
+#include "Material.h"
 
 namespace DebugStatusUI
 {

@@ -161,6 +161,11 @@ bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, Tex
 	return true;
 }
 
+MyEngine::Material::Material(const std::string& name)
+	: m_name(name)
+{
+}
+
 void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 {
 	//상수버퍼 업데이트
@@ -641,10 +646,4 @@ HRESULT MyEngine::Material::CompileShaderFromFile(const WCHAR* szFileName, LPCST
 	if (pErrorBlob) pErrorBlob->Release();
 
 	return S_OK;
-}
-
-MyEngine::Material::Material(const std::string& name)
-	: m_name(name)
-{
-
 }
