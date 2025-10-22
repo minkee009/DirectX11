@@ -186,13 +186,11 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 		if (FAILED(hr))
 			return;
 	}
-	else
-	{
-		MaterialCB cb;
-		cb.textureFlags = m_textureFlags;
-		context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
-		context->PSSetConstantBuffers(1, 1, m_materialCB.GetAddressOf());
-	}
+
+	MaterialCB cb;
+	cb.textureFlags = m_textureFlags;
+	context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
+	context->PSSetConstantBuffers(1, 1, m_materialCB.GetAddressOf());
 
 	if (m_pVertexShader)
 		context->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
@@ -383,6 +381,15 @@ cbuffer ConstantBuffer : register(b0)
     bool isPointLight;
 }
 
+cbuffer BoneBuffer : register(b2)
+{
+	matrix ModelMatricies[128];
+}
+cbuffer BoneBuffer : register(b3)
+{
+	uint boneIdx;
+}
+
 
 struct VS_INPUT
 {
@@ -404,14 +411,15 @@ struct PS_INPUT
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
-    
-    output.Pos = mul(input.Pos, World);
+	matrix tWorld = mul(ModelMatricies[boneIdx], World);
+
+    output.Pos = mul(input.Pos, tWorld);
     output.WorldPos = output.Pos.xyz;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
     
-    output.Norm = normalize(mul(input.Norm, (float3x3) World));
-    output.Tan = normalize(mul(input.Tan, (float3x3) World));
+    output.Norm = normalize(mul(input.Norm, (float3x3) tWorld));
+    output.Tan = normalize(mul(input.Tan, (float3x3) tWorld));
     output.Tex = input.Tex;
     
     return output;

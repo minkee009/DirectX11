@@ -310,8 +310,8 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
-    obj1->SetWorldPosition(3.0f, 0.0f, 5.0f);
-    obj1->SetLocalScale(0.08f, 0.08f, 0.08f);
+    obj1->SetWorldPosition(0, 0, 0);
+    obj1->SetLocalScale(1, 1, 1);
 
     //auto obj2 = m_sceneObjects[1].get();
     //obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
@@ -323,7 +323,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
+    m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
 
     return true;
 }
@@ -756,7 +756,7 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pStaticMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
+        m_pRigidMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
 
         //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
     }
@@ -774,7 +774,7 @@ void MyEngine::MyD3DContext::Render()
         cb.mWorld = XMMatrixTranspose(mLight);
         cb.vOutputColor = m_lightColors[m];
         m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
+        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(),nullptr, 0);
         m_pImmediateContext->PSSetShader(m_pPixelShaderSolid.Get(), nullptr, 0);
         m_pImmediateContext->DrawIndexed(36, 0, 0);
     }
@@ -798,6 +798,7 @@ void MyEngine::MyD3DContext::Present()
 void MyEngine::MyD3DContext::UninitializeScene()
 {
     m_pStaticMeshRenderers.clear();
+    m_pRigidMeshRenderers.clear();
     AssimpConverter::Release();
 
     m_sceneObjects.clear();

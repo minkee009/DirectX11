@@ -18,6 +18,7 @@ namespace MyEngine
 		bool m_isImGuiInit = false;
 		bool m_isWin32BackendInit = false;
 		bool m_isD3D11BackendInit = false;
+		void UpdateInfiniteDrag();
 	public:
 		bool Initialize(MyD3DContext* myContext);
 		void BeginFrame();

@@ -19,16 +19,6 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes,std::vecto
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         meshes.push_back(ProcessMesh(pMesh, pScene));
         matIDX.push_back(pMesh->mMaterialIndex);
-
-        if (pMesh->HasBones())
-        {
-            std::cout << pMesh->mNumBones << std::endl;
-            for (UINT j = 0; j < pMesh->mNumBones; j++)
-            {
-                auto& bone = pMesh->mBones[j];
-                std::cout << bone->mName.C_Str() << std::endl;
-            }
-        }
     }
 
     //자식 노드 처리
@@ -38,7 +28,7 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes,std::vecto
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int currentDepth, std::vector<RigidBone>& bones, std::vector<UINT>& boneIDX, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
@@ -46,22 +36,14 @@ void MyEngine::AssimpConverter::ProcessNode(int currentDepth, std::vector<RigidB
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         meshes.push_back(ProcessMesh(pMesh, pScene));
         matIDX.push_back(pMesh->mMaterialIndex);
-        boneIDX.push_back(static_cast<int>(bones.size()));
-
-        if (pMesh->HasBones())
-        {
-            std::cout << pMesh->mNumBones << std::endl;
-            for (UINT j = 0; j < pMesh->mNumBones; j++)
-            {
-                auto& bone = pMesh->mBones[j];
-                std::cout << bone->mName.C_Str() << std::endl;
-            }
-        }
+        //std::cout << boneIDX.size() << " : " << pMesh->mName.C_Str() << "[ parent : " << (currentDepth - 1) << " ]" << std::endl;
     }
 
     RigidBone bone;
+
     auto& matrix = pNode->mTransformation;
-    bone.parent = currentDepth - 1;
+    //bone.index = static_cast<int>(bones.size());
+    bone.parentIndex = parentIndex;
     bone.local = Matrix(
         matrix.a1, matrix.a2, matrix.a3, matrix.a4,
         matrix.b1, matrix.b2, matrix.b3, matrix.b4,
@@ -71,10 +53,23 @@ void MyEngine::AssimpConverter::ProcessNode(int currentDepth, std::vector<RigidB
 
     bones.emplace_back(bone);
 
+    //std::cout << "=====================================================" << std::endl;
+
+
+    //std::cout << "[Current Node] : " << pNode->mName.C_Str() << std::endl;
+
+    //for (UINT i = 0; i < pNode->mNumChildren; i++)
+    //{
+    //    auto pNodes = pNode->mChildren[i];
+    //    std::cout << "[Child Node] : " << pNodes->mName.C_Str() << std::endl;
+    //}
+
+    int currentDepth = static_cast<int>(bones.size()) - 1;
+
     //자식 노드 처리
     for (UINT i = 0; i < pNode->mNumChildren; i++)
     {
-        ProcessNode(currentDepth + 1, bones, boneIDX, meshes, matIDX, pNode->mChildren[i], pScene);
+        ProcessNode(currentDepth, bones, meshes, matIDX, pNode->mChildren[i], pScene);
     }
 }
 
@@ -93,7 +88,7 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
         vertex.tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
         if (pMesh->mTextureCoords[0])
         {
-            vertex.uv = { (float)pMesh->mTextureCoords[0][i].x, 1.0f - (float)pMesh->mTextureCoords[0][i].y };
+            vertex.uv = { (float)pMesh->mTextureCoords[0][i].x, (float)pMesh->mTextureCoords[0][i].y };
         }
         vertices.push_back(vertex);
     }
@@ -177,12 +172,14 @@ void MyEngine::AssimpConverter::Release()
 std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigidMeshRendererFromFile(std::string filePath)
 {
     //importFlag 세팅
-    s_importFlags = aiProcess_Triangulate |    // vertex 삼각형 으로 출력
-        aiProcess_GenNormals |        // Normal 정보 생성  
-        aiProcess_GenUVCoords |      // 텍스처 좌표 생성
-        aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
-        aiProcess_JoinIdenticalVertices |  // 중복 정점 제거
-        aiProcess_ValidateDataStructure; // 구조 검증
+    s_importFlags =
+        aiProcess_Triangulate |
+        aiProcess_GenNormals |
+        aiProcess_CalcTangentSpace |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_SortByPType |
+        aiProcess_FlipUVs;
+    
 
     Material::InitBlinnPhongShaders(s_pDevice);
 
@@ -196,21 +193,21 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     RigidMesh rMesh;
 
     std::vector<Mesh> meshes;
-    std::vector<UINT> vertIndices;
-    std::vector<UINT> boneIndices;
+    std::vector<UINT> matIndices;
     std::vector<RigidBone> rigidBones;
 
-    ProcessNode(0, rigidBones, boneIndices, meshes,vertIndices, pScene->mRootNode, pScene);
+    ProcessNode(-1, rigidBones, meshes, matIndices, pScene->mRootNode, pScene);
     rMesh.SetSubMesh(std::move(meshes));
-    rMesh.SetMatIdx(std::move(vertIndices));
-    rMesh.SetBoneIdx(std::move(boneIndices));
+    rMesh.SetMatIdx(std::move(matIndices));
+    rMesh.SetBones(std::move(rigidBones));
     pRigidMeshRenderer->SetMesh(std::move(rMesh));
-    pRigidMeshRenderer->SetBone(std::move(rigidBones));
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
         pRigidMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene));
     }
+
+    return pRigidMeshRenderer;
 }
 
 std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticMeshRendererFromFile(std::string filePath)
@@ -223,7 +220,8 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         aiProcess_JoinIdenticalVertices |  // 중복 정점 제거
         aiProcess_ValidateDataStructure | // 구조 검증
 	    //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
-	    aiProcess_PreTransformVertices;  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
+	    aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
+        aiProcess_FlipUVs; 
 
 
     Material::InitBlinnPhongShaders(s_pDevice);

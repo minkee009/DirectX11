@@ -4,11 +4,118 @@
 
 #include <string>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx11.h>
 #include "StaticMeshRenderer.h"
 #include "Time.h"
 
+
+void MyEngine::MyImGui::UpdateInfiniteDrag()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    static ImVec2 lastMousePosBeforeWarp = ImVec2(-1, 1);
+
+    // 드래그 중이 아니면 리셋
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    {
+        lastMousePosBeforeWarp = ImVec2(-1, -1);
+        return;
+    }
+
+    // 현재 윈도우 핸들 가져오기
+    HWND hwnd = GetActiveWindow(); // 또는 메인 윈도우 핸들 저장해두기
+    if (!hwnd) return;
+
+    // 현재 마우스 위치 (스크린 좌표)
+    POINT screenPos;
+    GetCursorPos(&screenPos);
+
+    // 윈도우 클라이언트 영역 정보
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+    POINT clientOrigin = { 0, 0 };
+    ClientToScreen(hwnd, &clientOrigin);
+
+    int clientW = clientRect.right - clientRect.left;
+    int clientH = clientRect.bottom - clientRect.top;
+
+    // 클라이언트 영역 기준으로 변환
+    int localX = screenPos.x - clientOrigin.x;
+    int localY = screenPos.y - clientOrigin.y;
+
+    // 워프 직전 델타 저장
+    ImVec2 currentDelta = io.MouseDelta;
+
+    // 경계 체크 및 워프 (여유 공간 10px)
+    const int margin = 10;
+    bool wrapped = false;
+    POINT newScreenPos = screenPos;
+
+    if (localX <= margin)
+    {
+        newScreenPos.x = clientOrigin.x + clientW - margin - 1;
+        wrapped = true;
+    }
+    else if (localX >= clientW - margin)
+    {
+        newScreenPos.x = clientOrigin.x + margin + 1;
+        wrapped = true;
+    }
+
+    if (localY <= margin)
+    {
+        newScreenPos.y = clientOrigin.y + clientH - margin - 1;
+        wrapped = true;
+    }
+    else if (localY >= clientH - margin)
+    {
+        newScreenPos.y = clientOrigin.y + margin + 1;
+        wrapped = true;
+    }
+
+    if (wrapped)
+    {
+        // 워프 직전 위치 저장
+        lastMousePosBeforeWarp = io.MousePos;
+
+        // 커서 워프
+        SetCursorPos(newScreenPos.x, newScreenPos.y);
+
+        // ImGui에게 새 위치 알리기 (클라이언트 좌표로)
+        io.MousePos = ImVec2(
+            (float)(newScreenPos.x - clientOrigin.x),
+            (float)(newScreenPos.y - clientOrigin.y)
+        );
+
+        // 중요: Delta는 유지! 워프는 화면상 위치만 바꿀 뿐
+        // 실제 마우스 이동량은 그대로 전달되어야 함
+        io.MouseDelta = currentDelta;
+
+        // WantSetMousePos로 ImGui에게 위치 변경 알림
+        io.WantSetMousePos = true;
+    }
+    else if (lastMousePosBeforeWarp.x >= 0)
+    {
+        // 워프 직후 첫 프레임
+        // 이때 Delta가 비정상적으로 클 수 있으므로 보정
+        ImVec2 expectedDelta = ImVec2(
+            io.MousePos.x - lastMousePosBeforeWarp.x,
+            io.MousePos.y - lastMousePosBeforeWarp.y
+        );
+
+        // Delta가 비정상적으로 크면 (화면 반대편으로 점프) 무시
+        float deltaLen = sqrtf(expectedDelta.x * expectedDelta.x +
+            expectedDelta.y * expectedDelta.y);
+        if (deltaLen > 100.0f) // threshold
+        {
+            io.MouseDelta = ImVec2(0, 0);
+        }
+
+        lastMousePosBeforeWarp = ImVec2(-1, -1);
+    }
+}
 
 bool MyEngine::MyImGui::Initialize(MyD3DContext* myContext)
 {
@@ -121,6 +228,11 @@ void MyEngine::MyImGui::Update()
     static float nearPlane = 0.3f;
     ImGui::Text("Near Plane");
     ImGui::DragFloat("##Near", &nearPlane, 0.01f, 0.01f, 500.0f, "%g");
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
+ 
     m_d3dContext->m_pCamera->SetNearPlane(nearPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##2")) {
@@ -131,6 +243,10 @@ void MyEngine::MyImGui::Update()
     static float farPlane = 1000.0f;
     ImGui::Text("Far Plane");
     ImGui::DragFloat("##Far", &farPlane, 0.01f, nearPlane + 0.01f, 1000.0f,"%g");
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
     m_d3dContext->m_pCamera->SetFarPlane(farPlane);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기화##3")) {
@@ -173,6 +289,10 @@ void MyEngine::MyImGui::Update()
     {
         obj->SetLocalPosition(obj_pos);
     }
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
     if (ImGui::IsItemDeactivatedAfterEdit())
     {
         obj->SetLocalPosition(obj_pos);
@@ -198,6 +318,10 @@ void MyEngine::MyImGui::Update()
     {
         obj->SetLocalEulerRotation(obj1_rot);
     }
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
     if (ImGui::IsItemDeactivatedAfterEdit())
     {
         obj->SetLocalEulerRotation(obj1_rot);
@@ -213,6 +337,10 @@ void MyEngine::MyImGui::Update()
     ImGui::Text(u8"빛");
 
     ImGui::ColorEdit3("##Light1Color", &m_d3dContext->m_lightColors[0].x);
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##3")) {
         m_d3dContext->m_lightColors[0] = { 1,1,1,1 };
@@ -221,7 +349,11 @@ void MyEngine::MyImGui::Update()
     constexpr Vector3 light1_defEulerRot = { 0,0,0 };
     static Vector3 light1_rot = { 0,0,0 };
     ImGui::DragFloat3("##Light1Dir", &light1_rot.x, 0.1f);
-    auto light1_angleRot = Vector3{ XMConvertToRadians(light1_rot.x),XMConvertToRadians(light1_rot.z) ,XMConvertToRadians(light1_rot.y) };
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
+    auto light1_angleRot = Vector3{ XMConvertToRadians(light1_rot.x),XMConvertToRadians(light1_rot.y) ,XMConvertToRadians(light1_rot.z) };
     auto light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_angleRot.y, light1_angleRot.x, light1_angleRot.z));
     m_d3dContext->m_lightDirs[0] = { light1_dir.x, light1_dir.y, light1_dir.z, 1 };
     ImGui::SameLine();
@@ -237,6 +369,7 @@ void MyEngine::MyImGui::Update()
     if (ImGui::Button(u8"초기값##5")) {
         m_d3dContext->m_lightDistance = 5.0f;
     }
+    ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
 
     //cb.diffuseStr = m_diffuseStrength;
     //cb.specularStr = m_specularStrength;
@@ -244,6 +377,10 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Text(u8"환경광(ambient) : 색");
     ImGui::ColorEdit3("##AmbientColor", &m_d3dContext->m_ambientColor.x);
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##6")) {
         m_d3dContext->m_ambientColor = { 1,1,1,1 };
@@ -272,6 +409,7 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Text(u8"광택지수(shininess)");
     static int shininessLevel = 8; //1~12
+    ImVec2 shininessUIPos = ImGui::GetCursorPos();
     ImGui::SliderInt("##shininess", &shininessLevel, 1, 12,"");
     m_d3dContext->m_shininess = pow(2, shininessLevel);
     ImGui::SameLine();
@@ -286,26 +424,29 @@ void MyEngine::MyImGui::Update()
     if (ImGui::Button(u8"초기값##11")) {
         m_d3dContext->m_reflectionFactor = 0.0f;
     }
-
-    ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
-
+    
     std::string toStringStext = std::to_string(m_d3dContext->m_shininess);
     const char* stext = toStringStext.c_str();
     auto textSize = ImGui::CalcTextSize(stext);
 
-
     // 별도의 숫자 표시 (항상 맨 마지막에)
-    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, 426 + 50); // 윈도우 안에서의 좌표
+    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, shininessUIPos.y + 3); // 윈도우 안에서의 좌표
     ImGui::SetCursorPos(pos);
     ImGui::Text("%d", m_d3dContext->m_shininess);
-   
 
     ImGui::End();
 
-    //ImGui::Begin(u8"렌더러 상태");
-    //ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::StaticMeshRenderer::limitDrawOption);
-    //ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::StaticMeshRenderer::meshNum);
-    //ImGui::End();
+    ImGui::SetNextWindowPos(ImVec2(1024 - 225, 5), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(220, 86), ImGuiCond_Once);
+
+    ImGui::Begin(u8"렌더러 상태");
+    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::StaticMeshRenderer::limitDrawOption);
+    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::StaticMeshRenderer::meshNum);
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
+    ImGui::End();
 }
 
 void MyEngine::MyImGui::Render()

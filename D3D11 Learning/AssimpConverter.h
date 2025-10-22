@@ -30,7 +30,7 @@ namespace MyEngine
 		static ID3D11DeviceContext* s_pContext;
 
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
-		static void ProcessNode(int currentDepth, std::vector<RigidBone>& bones, std::vector<UINT>& boneIDX, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
+		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
 		static Mesh ProcessMesh(aiMesh* pMesh, const aiScene* pScene);
 		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene);
 

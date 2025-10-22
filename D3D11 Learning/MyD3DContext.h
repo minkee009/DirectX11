@@ -82,6 +82,7 @@ namespace MyEngine {
 
 		//Scene 관련 변수
 		std::vector<std::unique_ptr<StaticMeshRenderer>> m_pStaticMeshRenderers;
+		std::vector<std::unique_ptr<RigidMeshRenderer>> m_pRigidMeshRenderers;
 
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
