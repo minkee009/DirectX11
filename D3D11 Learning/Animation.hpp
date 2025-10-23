@@ -1,4 +1,6 @@
+#pragma once
 #include <vector>
+#include <algorithm>
 #include "directxtk/SimpleMath.h"
 
 using namespace DirectX::SimpleMath;
@@ -88,7 +90,7 @@ namespace MyEngine
 		Quaternion q0 = k0.value;
 		Quaternion q1 = k1.value;
 
-		return Quaternion::Slerp(q0, q1, t);
+		return Quaternion::Slerp(q0, q1, static_cast<float>(t));
 	}
 
 	struct AnimationClip
