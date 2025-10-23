@@ -1,9 +1,11 @@
+#include <algorithm>
+
 #include "RigidMeshRenderer.h"
 #include "StaticMeshRenderer.h"
 
 void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
-	if (!m_boneMatCB)
+	if (!m_boneMatrixCB)
 	{
 		//상수버퍼 만들어주기
 		D3D11_BUFFER_DESC cbDesc;
@@ -16,12 +18,12 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		ID3D11Device* pDevice;
 		context->GetDevice(&pDevice);
 
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatCB.GetAddressOf());
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatrixCB.GetAddressOf());
 		if (FAILED(hr))
 			return;
 	}
 
-	if (!m_boneMatIdxCB)
+	if (!m_boneMatrixIdxCB)
 	{
 		//상수버퍼 만들어주기
 		D3D11_BUFFER_DESC cbDesc;
@@ -34,7 +36,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		ID3D11Device* pDevice;
 		context->GetDevice(&pDevice);
 
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatIdxCB.GetAddressOf());
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatrixIdxCB.GetAddressOf());
 		if (FAILED(hr))
 			return;
 	}
@@ -60,8 +62,8 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 
 		cb1.matricies[i] = bone.model;
 	}
-	context->UpdateSubresource(m_boneMatCB.Get(), 0, nullptr, &cb1, 0, 0);
-	context->VSSetConstantBuffers(2, 1, m_boneMatCB.GetAddressOf());
+	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, &cb1, 0, 0);
+	context->VSSetConstantBuffers(2, 1, m_boneMatrixCB.GetAddressOf());
 
 	UINT stride = sizeof(VertexType);
 	UINT offset = 0;
@@ -74,8 +76,8 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		mesh.Bind(context);
 		cb2.index = meshCount + 1;
 
-		context->UpdateSubresource(m_boneMatIdxCB.Get(), 0, nullptr, &cb2, 0, 0);
-		context->VSSetConstantBuffers(3, 1, m_boneMatIdxCB.GetAddressOf());
+		context->UpdateSubresource(m_boneMatrixIdxCB.Get(), 0, nullptr, &cb2, 0, 0);
+		context->VSSetConstantBuffers(3, 1, m_boneMatrixIdxCB.GetAddressOf());
 
 		auto& materialIndices = m_rigidMesh.GetMaterialIndices();
 		m_materials[materialIndices[meshCount++]].Bind(context);
@@ -88,3 +90,8 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
 	}
 }
+
+void MyEngine::RigidMeshRenderer::Play()
+{
+}
+

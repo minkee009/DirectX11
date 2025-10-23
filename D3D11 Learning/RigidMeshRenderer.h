@@ -3,11 +3,25 @@
 #include "StaticMesh.h"
 #include "Material.h"
 #include "directxtk/SimpleMath.h"
-
-using namespace SimpleMath;
+#include "Animation.hpp"
 
 namespace MyEngine
 {
+	//단일 클립 재생기
+	//class AnimationController
+	//{
+	//private:
+	//	AnimationClip m_clip;
+	//	double m_time;
+	//	double m_speed;
+	//public:
+	//	inline void SetClip(AnimationClip&& clip) { m_clip = std::move(clip); }
+	//	void SetSpeed(double speed);
+	//	void Play();
+	//};
+
+
+	//======= RigidMesh =======//
 	struct BoneMatCB
 	{
 		Matrix matricies[128];
@@ -16,7 +30,7 @@ namespace MyEngine
 	struct BoneMatIdxCB
 	{
 		UINT index = 0;
-		float padding[3];
+		float padding[3] = { 0, };
 	};
 
 	struct RigidBone
@@ -41,12 +55,22 @@ namespace MyEngine
 	private:
 		RigidMesh m_rigidMesh;
 		std::vector<Material> m_materials;
-		// Bind -> 애니메이션 상수버퍼를 올려줌 ( matrix[128],matIdx )
-		ComPtr<ID3D11Buffer> m_boneMatCB;
-		ComPtr<ID3D11Buffer> m_boneMatIdxCB;
+		ComPtr<ID3D11Buffer> m_boneMatrixCB;
+		ComPtr<ID3D11Buffer> m_boneMatrixIdxCB;
 	public:
 		inline void SetMesh(RigidMesh&& mesh) { m_rigidMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
 		void Draw(ID3D11DeviceContext* context);
+
+		// ====== 애니메이션 처리 ====== //
+	private:
+		std::vector<AnimationClip> m_boneAnimClips;
+		double m_time;
+		double m_speed;
+	public:
+		inline void SetClip(std::vector<AnimationClip>&& clips) { m_boneAnimClips = std::move(clips); }
+
+		void Play();
+		inline void SetSpeed(double speed) { m_speed = speed; }
 	};
 }

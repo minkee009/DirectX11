@@ -311,7 +311,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, 0);
-    obj1->SetLocalScale(1, 1, 1);
+    obj1->SetLocalScale(0.072f, 0.072f, 0.072f);
 
     //auto obj2 = m_sceneObjects[1].get();
     //obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
@@ -323,7 +323,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
-    m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
     return true;
 }
