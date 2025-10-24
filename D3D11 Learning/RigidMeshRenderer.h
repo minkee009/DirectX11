@@ -8,20 +8,6 @@
 
 namespace MyEngine
 {
-	//단일 클립 재생기
-	//class AnimationController
-	//{
-	//private:
-	//	AnimationClip m_clip;
-	//	double m_time;
-	//	double m_speed;
-	//public:
-	//	inline void SetClip(AnimationClip&& clip) { m_clip = std::move(clip); }
-	//	void SetSpeed(double speed);
-	//	void Play();
-	//};
-
-
 	//======= RigidMesh =======//
 	struct BoneMatCB
 	{
