@@ -117,7 +117,7 @@ namespace MyEngine {
 		FLOAT m_specularStrength = 1.0f;
 		UINT m_shininess = 256;
 
-		FLOAT m_reflectionFactor = 0.0f;
+		FLOAT m_reflectionFactor = 0.6f;
 		bool m_isPointLight = false;
 
 		UINT m_vertexCount = 0;

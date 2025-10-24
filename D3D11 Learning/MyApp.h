@@ -15,8 +15,8 @@ namespace MyEngine
 		Time* m_pTime = nullptr;
 		HINSTANCE m_hInst;
 		HWND m_hWnd;
-		int m_width = 1024;
-		int m_height = 768;
+		int m_width = 1600;
+		int m_height = 900;
 
 		std::unique_ptr<DirectX::Keyboard> m_keyboard;
 		std::unique_ptr<DirectX::Mouse> m_mouse;

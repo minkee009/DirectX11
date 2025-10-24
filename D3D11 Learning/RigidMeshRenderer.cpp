@@ -95,7 +95,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 
 void MyEngine::RigidMeshRenderer::MatrixUpdate()
 {
-	if (m_boneAnimations.empty())
+	if (m_boneAnimations.empty() || !m_playing)
 		return;
 
 	auto& anim = m_boneAnimations[m_animationIdx];
@@ -130,5 +130,11 @@ void MyEngine::RigidMeshRenderer::MatrixUpdate()
 
 void MyEngine::RigidMeshRenderer::Play()
 {
+	m_playing = true;
+}
+
+void MyEngine::RigidMeshRenderer::Pause()
+{
+	m_playing = false;
 }
 

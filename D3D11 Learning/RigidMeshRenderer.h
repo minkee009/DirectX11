@@ -76,7 +76,13 @@ namespace MyEngine
 		inline void SetAnimations(std::vector<std::unordered_map<UINT, AnimationClip>>&& animations) { m_boneAnimations = std::move(animations); }
 
 		void Play();
+		void Pause();
+
+		inline void SetTime(double time) { m_time = time; }
 		inline void SetSpeed(double speed) { m_speed = speed; }
 		inline void SetAnimationIndex(UINT index) { m_animationIdx = index; }
+
+		inline double GetDuration() const { if (m_boneAnimations.empty()) return 0.0; else return m_boneAnimations[m_animationIdx].begin()->second.duration; }
+		inline double GetTime() const { return m_time; }
 	};
 }

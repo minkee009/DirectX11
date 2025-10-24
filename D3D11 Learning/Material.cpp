@@ -104,6 +104,7 @@ bool MyEngine::Material::InitSampler(ID3D11SamplerState* pSampler)
 	}
 
 	m_pSampler = pSampler;
+	return true;
 }
 
 bool MyEngine::Material::InitTexture(const std::string& name, TextureType type, UINT slot, ID3D11ShaderResourceView* textureView)
@@ -548,7 +549,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
-	diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;
+	//diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;
     float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
