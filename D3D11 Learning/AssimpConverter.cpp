@@ -28,7 +28,7 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes,std::vecto
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
@@ -42,7 +42,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     RigidBone bone;
 
     auto& matrix = pNode->mTransformation;
-    //bone.index = static_cast<int>(bones.size());
+    bone.index = static_cast<int>(bones.size());
     bone.parentIndex = parentIndex;
     bone.local = Matrix(
         matrix.a1, matrix.a2, matrix.a3, matrix.a4,
@@ -52,24 +52,12 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     );
 
     bones.emplace_back(bone);
-
-    //std::cout << "=====================================================" << std::endl;
-
-
-    //std::cout << "[Current Node] : " << pNode->mName.C_Str() << std::endl;
-
-    //for (UINT i = 0; i < pNode->mNumChildren; i++)
-    //{
-    //    auto pNodes = pNode->mChildren[i];
-    //    std::cout << "[Child Node] : " << pNodes->mName.C_Str() << std::endl;
-    //}
-
-    int currentDepth = static_cast<int>(bones.size()) - 1;
+    nodeNameToIndexMap.insert({ pNode->mName.C_Str(),bone.index });
 
     //자식 노드 처리
     for (UINT i = 0; i < pNode->mNumChildren; i++)
     {
-        ProcessNode(currentDepth, bones, meshes, matIDX, pNode->mChildren[i], pScene);
+        ProcessNode(bone.index, bones, meshes, matIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap);
     }
 }
 
@@ -196,11 +184,118 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     std::vector<UINT> matIndices;
     std::vector<RigidBone> rigidBones;
 
-    ProcessNode(-1, rigidBones, meshes, matIndices, pScene->mRootNode, pScene);
+    std::unordered_map <std::string, UINT> nodeNameToIndex;
+
+    ProcessNode(-1, rigidBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex);
     rMesh.SetSubMesh(std::move(meshes));
     rMesh.SetMatIdx(std::move(matIndices));
     rMesh.SetBones(std::move(rigidBones));
     pRigidMeshRenderer->SetMesh(std::move(rMesh));
+
+
+    if (pScene->HasAnimations())
+    {
+        std::vector<std::unordered_map<UINT, AnimationClip>> boneAnimations;
+        boneAnimations.resize(pScene->mNumAnimations);
+
+        for (UINT i = 0; i < pScene->mNumAnimations; i++)
+        {
+            auto& animation = pScene->mAnimations[i];
+            std::cout << animation->mName.C_Str() << std::endl;
+            for (UINT j = 0; j < animation->mNumChannels; j++)
+            {
+                auto& animNode = animation->mChannels[j];
+
+                std::cout << "    ->" << animNode->mNodeName.C_Str() << std::endl;
+
+                if (nodeNameToIndex.find({ animNode->mNodeName.C_Str() }) != nodeNameToIndex.end())
+                    std::cout << "    nameMatching!" << std::endl;
+
+                auto currentNodeIdx = nodeNameToIndex[{ animNode->mNodeName.C_Str() }];
+                auto& currentAnimationClip = boneAnimations[i][currentNodeIdx];
+                currentAnimationClip.frameRate = animation->mTicksPerSecond;
+                if (animation->mTicksPerSecond != 0.0)
+                    currentAnimationClip.duration = static_cast<float>(animation->mDuration / animation->mTicksPerSecond);
+                else
+                    currentAnimationClip.duration = static_cast<float>(animation->mDuration);
+
+                std::cout << "        # posKeys : " << animNode->mNumPositionKeys << std::endl;
+                for (UINT k = 0; k < animNode->mNumPositionKeys; k++)
+                {
+                    const auto& posKey = animNode->mPositionKeys[k];
+                    currentAnimationClip.pos.AddKeyframe(
+                        posKey.mTime, 
+                        Vector3
+                        { 
+                            static_cast<float>(posKey.mValue.x),
+                            static_cast<float>(posKey.mValue.y),
+                            static_cast<float>(posKey.mValue.z) 
+                        }
+                    );
+
+                    std::cout << "        [pos] - { "
+                        << posKey.mValue.x
+                        << ", "
+                        << posKey.mValue.y
+                        << ", "
+                        << posKey.mValue.z
+                        << "} " << std::endl;
+                }
+                std::cout << "    ==============================" << std::endl;
+                std::cout << "        # rotKeys : " << animNode->mNumRotationKeys << std::endl;
+                for (UINT k = 0; k < animNode->mNumRotationKeys; k++)
+                {
+                    const auto& rotKey = animNode->mRotationKeys[k];
+                    currentAnimationClip.rot.AddKeyframe(
+                        rotKey.mTime,
+                        Quaternion
+                        {
+                            static_cast<float>(rotKey.mValue.x),
+                            static_cast<float>(rotKey.mValue.y),
+                            static_cast<float>(rotKey.mValue.z),
+                            static_cast<float>(rotKey.mValue.w)
+                        }
+                    );
+
+                    std::cout << "        [rot] - { "
+                        << animNode->mRotationKeys[k].mValue.x
+                        << ", "
+                        << animNode->mRotationKeys[j].mValue.y
+                        << ", "
+                        << animNode->mRotationKeys[j].mValue.z 
+                        << ", "
+                        << animNode->mRotationKeys[j].mValue.w
+                        << "} " << std::endl;
+                }
+                std::cout << "    ==============================" << std::endl;
+                std::cout << "        # scaleKeys : " << animNode->mNumScalingKeys << std::endl;
+                for (UINT k = 0; k < animNode->mNumScalingKeys; k++)
+                {
+                    const auto& scaleKey = animNode->mScalingKeys[k];
+                    currentAnimationClip.scale.AddKeyframe(
+                        scaleKey.mTime,
+                        Vector3
+                        {
+                            static_cast<float>(scaleKey.mValue.x),
+                            static_cast<float>(scaleKey.mValue.y),
+                            static_cast<float>(scaleKey.mValue.z)
+                        }
+                    );
+
+                    std::cout << "        [scale] - { "
+                        << animNode->mScalingKeys[k].mValue.x
+                        << ", "
+                        << animNode->mScalingKeys[k].mValue.y
+                        << ", "
+                        << animNode->mScalingKeys[k].mValue.z
+                        << "} " << std::endl;
+                }
+            }
+        }
+
+        pRigidMeshRenderer->SetAnimations(std::move(boneAnimations));
+    }
+
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {

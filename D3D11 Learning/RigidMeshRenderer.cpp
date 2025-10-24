@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <iostream>
 
 #include "RigidMeshRenderer.h"
 #include "StaticMeshRenderer.h"
+#include "Time.h"
 
 void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
@@ -42,7 +44,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	}
 
 	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
-
+	MatrixUpdate();
 	BoneMatCB cb1;
 	auto& bones = m_rigidMesh.GetBones();
 
@@ -88,6 +90,41 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 			continue;
 
 		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
+	}
+}
+
+void MyEngine::RigidMeshRenderer::MatrixUpdate()
+{
+	if (m_boneAnimations.empty())
+		return;
+
+	auto& anim = m_boneAnimations[m_animationIdx];
+	auto& bones = m_rigidMesh.GetBones();
+	auto& duration = anim.begin()->second.duration;
+
+	m_time += Time::instance->GetDeltaTime() * m_speed;
+	m_time = std::fmod(m_time, duration);
+
+	for (auto& pair : anim)
+	{
+		auto& index = pair.first;
+		auto& clip = pair.second;
+		auto& bone = bones[index];
+
+		auto actualTime = m_time * clip.frameRate;
+
+		Vector3 currentPos = clip.pos.Evaluate(actualTime);
+		Quaternion currentRot = clip.rot.Evaluate(actualTime);
+		Vector3 currentScale = clip.scale.Evaluate(actualTime);
+
+		Matrix S = Matrix::CreateScale(currentScale);
+
+		Matrix R = Matrix::CreateFromQuaternion(currentRot);
+
+		Matrix T = Matrix::CreateTranslation(currentPos);
+
+		bone.local = S * R * T;
+		bone.local = bone.local.Transpose();
 	}
 }
 

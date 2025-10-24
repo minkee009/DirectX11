@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <map>
 #include "StaticMesh.h"
 #include "Material.h"
 #include "directxtk/SimpleMath.h"
@@ -38,6 +39,7 @@ namespace MyEngine
 		int index = -1;
 		int parentIndex = -1;
 		Matrix local; //상수 값 - 로드할 때 한번만 연산
+		Matrix local_anim;
 		Matrix model; //프레임당 한번만 연산
 	};
 
@@ -64,13 +66,17 @@ namespace MyEngine
 
 		// ====== 애니메이션 처리 ====== //
 	private:
-		std::vector<AnimationClip> m_boneAnimClips;
-		double m_time;
-		double m_speed;
+		bool m_playing = true;
+		std::vector<std::unordered_map<UINT, AnimationClip>> m_boneAnimations;
+		double m_time = 0;
+		double m_speed = 1.0;
+		UINT m_animationIdx = 0;
+		void MatrixUpdate();
 	public:
-		inline void SetClip(std::vector<AnimationClip>&& clips) { m_boneAnimClips = std::move(clips); }
+		inline void SetAnimations(std::vector<std::unordered_map<UINT, AnimationClip>>&& animations) { m_boneAnimations = std::move(animations); }
 
 		void Play();
 		inline void SetSpeed(double speed) { m_speed = speed; }
+		inline void SetAnimationIndex(UINT index) { m_animationIdx = index; }
 	};
 }

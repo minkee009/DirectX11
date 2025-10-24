@@ -51,7 +51,7 @@ namespace MyEngine
 			double t = (time - k0.time) / (k1.time - k0.time);
 			return k0.value * (1.0 - t) + k1.value * t;
 		}
-		void AddKeyframe(double time, double value)
+		void AddKeyframe(double time, T value)
 		{
 			m_keyframes.push_back({ time, value });
 		}
@@ -100,5 +100,6 @@ namespace MyEngine
 
 		AnimationCurve<Vector3> pos;
 		AnimationCurve<Quaternion> rot;
+		AnimationCurve<Vector3> scale;
 	};
 }
