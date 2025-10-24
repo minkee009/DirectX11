@@ -84,5 +84,6 @@ namespace MyEngine
 
 		inline double GetDuration() const { if (m_boneAnimations.empty()) return 0.0; else return m_boneAnimations[m_animationIdx].begin()->second.duration; }
 		inline double GetTime() const { return m_time; }
+		inline double GetSpeed() const { return m_speed; }
 	};
 }
