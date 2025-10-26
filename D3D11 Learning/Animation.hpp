@@ -23,12 +23,20 @@ namespace MyEngine
 
 		size_t FindKeyframeIndex(double time) const
 		{
-			for (size_t i = 0; i + 1 < m_keyframes.size(); ++i)
-			{
-				if (time >= m_keyframes[i].time && time <= m_keyframes[i + 1].time)
-					return i;
-			}
-			return m_keyframes.size() - 1;
+			if (m_keyframes.empty())
+				return 0;
+
+			auto it = std::upper_bound(
+				m_keyframes.begin(), m_keyframes.end(), time,
+				[](double t, const AnimationKeyFrame<T>& kf) { return t < kf.time; });
+
+			if (it == m_keyframes.begin())
+				return 0;
+
+			if (it == m_keyframes.end())
+				return m_keyframes.size() - 1;
+
+			return static_cast<size_t>(it - m_keyframes.begin() - 1);
 		}
 	public:
 		T Evaluate(double time) const

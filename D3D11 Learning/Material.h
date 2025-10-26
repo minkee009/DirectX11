@@ -3,11 +3,13 @@
 #include <d3d11_1.h>
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
+#include <directxtk/SimpleMath.h>
 #include <string>
 
 #pragma comment(lib, "d3d11.lib")
 
 using namespace DirectX;
+using namespace SimpleMath;
 using namespace Microsoft::WRL;
 
 namespace MyEngine 
@@ -54,6 +56,7 @@ namespace MyEngine
 	{
 		UINT textureFlags; // bit0=Diffuse, bit1=Specular, bit2=Normal, ...
 		float padding[3];  // 16byte align
+		Color baseColor;
 	};
 
 	class Material
@@ -69,6 +72,8 @@ namespace MyEngine
 
 		std::vector<TextureBinding> m_textures;
 
+		Color m_baseColor = { 1,1,1,1 };
+
 		bool m_useZWrite = true;
 		bool m_useAlphaBlend = false;
 		bool m_useBackFaceCulling = true;
@@ -80,6 +85,8 @@ namespace MyEngine
 		static ComPtr<ID3DBlob> s_pDefaultVSBlob;
 
 		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader;
+		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader_useRigidBone;
+		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader_useSkinningBone;
 		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongPixelShader;
 		static ComPtr<ID3DBlob> s_pBlinnPhongVSBlob;
 	public:
@@ -94,12 +101,16 @@ namespace MyEngine
 			D3D11_TEXTURE_ADDRESS_MODE addressMode = D3D11_TEXTURE_ADDRESS_WRAP);
 		bool InitSampler(ID3D11SamplerState* pSampler);
 		bool InitAndConvertTexture(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const std::wstring& path);
+		bool InitAndConvertTextureFromMemory(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const uint8_t* pData,size_t dataSize, const std::wstring& formatExt);
 		bool InitTexture(const std::string& name, TextureType type, UINT slot, ID3D11ShaderResourceView* textureView);
 
 		inline ID3DBlob* GetVSBlob() const { return m_pVSBlob.Get(); }
 		inline ID3D11VertexShader* GetVertexShader() const { return m_pVertexShader.Get(); }
 		inline ID3D11PixelShader* GetPixelShader() const { return m_pPixelShader.Get(); }
 		inline const std::string& GetName() const { return m_name; }
+		inline const Color& GetBaseColor() const { return m_baseColor; }
+
+		inline void SetBaseColor(const Color& baseColor) { m_baseColor = baseColor; }
 
 		//±âº» ¼ÎÀÌ´õ (ºÐÈ«»ö)
 		static void InitDefaultShaders(ID3D11Device* device);
@@ -113,6 +124,8 @@ namespace MyEngine
 		static void InitBlinnPhongShaders(ID3D11Device* device);
 		static void ReleaseBlinnPhongShaders();
 		inline static ID3D11VertexShader* GetBlinnPhongVertexShader() { return s_pBlinnPhongVertexShader.Get(); }
+		inline static ID3D11VertexShader* GetBlinnPhongVertexShader_RigidBone() { return s_pBlinnPhongVertexShader_useRigidBone.Get(); }
+		inline static ID3D11VertexShader* GetBlinnPhongVertexShader_SkinningBone() { return s_pBlinnPhongVertexShader_useSkinningBone.Get(); }
 		inline static ID3D11PixelShader* GetBlinnPhongPixelShader() { return s_pBlinnPhongPixelShader.Get(); }
 		inline static ID3DBlob* GetBlinnPhongVSBlob() { return s_pBlinnPhongVSBlob.Get(); }
 	};

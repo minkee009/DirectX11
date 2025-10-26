@@ -253,6 +253,7 @@ void MyEngine::MyImGui::Update()
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
     static std::vector<Vector3> objDefPoses{};
+    static std::vector<Vector3> objDefScales{};
     static bool objDefIsLoaded = false;
 
     if (!objDefIsLoaded)
@@ -260,6 +261,7 @@ void MyEngine::MyImGui::Update()
         for (auto& sObj : m_d3dContext->m_sceneObjects)
         {
             objDefPoses.push_back(sObj->GetLocalPosition());
+            objDefScales.push_back(sObj->GetLocalScale());
         }
         objDefIsLoaded = true;
     }
@@ -297,18 +299,18 @@ void MyEngine::MyImGui::Update()
 
 
     ImGui::Text(u8"오브젝트 회전 값 (오일러)");
-    constexpr Vector3 obj1_defEulerRot = { 0,0,0 };
-    static Vector3 obj1_rot = obj->GetLocalEulerRotation();
+    constexpr Vector3 obj_defEulerRot = { 0,0,0 };
+    static Vector3 obj_rot = obj->GetLocalEulerRotation();
 
     if (objIdxChanged)
     {
-        obj1_rot = obj->GetLocalEulerRotation();
+        obj_rot = obj->GetLocalEulerRotation();
         objIdxChanged = false;
     }
 
-    if (ImGui::DragFloat3("##obj1_rot", &obj1_rot.x,0.1f))
+    if (ImGui::DragFloat3("##obj1_rot", &obj_rot.x,0.1f))
     {
-        obj->SetLocalEulerRotation(obj1_rot);
+        obj->SetLocalEulerRotation(obj_rot);
     }
     if (ImGui::IsItemActive())
     {
@@ -316,12 +318,40 @@ void MyEngine::MyImGui::Update()
     }
     if (ImGui::IsItemDeactivatedAfterEdit())
     {
-        obj->SetLocalEulerRotation(obj1_rot);
+        obj->SetLocalEulerRotation(obj_rot);
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##2")) {
-        obj1_rot = obj1_defEulerRot;
-        obj->SetLocalEulerRotation(obj1_defEulerRot);
+        obj_rot = obj_defEulerRot;
+        obj->SetLocalEulerRotation(obj_defEulerRot);
+    }
+
+
+    ImGui::Text(u8"오브젝트 스케일 값");
+    static Vector3 obj_scale = obj->GetLocalScale();
+
+    if (objIdxChanged)
+    {
+        obj_scale = obj->GetLocalScale();
+        objIdxChanged = false;
+    }
+
+    if (ImGui::DragFloat3("##obj1_scale", &obj_scale.x, 0.1f))
+    {
+        obj->SetLocalScale(obj_scale);
+    }
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
+    if (ImGui::IsItemDeactivatedAfterEdit())
+    {
+        obj->SetLocalScale(obj_scale);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##14")) {
+        obj_scale = objDefScales[objIdx];
+        obj->SetLocalScale(objDefScales[objIdx]);
     }
 
     ImGui::Separator();
@@ -440,38 +470,38 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::End();
 
-    ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);
+    //ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
+    //ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);
 
-    ImGui::Begin(u8"애니메이션 상태");
+    //ImGui::Begin(u8"애니메이션 상태");
 
-    auto& rigidMeshRenderer = m_d3dContext->m_pRigidMeshRenderers[0];
+    //auto& rigidMeshRenderer = m_d3dContext->m_pRigidMeshRenderers[0];
 
-    float animTime = static_cast<float>(rigidMeshRenderer->GetTime());
-    float duration = static_cast<float>(rigidMeshRenderer->GetDuration());
+    //float animTime = static_cast<float>(rigidMeshRenderer->GetTime());
+    //float duration = static_cast<float>(rigidMeshRenderer->GetDuration());
 
-    ImGui::Text(u8"애니메이션 시간");
+    //ImGui::Text(u8"애니메이션 시간");
 
-    if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
-    {
-        rigidMeshRenderer->SetTime(animTime);
-        rigidMeshRenderer->Pause();
-    }
-    else
-    {
-        rigidMeshRenderer->Play();
-    }
+    //if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
+    //{
+    //    rigidMeshRenderer->SetTime(animTime);
+    //    rigidMeshRenderer->Pause();
+    //}
+    //else
+    //{
+    //    rigidMeshRenderer->Play();
+    //}
 
-    float animSpeed = static_cast<float>(rigidMeshRenderer->GetSpeed());
-    ImGui::Text(u8"애니메이션 속도");
-    ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
-    rigidMeshRenderer->SetSpeed(animSpeed);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##12")) {
-        rigidMeshRenderer->SetSpeed(1.0f);
-    }
+    //float animSpeed = static_cast<float>(rigidMeshRenderer->GetSpeed());
+    //ImGui::Text(u8"애니메이션 속도");
+    //ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
+    //rigidMeshRenderer->SetSpeed(animSpeed);
+    //ImGui::SameLine();
+    //if (ImGui::Button(u8"초기값##12")) {
+    //    rigidMeshRenderer->SetSpeed(1.0f);
+    //}
 
-    ImGui::End();
+    //ImGui::End();
 }
 
 void MyEngine::MyImGui::Render()

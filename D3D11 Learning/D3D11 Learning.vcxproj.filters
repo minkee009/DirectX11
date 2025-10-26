@@ -238,5 +238,8 @@
     <CopyFileToFolders Include="Resources\Models\BoxHuman.fbx">
       <Filter>모델 파일</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Models\SkinningTest.fbx">
+      <Filter>모델 파일</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

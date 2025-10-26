@@ -162,6 +162,54 @@ bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, Tex
 	return true;
 }
 
+bool MyEngine::Material::InitAndConvertTextureFromMemory(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const uint8_t* pData, size_t dataSize, const std::wstring& formatExt)
+{
+	if (!pData || dataSize == 0)
+		return false;
+
+	HRESULT hr = S_OK;
+	DirectX::ScratchImage image;
+
+	if (formatExt == L".dds" || formatExt == L".DDS")
+	{
+		// DDS 포맷은 LoadFromDDSMemory 사용
+		hr = DirectX::LoadFromDDSMemory(pData, dataSize, DirectX::DDS_FLAGS_NONE, nullptr, image);
+	}
+	else // 대부분의 WIC 포맷 (png, jpg, bmp, tiff 등)
+	{
+		// WIC 포맷은 LoadFromWICMemory 사용
+		hr = DirectX::LoadFromWICMemory(pData, dataSize, DirectX::WIC_FLAGS_NONE, nullptr, image);
+	}
+
+	if (FAILED(hr))
+	{
+		// 로딩 실패
+		return false;
+	}
+
+	// D3D11 Device 가져오기
+	ComPtr<ID3D11Device> device;
+	context->GetDevice(device.GetAddressOf());
+
+	// ShaderResourceView 생성
+	ComPtr<ID3D11ShaderResourceView> pSRV;
+	hr = DirectX::CreateShaderResourceView(
+		device.Get(),
+		image.GetImages(),
+		image.GetImageCount(),
+		image.GetMetadata(),
+		pSRV.GetAddressOf());
+
+	if (FAILED(hr))
+		return false;
+
+	// 엔진 구조에 저장
+	m_textureFlags |= static_cast<UINT>(type);
+	m_textures.push_back(TextureBinding{ type, name, slot, pSRV });
+
+	return true;
+}
+
 MyEngine::Material::Material(const std::string& name)
 	: m_name(name)
 {
@@ -190,6 +238,7 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 
 	MaterialCB cb;
 	cb.textureFlags = m_textureFlags;
+	cb.baseColor = m_baseColor;
 	context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
 	context->PSSetConstantBuffers(1, 1, m_materialCB.GetAddressOf());
 
@@ -217,6 +266,8 @@ ComPtr<ID3D11PixelShader> MyEngine::Material::s_pDefaultPixelShader = nullptr;
 ComPtr<ID3DBlob> MyEngine::Material::s_pDefaultVSBlob = nullptr;
 
 ComPtr<ID3D11VertexShader> MyEngine::Material::s_pBlinnPhongVertexShader = nullptr;
+ComPtr<ID3D11VertexShader> MyEngine::Material::s_pBlinnPhongVertexShader_useRigidBone = nullptr;
+ComPtr<ID3D11VertexShader> MyEngine::Material::s_pBlinnPhongVertexShader_useSkinningBone = nullptr;
 ComPtr<ID3D11PixelShader> MyEngine::Material::s_pBlinnPhongPixelShader = nullptr;
 ComPtr<ID3DBlob> MyEngine::Material::s_pBlinnPhongVSBlob = nullptr;
 
@@ -368,18 +419,86 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
-    float3 CameraPos;
-    float3 vLightPos;
-    float4 vLightDir;
-    float4 vLightColor;
-    float4 vOutputColor;
-    float4 vAmbientColor;
-    float ambientStr;
-    float diffuseStr;
-    float specularStr;
-    uint shininess;
-    float reflectionFactor;
-    bool isPointLight;
+}
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT) 0;
+
+    output.Pos = mul(input.Pos, World);
+    output.WorldPos = output.Pos.xyz;
+    output.Pos = mul(output.Pos, View);
+    output.Pos = mul(output.Pos, Projection);
+    
+    output.Norm = normalize(mul(input.Norm, (float3x3) World));
+    output.Tan = normalize(mul(input.Tan, (float3x3) World));
+    output.Tex = input.Tex;
+    
+    return output;
+}
+)";
+
+		ID3DBlob* pVSBlob = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+		HRESULT hr = D3DCompile(vsCode, strlen(vsCode), nullptr, nullptr, nullptr, "VS", "vs_4_0",
+			D3DCOMPILE_ENABLE_STRICTNESS, 0, &pVSBlob, &pErrorBlob);
+
+		if (FAILED(hr))
+		{
+			if (pErrorBlob)
+			{
+				const char* errorMsg = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+				OutputDebugStringA("버텍스 셰이더 컴파일 오류:\n");
+				OutputDebugStringA(errorMsg);
+				pErrorBlob->Release();
+			}
+			MessageBox(nullptr,
+				L"블린 퐁 버텍스 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return;
+		}
+
+		if (pErrorBlob)
+			pErrorBlob->Release();
+
+		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(),
+			nullptr, s_pBlinnPhongVertexShader.GetAddressOf());
+
+		if (FAILED(hr))
+		{
+			pVSBlob->Release();
+			MessageBox(nullptr, L"버텍스 셰이더 생성 실패", L"오류", MB_OK);
+			return;
+		}
+
+		s_pBlinnPhongVSBlob = nullptr;
+		s_pBlinnPhongVSBlob.Attach(pVSBlob);
+	}
+
+	if (!s_pBlinnPhongVertexShader_useRigidBone)
+	{
+		const char* vsCode = R"(
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
 }
 
 cbuffer BoneBuffer : register(b2)
@@ -450,7 +569,7 @@ PS_INPUT VS(VS_INPUT input)
 			pErrorBlob->Release();
 
 		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(),
-			nullptr, s_pBlinnPhongVertexShader.GetAddressOf());
+			nullptr, s_pBlinnPhongVertexShader_useRigidBone.GetAddressOf());
 
 		if (FAILED(hr))
 		{
@@ -458,9 +577,6 @@ PS_INPUT VS(VS_INPUT input)
 			MessageBox(nullptr, L"버텍스 셰이더 생성 실패", L"오류", MB_OK);
 			return;
 		}
-
-		s_pBlinnPhongVSBlob = nullptr;
-		s_pBlinnPhongVSBlob.Attach(pVSBlob);
 	}
 
 	//블린 퐁 픽셀 셰이더
@@ -489,6 +605,7 @@ cbuffer ConstantBuffer : register(b0)
 cbuffer MaterialBuffer : register(b1)
 {
 	uint textureFlags; 
+	float4 baseColor;
 }
 
 Texture2D txDiffuse : register(t0);
@@ -564,7 +681,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
 
     // 알파 클리핑용 디퓨즈 샘플링
-    float4 baseTex = lerp(float4(1, 1, 1, 1), txDiffuse.Sample(samLinear, input.Tex),(textureFlags & 1) != 0);
+    float4 baseTex = lerp(baseColor, txDiffuse.Sample(samLinear, input.Tex),(textureFlags & 1) != 0);
 
     // 알파 임계값 설정 (0.1~0.5 정도 보통 사용)
     const float alphaCutoff = 0.5f;
@@ -618,6 +735,8 @@ float4 PS(PS_INPUT input) : SV_TARGET
 void MyEngine::Material::ReleaseBlinnPhongShaders()
 {
 	s_pBlinnPhongVertexShader = nullptr;
+	s_pBlinnPhongVertexShader_useRigidBone = nullptr;
+	s_pBlinnPhongVertexShader_useSkinningBone = nullptr;
 	s_pBlinnPhongPixelShader = nullptr;
 	s_pBlinnPhongVSBlob = nullptr;
 }

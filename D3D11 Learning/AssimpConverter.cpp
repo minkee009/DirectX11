@@ -91,13 +91,36 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
     return Mesh(vertices, indices, s_pDevice);
 }
 
-MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, const aiScene* pScene)
+MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, const aiScene* pScene, const BoneType& boneType)
 {
     Material mat{ { pMat->GetName().C_Str()} };
 
     mat.InitSampler(s_pDevice);
-    mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader(), Material::GetBlinnPhongVSBlob());
+
+    switch (boneType)
+    {
+    case BoneType::None:
+        mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader(), Material::GetBlinnPhongVSBlob());
+        break;
+    case BoneType::RigidBone:
+        mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader_RigidBone(), Material::GetBlinnPhongVSBlob());
+        break;
+    case BoneType::SkinningBone:
+        mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader_SkinningBone(), Material::GetBlinnPhongVSBlob());
+        break;
+    }
     mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongPixelShader(), nullptr);
+    
+    //색상 불러오기
+    aiColor4D diffuseColor;
+    if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor))
+    {
+        mat.SetBaseColor({ diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a });
+    }
+    else
+    {
+        mat.SetBaseColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+    }
 
     // ---- Texture 매핑 ---- //
     struct TexTypeMap {
@@ -127,17 +150,50 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
             aiString path;
             if (pMat->GetTexture(aiType, i, &path) == AI_SUCCESS)
             {
-                fs::path original_path(path.C_Str());
-                fs::path filename_only = original_path.filename();
-                fs::path final_texPath = base_directory / filename_only;
+                std::string path_str = path.C_Str();
 
-                mat.InitAndConvertTexture(
-                    s_pContext,
-                    myType,
-                    filename_only.string(),
-                    slot,
-                    final_texPath.wstring()
-                );
+                if (path_str.length() > 0 && path_str[0] == '*')
+                {
+                    size_t textureIndex = std::stoul(path_str.substr(1));
+                    if (textureIndex < pScene->mNumTextures)
+                    {
+                        const aiTexture* embeddedTexture = pScene->mTextures[textureIndex];
+
+                        const uint8_t* data = reinterpret_cast<const uint8_t*>(embeddedTexture->pcData);
+                        size_t size = embeddedTexture->mWidth;
+
+                        std::wstring formatExt = L"";
+                        if (embeddedTexture->achFormatHint[0] != '\0')
+                        {
+                            std::string hint(embeddedTexture->achFormatHint);
+                            formatExt = L"." + std::wstring(hint.begin(), hint.end());
+                        }
+
+                        mat.InitAndConvertTextureFromMemory(
+                            s_pContext,
+                            myType,
+                            path_str,
+                            slot,
+                            data,       // 일반화된 포인터
+                            size,       // 일반화된 크기
+                            formatExt   // 일반화된 확장자
+                        );
+                    }
+                }
+                else
+                {
+                    fs::path original_path(path.C_Str());
+                    fs::path filename_only = original_path.filename();
+                    fs::path final_texPath = base_directory / filename_only;
+
+                    mat.InitAndConvertTexture(
+                        s_pContext,
+                        myType,
+                        filename_only.string(),
+                        slot,
+                        final_texPath.wstring()
+                    );
+                }
             }
         }
     }
@@ -299,7 +355,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pRigidMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene));
+        pRigidMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::RigidBone));
     }
 
     return pRigidMeshRenderer;
@@ -340,7 +396,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pStaticMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene));
+        pStaticMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::None));
     }
 
     return pStaticMeshRenderer;

@@ -322,8 +322,9 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
-    m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
+    //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
     return true;
 }
@@ -756,7 +757,7 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pRigidMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
+        m_pStaticMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
 
         //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
     }

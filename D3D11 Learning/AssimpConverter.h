@@ -29,10 +29,12 @@ namespace MyEngine
 		static ID3D11Device* s_pDevice;
 		static ID3D11DeviceContext* s_pContext;
 
+		enum class BoneType { None, RigidBone, SkinningBone };
+
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
 		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap);
 		static Mesh ProcessMesh(aiMesh* pMesh, const aiScene* pScene);
-		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene);
+		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene,const BoneType& boneType);
 
 	public:
 		static void Initialize(ID3D11DeviceContext* context);

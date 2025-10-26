@@ -8,9 +8,12 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
     UINT stride = sizeof(VertexType);
     UINT offset = 0;
 
-    //Material::BindDefaultShaders(context);
     int matCount = 0;
     int drawCount = 0;
+
+    //16바이트 버퍼전송 -> UseBoneMatrix 항목만 업데이트
+    //...코드
+
     for (auto& mesh : m_staticMesh.GetMeshes())
     {
         mesh.Bind(context);
