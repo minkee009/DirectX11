@@ -444,7 +444,7 @@ void MyEngine::MyImGui::Update()
     ImGui::SliderFloat("##reflectionFactor", &m_d3dContext->m_reflectionFactor, 0.0f, 1.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##11")) {
-        m_d3dContext->m_reflectionFactor = 0.6f;
+        m_d3dContext->m_reflectionFactor = 0.3f;
     }
     
     std::string toStringStext = std::to_string(m_d3dContext->m_shininess);
@@ -470,38 +470,38 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::End();
 
-    //ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
-    //ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);
+    ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);
 
-    //ImGui::Begin(u8"애니메이션 상태");
+    ImGui::Begin(u8"애니메이션 상태");
 
-    //auto& rigidMeshRenderer = m_d3dContext->m_pRigidMeshRenderers[0];
+    auto& animationMeshRenderer = m_d3dContext->m_pSkinningMeshRenderers[0];
 
-    //float animTime = static_cast<float>(rigidMeshRenderer->GetTime());
-    //float duration = static_cast<float>(rigidMeshRenderer->GetDuration());
+    float animTime = static_cast<float>(animationMeshRenderer->GetTime());
+    float duration = static_cast<float>(animationMeshRenderer->GetDuration());
 
-    //ImGui::Text(u8"애니메이션 시간");
+    ImGui::Text(u8"애니메이션 시간");
 
-    //if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
-    //{
-    //    rigidMeshRenderer->SetTime(animTime);
-    //    rigidMeshRenderer->Pause();
-    //}
-    //else
-    //{
-    //    rigidMeshRenderer->Play();
-    //}
+    if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
+    {
+        animationMeshRenderer->SetTime(animTime);
+        animationMeshRenderer->Pause();
+    }
+    else
+    {
+        animationMeshRenderer->Play();
+    }
 
-    //float animSpeed = static_cast<float>(rigidMeshRenderer->GetSpeed());
-    //ImGui::Text(u8"애니메이션 속도");
-    //ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
-    //rigidMeshRenderer->SetSpeed(animSpeed);
-    //ImGui::SameLine();
-    //if (ImGui::Button(u8"초기값##12")) {
-    //    rigidMeshRenderer->SetSpeed(1.0f);
-    //}
+    float animSpeed = static_cast<float>(animationMeshRenderer->GetSpeed());
+    ImGui::Text(u8"애니메이션 속도");
+    ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
+    animationMeshRenderer->SetSpeed(animSpeed);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##12")) {
+        animationMeshRenderer->SetSpeed(1.0f);
+    }
 
-    //ImGui::End();
+    ImGui::End();
 }
 
 void MyEngine::MyImGui::Render()

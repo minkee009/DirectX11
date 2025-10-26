@@ -1,6 +1,6 @@
 #include "StaticMeshRenderer.h"
 
-int DebugStatusUI::StaticMeshRenderer::meshNum = 4;
+int DebugStatusUI::StaticMeshRenderer::meshNum = 1;
 bool DebugStatusUI::StaticMeshRenderer::limitDrawOption = false;
 
 void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
@@ -10,9 +10,6 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
 
     int matCount = 0;
     int drawCount = 0;
-
-    //16바이트 버퍼전송 -> UseBoneMatrix 항목만 업데이트
-    //...코드
 
     for (auto& mesh : m_staticMesh.GetMeshes())
     {
