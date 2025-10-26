@@ -282,7 +282,9 @@ struct VS_INPUT
 	float4 Pos : POSITION;       // float4 -> float3
 	float3 Norm : NORMAL;                         
 	float3 Tan : TANGENT;                         
-	float2 Tex : TEXCOORD0;                       
+	float2 Tex : TEXCOORD0;               
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;        
 };                                                
 			                                                   
 struct PS_INPUT                                   
@@ -427,6 +429,8 @@ struct VS_INPUT
     float3 Norm : NORMAL;
     float3 Tan : TANGENT;
     float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
 };
 
 struct PS_INPUT
@@ -517,6 +521,8 @@ struct VS_INPUT
     float3 Norm : NORMAL;
     float3 Tan : TANGENT;
     float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
 };
 
 struct PS_INPUT
@@ -578,6 +584,105 @@ PS_INPUT VS(VS_INPUT input)
 			return;
 		}
 	}
+
+	if (!s_pBlinnPhongVertexShader_useSkinningBone)
+	{
+		const char* vsCode = R"(
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+}
+
+cbuffer BoneBuffer : register(b2)
+{
+	matrix ModelMatricies[256];
+}
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT) 0;
+	
+    matrix skinningMatrix =  {
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f
+    };
+
+    for (int i = 0; i < 4; i++)
+    {
+        skinningMatrix += ModelMatricies[input.BoneIndices[i]] * input.BoneWeights[i];
+    }
+
+	matrix finalWorld = mul(skinningMatrix, World);
+
+    output.Pos = mul(input.Pos, finalWorld);
+    output.WorldPos = output.Pos.xyz;
+    output.Pos = mul(output.Pos, View);
+    output.Pos = mul(output.Pos, Projection);
+    
+    output.Norm = normalize(mul(input.Norm, (float3x3) finalWorld));
+    output.Tan = normalize(mul(input.Tan, (float3x3) finalWorld));
+    output.Tex = input.Tex;
+    
+    return output;
+}
+)";
+
+		ID3DBlob* pVSBlob = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+		HRESULT hr = D3DCompile(vsCode, strlen(vsCode), nullptr, nullptr, nullptr, "VS", "vs_4_0",
+			D3DCOMPILE_ENABLE_STRICTNESS, 0, &pVSBlob, &pErrorBlob);
+
+		if (FAILED(hr))
+		{
+			if (pErrorBlob)
+			{
+				const char* errorMsg = reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer());
+				OutputDebugStringA("버텍스 셰이더 컴파일 오류:\n");
+				OutputDebugStringA(errorMsg);
+				pErrorBlob->Release();
+			}
+			MessageBox(nullptr,
+				L"블린 퐁 버텍스 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+			return;
+		}
+
+		if (pErrorBlob)
+			pErrorBlob->Release();
+
+		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(),
+			nullptr, s_pBlinnPhongVertexShader_useSkinningBone.GetAddressOf());
+
+		if (FAILED(hr))
+		{
+			pVSBlob->Release();
+			MessageBox(nullptr, L"버텍스 셰이더 생성 실패", L"오류", MB_OK);
+			return;
+		}
+	}
+
 
 	//블린 퐁 픽셀 셰이더
 	if (!s_pBlinnPhongPixelShader)

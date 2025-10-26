@@ -7,20 +7,10 @@
 
 #include "RigidMeshRenderer.h"
 #include "StaticMeshRenderer.h"
+#include "SkinningMeshRenderer.h"
 
 namespace MyEngine
 {
-	//class FBXSceneGraph 
-	//{
-	//private:
-	//	friend class AssimpConverter;
-	//	std::vector<Mesh> m_meshes;
-	//	std::vector<UINT> m_matIdxes;
-	//	std::vector<Material> m_materials;
-	//public:
-	//	void Draw(ID3D11DeviceContext* context);
-	//};
-
 	class AssimpConverter
 	{
 	private:
@@ -31,8 +21,15 @@ namespace MyEngine
 
 		enum class BoneType { None, RigidBone, SkinningBone };
 
+		struct CorrectionNode
+		{
+			UINT meshIdx;
+			const aiBone* pBone;
+		};
+
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
-		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap);
+		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap);
+		static void ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap);
 		static Mesh ProcessMesh(aiMesh* pMesh, const aiScene* pScene);
 		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene,const BoneType& boneType);
 
@@ -41,6 +38,7 @@ namespace MyEngine
 		static void Release();
 		static std::unique_ptr<RigidMeshRenderer> LoadRigidMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<StaticMeshRenderer> LoadStaticMeshRendererFromFile(std::string filePath);
+		static std::unique_ptr<SkinningMeshRenderer> LoadSkinningMeshRendererFromFile(std::string filePath);
 	};
 
 }

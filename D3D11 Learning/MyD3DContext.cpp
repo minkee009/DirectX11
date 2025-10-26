@@ -322,7 +322,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
@@ -356,9 +356,11 @@ bool MyEngine::MyD3DContext::InitCube()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONEINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONEWEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     UINT numElements = ARRAYSIZE(layout);
 
@@ -757,7 +759,7 @@ void MyEngine::MyD3DContext::Render()
         m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pStaticMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
+        m_pSkinningMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
 
         //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
     }
@@ -800,6 +802,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
 {
     m_pStaticMeshRenderers.clear();
     m_pRigidMeshRenderers.clear();
+    m_pSkinningMeshRenderers.clear();
     AssimpConverter::Release();
 
     m_sceneObjects.clear();

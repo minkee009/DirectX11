@@ -6,6 +6,8 @@ struct VS_INPUT
     float3 Norm : NORMAL;
     float3 Tan : TANGENT;
     float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
 };
 
 struct PS_INPUT
@@ -20,7 +22,7 @@ struct PS_INPUT
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
-    
+
     output.Pos = mul(input.Pos, World);
     output.WorldPos = output.Pos.xyz;
     output.Pos = mul(output.Pos, View);

@@ -11,6 +11,8 @@ namespace MyEngine
 		Vector3 normal;
 		Vector3 tangent;
 		Vector2 uv;
+		UINT boneIndices[4];
+		float boneWeights[4];
 	};
 }
 

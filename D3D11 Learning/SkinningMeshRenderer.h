@@ -8,47 +8,40 @@
 
 namespace MyEngine
 {
-	//======= RigidMesh =======//
-	struct RigidBoneMatCB
+	//======= Skinning Mesh =======//
+	struct SkinningBoneMatCB
 	{
-		Matrix matricies[128];
-	};
-	
-	struct RigidBoneMatIdxCB
-	{
-		UINT index = 0;
-		float padding[3] = { 0, };
+		Matrix matricies[256];
 	};
 
-	struct RigidBone
+	struct SkinningBone
 	{
 		int index = -1;
 		int parentIndex = -1;
+
+		Matrix offset;  //바인드 역행렬 <- 상수 값
 		Matrix local; //상수 값 - 로드할 때 한번만 연산
 		Matrix model; //프레임당 한번만 연산
 	};
 
-	class RigidMesh : public StaticMesh
+	class SkinningMesh : public StaticMesh
 	{
 	private:
-		std::vector<RigidBone> m_bones;
-		std::vector<UINT> m_boneIndices;
+		std::vector<SkinningBone> m_bones;
 	public:
-		void SetBones(std::vector<RigidBone>&& bones) { m_bones = std::move(bones); }
-		inline std::vector<RigidBone>& GetBones() { return m_bones; }
-		void SetBoneIndices(std::vector<UINT>&& indices) { m_boneIndices = std::move(indices); }
-		inline std::vector<UINT>& GetBoneIndices() { return m_boneIndices; }
+		void SetBones(std::vector<SkinningBone>&& bones) { m_bones = std::move(bones); }
+		inline std::vector<SkinningBone>& GetBones() { return m_bones; }
 	};
 
-	class RigidMeshRenderer
+	class SkinningMeshRenderer
 	{
 	private:
-		RigidMesh m_rigidMesh;
+		SkinningMesh m_skinningMesh;
 		std::vector<Material> m_materials;
 		ComPtr<ID3D11Buffer> m_boneMatrixCB;
-		ComPtr<ID3D11Buffer> m_boneMatrixIdxCB;
+		std::unique_ptr<SkinningBoneMatCB> m_boneMatrixData;
 	public:
-		inline void SetMesh(RigidMesh&& mesh) { m_rigidMesh = std::move(mesh); }
+		inline void SetMesh(SkinningMesh&& mesh) { m_skinningMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
 		void Draw(ID3D11DeviceContext* context);
 

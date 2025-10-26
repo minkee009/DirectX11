@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <iostream>
 
-#include "RigidMeshRenderer.h"
+#include "SkinningMeshRenderer.h"
 #include "StaticMeshRenderer.h"
 #include "Time.h"
 
-void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
+void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
 	if (!m_boneMatrixCB)
 	{
@@ -13,7 +13,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		D3D11_BUFFER_DESC cbDesc;
 		ZeroMemory(&cbDesc, sizeof(cbDesc));
 		cbDesc.Usage = D3D11_USAGE_DEFAULT;
-		cbDesc.ByteWidth = sizeof(RigidBoneMatCB);
+		cbDesc.ByteWidth = sizeof(SkinningBoneMatCB);
 		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbDesc.CPUAccessFlags = 0;
 
@@ -25,33 +25,17 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 			return;
 	}
 
-	if (!m_boneMatrixIdxCB)
-	{
-		//상수버퍼 만들어주기
-		D3D11_BUFFER_DESC cbDesc;
-		ZeroMemory(&cbDesc, sizeof(cbDesc));
-		cbDesc.Usage = D3D11_USAGE_DEFAULT;
-		cbDesc.ByteWidth = sizeof(RigidBoneMatIdxCB);
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = 0;
-
-		ID3D11Device* pDevice;
-		context->GetDevice(&pDevice);
-
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatrixIdxCB.GetAddressOf());
-		if (FAILED(hr))
-			return;
-	}
-
 	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
 	MatrixUpdate();
-	RigidBoneMatCB cb1;
-	auto& bones = m_rigidMesh.GetBones();
+	if(!m_boneMatrixData)
+		m_boneMatrixData = std::make_unique<SkinningBoneMatCB>();
+
+	auto& bones = m_skinningMesh.GetBones();
 
 	for (UINT i = 0; i < bones.size(); i++)
 	{
 		auto& bone = bones[i];
-		
+
 		if (bone.parentIndex != -1)
 		{
 			auto& boneParent = bones[bone.parentIndex];
@@ -62,28 +46,20 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 			bone.model = bone.local;
 		}
 
-		cb1.matricies[i] = bone.model;
+		m_boneMatrixData->matricies[i] = bone.model * bone.offset;
 	}
-	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, &cb1, 0, 0);
+	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, m_boneMatrixData.get(), 0, 0);
 	context->VSSetConstantBuffers(2, 1, m_boneMatrixCB.GetAddressOf());
 
 	UINT stride = sizeof(VertexType);
 	UINT offset = 0;
 
 	int meshCount = 0;
-	auto& boneIndices = m_rigidMesh.GetBoneIndices();
-
-	for (auto& mesh : m_rigidMesh.GetMeshes())
+	for (auto& mesh : m_skinningMesh.GetMeshes())
 	{
-		RigidBoneMatIdxCB cb2;
-
 		mesh.Bind(context);
-		cb2.index = boneIndices[meshCount];
 
-		context->UpdateSubresource(m_boneMatrixIdxCB.Get(), 0, nullptr, &cb2, 0, 0);
-		context->VSSetConstantBuffers(3, 1, m_boneMatrixIdxCB.GetAddressOf());
-
-		auto& materialIndices = m_rigidMesh.GetMaterialIndices();
+		auto& materialIndices = m_skinningMesh.GetMaterialIndices();
 		m_materials[materialIndices[meshCount++]].Bind(context);
 
 		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
@@ -95,13 +71,13 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	}
 }
 
-void MyEngine::RigidMeshRenderer::MatrixUpdate()
+void MyEngine::SkinningMeshRenderer::MatrixUpdate()
 {
 	if (m_boneAnimations.empty() || !m_playing)
 		return;
 
 	auto& anim = m_boneAnimations[m_animationIdx];
-	auto& bones = m_rigidMesh.GetBones();
+	auto& bones = m_skinningMesh.GetBones();
 	auto& duration = anim.begin()->second.duration;
 
 	m_time += Time::instance->GetDeltaTime() * m_speed;
@@ -130,12 +106,12 @@ void MyEngine::RigidMeshRenderer::MatrixUpdate()
 	}
 }
 
-void MyEngine::RigidMeshRenderer::Play()
+void MyEngine::SkinningMeshRenderer::Play()
 {
 	m_playing = true;
 }
 
-void MyEngine::RigidMeshRenderer::Pause()
+void MyEngine::SkinningMeshRenderer::Pause()
 {
 	m_playing = false;
 }

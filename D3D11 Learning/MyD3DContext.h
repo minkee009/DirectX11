@@ -9,6 +9,8 @@
 #include "Camera.h"
 #include "AssimpConverter.h"
 #include "StaticMeshRenderer.h"
+#include "RigidMeshRenderer.h"
+#include "SkinningMeshRenderer.h"
 
 //#ifdef _DEBUG
 #include "MyImGui.h"
@@ -30,6 +32,8 @@ namespace MyEngine {
 		XMFLOAT3 normal;
 		XMFLOAT3 tangent;
 		XMFLOAT2 uv;
+		UINT boneIndices[4];
+		float boneWeights[4];
 	};
 
 	struct MyConstantBuffer {
@@ -83,6 +87,7 @@ namespace MyEngine {
 		//Scene 관련 변수
 		std::vector<std::unique_ptr<StaticMeshRenderer>> m_pStaticMeshRenderers;
 		std::vector<std::unique_ptr<RigidMeshRenderer>> m_pRigidMeshRenderers;
+		std::vector<std::unique_ptr<SkinningMeshRenderer>> m_pSkinningMeshRenderers;
 
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
