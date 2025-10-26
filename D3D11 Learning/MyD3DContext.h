@@ -6,12 +6,15 @@
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
-#include "MeshRenderer.h"
 #include "Camera.h"
+#include "AssimpConverter.h"
+#include "StaticMeshRenderer.h"
+#include "RigidMeshRenderer.h"
+#include "SkinningMeshRenderer.h"
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 #include "MyImGui.h"
-#endif
+//#endif
 
 #pragma comment(lib, "d3d11.lib")
 
@@ -28,8 +31,9 @@ namespace MyEngine {
 		XMFLOAT3 pos;
 		XMFLOAT3 normal;
 		XMFLOAT3 tangent;
-		XMFLOAT3 binormal;
 		XMFLOAT2 uv;
+		UINT boneIndices[4];
+		float boneWeights[4];
 	};
 
 	struct MyConstantBuffer {
@@ -72,15 +76,19 @@ namespace MyEngine {
 
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
-		UINT m_swapChainFlags = 0;
-		UINT m_vSyncInterval = 1;
 
 		ComPtr<ID3D11RasterizerState> m_pDefRasterizerState = nullptr;			//시계방향 컬링 (기본)
 		ComPtr<ID3D11RasterizerState> m_pClockWiseRasterizerState = nullptr;		//반시계방향 컬링 (스카이 박스용)
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
+		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
+		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
+		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
 		//Scene 관련 변수
-		ComPtr<ID3DBlob> m_pDefaultVSBlob = nullptr;
+		std::vector<std::unique_ptr<StaticMeshRenderer>> m_pStaticMeshRenderers;
+		std::vector<std::unique_ptr<RigidMeshRenderer>> m_pRigidMeshRenderers;
+		std::vector<std::unique_ptr<SkinningMeshRenderer>> m_pSkinningMeshRenderers;
+
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;
@@ -101,20 +109,6 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pCubeSpecularMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
-
-
-
-		std::unique_ptr<MeshRenderer> m_pMiyuMeshRenderer;	
-		std::unique_ptr<Material> m_pMiyuMat_Ground;
-		std::unique_ptr<Material> m_pMiyuMat_LBS_Outline_Material;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Body;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Cloth;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Hair;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Hair_LBS_Outline;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Head;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Weapon;
-		std::unique_ptr<Material> m_pMiyuMat_Miyu_Misc;
-		std::unique_ptr<Mesh> m_pMiyuMesh;
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
 
@@ -128,7 +122,7 @@ namespace MyEngine {
 		FLOAT m_specularStrength = 1.0f;
 		UINT m_shininess = 256;
 
-		FLOAT m_reflectionFactor = 0.6f;
+		FLOAT m_reflectionFactor = 0.3f;
 		bool m_isPointLight = false;
 
 		UINT m_vertexCount = 0;
@@ -142,11 +136,14 @@ namespace MyEngine {
 		UINT m_indexCount = 0;
 		UINT m_skyBoxIndexCount = 0;
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 		//GUI용 코드 (디버깅 용)
 		friend class MyImGui;
 		MyImGui m_imgui;
-#endif //_DEBUG
+//#endif //_DEBUG
+
+		bool InitCube();
+		bool InitSkyBox();
 
 		void Clear();
 		void Present();

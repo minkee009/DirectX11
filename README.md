@@ -2,6 +2,13 @@
 - DirectX 11 3D 개발 공부를 위한 깃입니다.
 
 ## 의존성
+- 빌드 파이프라인
+
+| Tool      | License     | Link |
+|-----------|-------------|------|
+| vcpkg     | MIT |[Github](https://github.com/microsoft/vcpkg) |
+
+- 내부 프로젝트
 
 | Library      | License     | Link |
 |-------------|------------|------|

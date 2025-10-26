@@ -98,11 +98,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        sd.BufferCount = 2;
-        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;  
-        sd.Flags = 0; 
-
-        m_swapChainFlags = sd.Flags;
+        sd.BufferCount = 1;
 
         hr = dxgiFactory2->CreateSwapChainForHwnd(m_pd3dDevice.Get(), m_hWnd, &sd, nullptr, nullptr, m_pSwapChain1.GetAddressOf());
         if (SUCCEEDED(hr))
@@ -116,7 +112,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     {
         // DirectX 11.0 시스템인 경우
         DXGI_SWAP_CHAIN_DESC sd = {};
-        sd.BufferCount = 2;
+        sd.BufferCount = 1;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
         sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -127,9 +123,6 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.Windowed = TRUE;
-        sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;  // 레거시 모드
-
-        m_swapChainFlags = sd.Flags;
 
         hr = dxgiFactory->CreateSwapChain(m_pd3dDevice.Get(), &sd, m_pSwapChain.GetAddressOf());
     }
@@ -197,7 +190,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     // 래스터라이저 상태 생성 및 설정
     D3D11_RASTERIZER_DESC rastDesc = {};
     rastDesc.FillMode = D3D11_FILL_SOLID;
-    rastDesc.CullMode = D3D11_CULL_BACK;
+    rastDesc.CullMode = D3D11_CULL_BACK; //양면 드로우 허용
     rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
     rastDesc.DepthBias = 0;
     rastDesc.DepthBiasClamp = 0.0f;
@@ -243,19 +236,100 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    //기본 메터리얼 생성
+    //알파 블렌드 상태 설정
+    D3D11_BLEND_DESC blendDesc = {};
+    blendDesc.RenderTarget[0].BlendEnable = TRUE;
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    m_pd3dDevice->CreateBlendState(&blendDesc, &m_pBlendState);
+
+    //뎁스 스텐실 상태 설정
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+    depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; // 깊이 버퍼 쓰기 활성화
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;      // 깊이가 작을수록 앞에 있음
+    depthStencilDesc.StencilEnable = FALSE;                  // 스텐실은 비활성화
+
+    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pOpaqueState);
+
+    depthStencilDesc = D3D11_DEPTH_STENCIL_DESC{};
+    depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // 깊이 버퍼 쓰기 비활성
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;      // 깊이가 작을수록 앞에 있음
+    depthStencilDesc.StencilEnable = FALSE;                  // 스텐실은 비활성화
+
+    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
+
     Material::InitDefaultShaders(m_pd3dDevice.Get());
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
     // ImGui 초기화
     if (!m_imgui.Initialize(this))
         return false;
-#endif //_DEBUG
+//#endif //_DEBUG
 
     return true;
 }
 
 bool MyEngine::MyD3DContext::InitializeScene()
+{
+    AssimpConverter::Initialize(m_pImmediateContext.Get());
+
+    HRESULT hr = S_OK;
+
+    InitCube();
+    InitSkyBox();
+
+    //상수 버퍼 생성
+    D3D11_BUFFER_DESC cbDesc;
+    ZeroMemory(&cbDesc, sizeof(cbDesc));
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.ByteWidth = sizeof(MyConstantBuffer);
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = 0;
+
+    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    //카메라 생성
+    m_pCamera = std::make_unique<Camera>();
+    m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
+    m_pCamera->GetTransform()->SetWorldEulerRotation(-17.0f, -20.0f, 0.0f);
+    m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
+
+    //오브젝트 생성
+    m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
+
+    auto obj1 = m_sceneObjects[0].get();
+    obj1->SetWorldPosition(0, 0, 0);
+    obj1->SetLocalScale(0.072f, 0.072f, 0.072f);
+
+    //auto obj2 = m_sceneObjects[1].get();
+    //obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
+    //obj2->SetLocalScale(5.0f, 5.0f, 5.0f);
+
+    //auto obj3 = m_sceneObjects[2].get();
+    //obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
+    //obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
+
+    //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
+    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
+
+    return true;
+}
+
+bool MyEngine::MyD3DContext::InitCube()
 {
     HRESULT hr = S_OK;
 
@@ -263,7 +337,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     ID3DBlob* pVSBlob = nullptr;
 
     // === 기본 셰이더 로드 ===
-    hr = CompileShaderFromFile(L"Resources/Shaders/VertexShader.hlsl", "VS", "vs_4_0", &pVSBlob);
+    hr = CompileShaderFromFile(L"Resources/Shaders/testVS.hlsl", "VS", "vs_4_0", &pVSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -278,16 +352,15 @@ bool MyEngine::MyD3DContext::InitializeScene()
         return false;
     }
 
-    m_pDefaultVSBlob = pVSBlob;
-
     //인풋 레이아웃 (셰이더 코드 바인딩) 설정
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONEINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONEWEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     UINT numElements = ARRAYSIZE(layout);
 
@@ -299,7 +372,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
         return false;
 
     ID3DBlob* pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"Resources/Shaders/PixelShader.hlsl", "PS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"Resources/Shaders/testPS.hlsl", "PS", "ps_4_0", &pPSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
@@ -325,90 +398,45 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
-
-    // === 스카이박스 셰이더 로드 ===
-    hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxVS.hlsl", "VS", "vs_4_0", &pVSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"스카이박스 정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pSkyBoxVShader.GetAddressOf());
-    if (FAILED(hr))
-    {
-        pVSBlob->Release();
-        return false;
-    }
-
-    //인풋 레이아웃 (셰이더 코드 바인딩) 설정
-    D3D11_INPUT_ELEMENT_DESC skyBoxlayout[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-    };
-    numElements = ARRAYSIZE(skyBoxlayout);
-
-    //인풋 레이아웃 생성
-    hr = m_pd3dDevice->CreateInputLayout(skyBoxlayout, numElements, pVSBlob->GetBufferPointer(),
-        pVSBlob->GetBufferSize(), m_pSkyBoxInputLayout.GetAddressOf());
-    pVSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
-    pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxPS.hlsl", "PS", "ps_4_0", &pPSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"스카이박스 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pSkyBoxPShader.GetAddressOf());
-    pPSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
     //정점 정의
-    MyVertex vertices[] =
-    {
-        // Top face (Y = 1)
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+	MyVertex vertices[] =
+	{
+		// Top face (Y = 1)
+		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
 
-        // Bottom face (Y = -1)
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+		// Bottom face (Y = -1)
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
 
-        // Left face (X = -1)
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		// Left face (X = -1)
+		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),    XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),   XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),    XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),     XMFLOAT2(0.0f, 0.0f) },
 
-        // Right face (X = 1)
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		// Right face (X = 1)
+		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),   XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),   XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),    XMFLOAT2(1.0f, 0.0f) },
 
-        // Back face (Z = -1)
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		// Back face (Z = -1)
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),   XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),    XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),     XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),    XMFLOAT2(1.0f, 0.0f) },
 
-        // Front face (Z = 1)
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-    };
+		// Front face (Z = 1)
+		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),   XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
+	};
 
     //정점 버퍼 정의
     D3D11_BUFFER_DESC vbDesc = {};
@@ -429,43 +457,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_vertexBufferStride = sizeof(MyVertex);
     m_vertexBufferOffset = 0;
-
-    //스카이박스 정점 정의
-    SkyBoxVertex skyboxVertices[] =
-    {
-        // 상단 (+Y)
-        { XMFLOAT3(-1.0f,  1.0f, -1.0f) }, // 0
-        { XMFLOAT3(1.0f,  1.0f, -1.0f) }, // 1
-        { XMFLOAT3(1.0f,  1.0f,  1.0f) }, // 2
-        { XMFLOAT3(-1.0f,  1.0f,  1.0f) }, // 3
-
-        // 하단 (-Y)
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f) }, // 4
-        { XMFLOAT3(1.0f, -1.0f, -1.0f) }, // 5
-        { XMFLOAT3(1.0f, -1.0f,  1.0f) }, // 6
-        { XMFLOAT3(-1.0f, -1.0f,  1.0f) }, // 7
-    };
-
-    //스카이박스 정점 버퍼 정의
-    vbDesc = {};
-    m_skyBoxVertexCount = ARRAYSIZE(skyboxVertices);
-    vbDesc.ByteWidth = sizeof(SkyBoxVertex) * m_skyBoxVertexCount;
-    vbDesc.CPUAccessFlags = 0;
-    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vbDesc.MiscFlags = 0;
-    vbDesc.Usage = D3D11_USAGE_DEFAULT;
-
-    //스카이박스 정점 버퍼 생성
-    vbData = {};
-    vbData.pSysMem = skyboxVertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
-    hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pSkyBoxVertexBuffer.GetAddressOf());
-
-    if (FAILED(hr))
-        return false;
-
-    m_skyBoxVertexBufferStride = sizeof(SkyBoxVertex);
-    m_skyBoxVertexBufferOffset = 0;
-
 
     //인덱스 정의
     UINT indices[] =
@@ -508,6 +499,122 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    ScratchImage image;
+
+    //텍스쳐 로드
+    //hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
+    hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
+    if (FAILED(hr))
+        return false;
+
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeTextureRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    hr = LoadFromDDSFile(L"Resources/Textures/normal_mapping_normal_map.dds", DDS_FLAGS_NONE, nullptr, image);
+    if (FAILED(hr))
+        return false;
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeNormalMapRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    hr = LoadFromDDSFile(L"Resources/Textures/spec_mapping.dds", DDS_FLAGS_NONE, nullptr, image);
+    if (FAILED(hr))
+        return false;
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeSpecularMapRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    return true;
+}
+bool MyEngine::MyD3DContext::InitSkyBox()
+{
+    HRESULT hr = S_OK;
+    ID3DBlob* pVSBlob = nullptr;
+    ID3DBlob* pPSBlob = nullptr;
+
+    // === 스카이박스 셰이더 로드 ===
+    hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxVS.hlsl", "VS", "vs_4_0", &pVSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"스카이박스 정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pSkyBoxVShader.GetAddressOf());
+    if (FAILED(hr))
+    {
+        pVSBlob->Release();
+        return false;
+    }
+
+    //인풋 레이아웃 (셰이더 코드 바인딩) 설정
+    D3D11_INPUT_ELEMENT_DESC skyBoxlayout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+    };
+    UINT numElements = ARRAYSIZE(skyBoxlayout);
+
+    //인풋 레이아웃 생성
+    hr = m_pd3dDevice->CreateInputLayout(skyBoxlayout, numElements, pVSBlob->GetBufferPointer(),
+        pVSBlob->GetBufferSize(), m_pSkyBoxInputLayout.GetAddressOf());
+    pVSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+    pPSBlob = nullptr;
+    hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxPS.hlsl", "PS", "ps_4_0", &pPSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"스카이박스 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pSkyBoxPShader.GetAddressOf());
+    pPSBlob->Release();
+    if (FAILED(hr))
+        return false;
+
+
+
+    //스카이박스 정점 정의
+    SkyBoxVertex skyboxVertices[] =
+    {
+        // 상단 (+Y)
+        { XMFLOAT3(-1.0f,  1.0f, -1.0f) }, // 0
+        { XMFLOAT3(1.0f,  1.0f, -1.0f) }, // 1
+        { XMFLOAT3(1.0f,  1.0f,  1.0f) }, // 2
+        { XMFLOAT3(-1.0f,  1.0f,  1.0f) }, // 3
+
+        // 하단 (-Y)
+        { XMFLOAT3(-1.0f, -1.0f, -1.0f) }, // 4
+        { XMFLOAT3(1.0f, -1.0f, -1.0f) }, // 5
+        { XMFLOAT3(1.0f, -1.0f,  1.0f) }, // 6
+        { XMFLOAT3(-1.0f, -1.0f,  1.0f) }, // 7
+    };
+
+    //스카이박스 정점 버퍼 정의
+    D3D11_BUFFER_DESC vbDesc = {};
+    m_skyBoxVertexCount = ARRAYSIZE(skyboxVertices);
+    vbDesc.ByteWidth = sizeof(SkyBoxVertex) * m_skyBoxVertexCount;
+    vbDesc.CPUAccessFlags = 0;
+    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vbDesc.MiscFlags = 0;
+    vbDesc.Usage = D3D11_USAGE_DEFAULT;
+
+    //스카이박스 정점 버퍼 생성
+    D3D11_SUBRESOURCE_DATA vbData = {};
+    vbData.pSysMem = skyboxVertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
+    hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pSkyBoxVertexBuffer.GetAddressOf());
+
+    if (FAILED(hr))
+        return false;
+
+    m_skyBoxVertexBufferStride = sizeof(SkyBoxVertex);
+    m_skyBoxVertexBufferOffset = 0;
+
     //인덱스 정의
     UINT skyboxIndices[] =
     {
@@ -537,7 +644,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     };
 
     //스카이박스 인덱스 버퍼 정의
-    ibDesc = {};
+    D3D11_BUFFER_DESC ibDesc;
     m_skyBoxIndexCount = ARRAYSIZE(skyboxIndices);
     ibDesc.Usage = D3D11_USAGE_DEFAULT;
     ibDesc.ByteWidth = sizeof(UINT) * m_skyBoxIndexCount;
@@ -546,7 +653,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     ibDesc.MiscFlags = 0;
 
     //스카이박스 인덱스 버퍼 생성
-    InitData = {};
+    D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = skyboxIndices;
     InitData.SysMemPitch = 0;
     InitData.SysMemSlicePitch = 0;
@@ -555,27 +662,9 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
-    //상수 버퍼 생성
-    D3D11_BUFFER_DESC cbDesc;
-    ZeroMemory(&cbDesc, sizeof(cbDesc));
-    cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    cbDesc.ByteWidth = sizeof(MyConstantBuffer);
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.CPUAccessFlags = 0;
-
-    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return false;
+    //텍스쳐 로드
 
     ScratchImage image;
-
-    //텍스쳐 로드
-    hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
-    if (FAILED(hr))
-        return false;
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeTextureRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
 
     DirectX::TexMetadata metadata;
     hr = LoadFromDDSFile(L"Resources/Textures/cubemap.dds", DDS_FLAGS_NONE, &metadata, image);
@@ -591,116 +680,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
     hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pSkyBoxTextureRV.GetAddressOf());
     if (FAILED(hr))
         return false;
-
-    hr = LoadFromDDSFile(L"Resources/Textures/normal_mapping_normal_map.dds", DDS_FLAGS_NONE, &metadata, image);
-    if (FAILED(hr))
-        return false;
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pCubeNormalMapRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    hr = LoadFromDDSFile(L"Resources/Textures/spec_mapping.dds", DDS_FLAGS_NONE, &metadata, image);
-    if (FAILED(hr))
-        return false;
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pCubeSpecularMapRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    //메쉬 생성
-	m_pMiyuMesh = Mesh::CreateFromFile(m_pd3dDevice.Get(), L"Resources/Models/Miyu_Akey_Rigging.obj");
-
-    //메쉬 랜더러 생성
-	m_pMiyuMeshRenderer = std::make_unique<MeshRenderer>();
-	m_pMiyuMeshRenderer->SetMesh(m_pMiyuMesh.get());
-
-    
-    bool vsload = false;
-    bool psload = false;
-    bool textureload = false;
-
-    //메터리얼 생성
-	m_pMiyuMat_Miyu_Cloth = std::make_unique<Material>(L"Miyu_Cloth");
-    m_pMiyuMat_Miyu_Cloth->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Miyu_Cloth->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Miyu_Cloth->InitTexture(m_pImmediateContext.Get(), L"Cloth.png", 0,L"Resources/Textures/Cloth.png");
-   
-    if(textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Cloth", m_pMiyuMat_Miyu_Cloth.get());
-
-    m_pMiyuMat_Miyu_Hair = std::make_unique<Material>(L"Miyu_Hair");
-    m_pMiyuMat_Miyu_Hair->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Miyu_Hair->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Miyu_Hair->InitTexture(m_pImmediateContext.Get(), L"Hair.png", 0, L"Resources/Textures/Hair.png");
-    
-    if (textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Hair", m_pMiyuMat_Miyu_Hair.get());
-
-    m_pMiyuMat_Miyu_Head = std::make_unique<Material>(L"Miyu_Head");
-    m_pMiyuMat_Miyu_Head->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Miyu_Head->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Miyu_Head->InitTexture(m_pImmediateContext.Get(), L"Character_Face.png", 0, L"Resources/Textures/Character_Face.png");
-
-    if (textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Head", m_pMiyuMat_Miyu_Head.get());
-
-    m_pMiyuMat_Miyu_Body = std::make_unique<Material>(L"Miyu_Body");
-    m_pMiyuMat_Miyu_Body->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Miyu_Body->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Miyu_Body->InitTexture(m_pImmediateContext.Get(), L"Character_Body.png", 0, L"Resources/Textures/Character_Body.png");
-
-    if (textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Body", m_pMiyuMat_Miyu_Body.get());
-
-    m_pMiyuMat_Miyu_Misc = std::make_unique<Material>(L"Miyu_Misc");
-    m_pMiyuMat_Miyu_Misc->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Miyu_Misc->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Miyu_Misc->InitTexture(m_pImmediateContext.Get(), L"Misc.png", 0, L"Resources/Textures/Misc.png");
-
-    if (textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Misc", m_pMiyuMat_Miyu_Misc.get());
-
-    m_pMiyuMat_Miyu_Weapon = std::make_unique<Material>(L"Miyu_Weapon");
-    m_pMiyuMat_Miyu_Weapon->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Miyu_Weapon->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Miyu_Weapon->InitTexture(m_pImmediateContext.Get(), L"Weapon.png", 0, L"Resources/Textures/Weapon.png");
-
-    if (textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Weapon", m_pMiyuMat_Miyu_Weapon.get());
-
-    m_pMiyuMat_Ground = std::make_unique<Material>(L"Ground");
-    m_pMiyuMat_Ground->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    m_pMiyuMat_Ground->InitShader(ShaderType::Pixel, m_pPixelShader.Get());
-    textureload = m_pMiyuMat_Ground->InitTexture(m_pImmediateContext.Get(), L"seafloor.png", 0, L"Resources/Textures/seafloor.dds");
-
-    if (textureload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Ground", m_pMiyuMat_Ground.get());
-
-    m_pMiyuMat_LBS_Outline_Material = std::make_unique<Material>(L"LBS_Outline_Material");
-    m_pMiyuMat_LBS_Outline_Material->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    psload = m_pMiyuMat_LBS_Outline_Material->InitAndCompileShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/OutLinePS.hlsl");
-    
-    if (psload)
-        m_pMiyuMeshRenderer->AddMaterial(L"LBS_Outline_Material", m_pMiyuMat_LBS_Outline_Material.get());
-
-    m_pMiyuMat_Miyu_Hair_LBS_Outline = std::make_unique<Material>(L"Miyu_Hair_(LBS_Outline)");
-    m_pMiyuMat_Miyu_Hair_LBS_Outline->InitShader(ShaderType::Vertex, m_pVertexShader.Get());
-    psload = m_pMiyuMat_Miyu_Hair_LBS_Outline->InitAndCompileShader(m_pd3dDevice.Get(), ShaderType::Pixel, L"Resources/Shaders/OutLinePS.hlsl");
-   
-    if (psload)
-        m_pMiyuMeshRenderer->AddMaterial(L"Miyu_Hair_(LBS_Outline)", m_pMiyuMat_Miyu_Hair_LBS_Outline.get());
-
-    //카메라 생성
-    m_pCamera = std::make_unique<Camera>();
-    m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
-    m_pCamera->GetTransform()->SetWorldEulerRotation(-17.0f, -20.0f, 0.0f);
-    m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
-
-    //오브젝트 생성
-    m_sceneObjects.push_back(std::make_unique<Transform>());
-
-    auto obj1 = m_sceneObjects[0].get();
-    obj1->SetWorldPosition(0.0f, 0.0f, 0.0f);
-    obj1->SetLocalScale(5.0f, 5.0f, 5.0f);
 
     return true;
 }
@@ -719,6 +698,8 @@ void MyEngine::MyD3DContext::Render()
     m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
 
     Clear();
+
+    m_pImmediateContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
     MyConstantBuffer cb;
     cb.mWorld = XMMatrixIdentity();
@@ -739,62 +720,11 @@ void MyEngine::MyD3DContext::Render()
     cb.vAmbientColor = m_ambientColor;
     cb.reflectionFactor = m_reflectionFactor;
 
-    m_pImmediateContext->PSSetShaderResources(0, 1, m_pCubeTextureRV.GetAddressOf());
+    m_pImmediateContext->PSSetShaderResources(5, 1, m_pCubeTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(2, 1, m_pCubeNormalMapRV.GetAddressOf());
     m_pImmediateContext->PSSetShaderResources(3, 1, m_pCubeSpecularMapRV.GetAddressOf());
     m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-
-    for (auto& obj : m_sceneObjects)
-    {
-        //미유 드로우
-        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-        
-        m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-        m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-
-		m_pMiyuMeshRenderer->Draw(m_pImmediateContext.Get());
-
-        // 박스 드로우
-        //cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        //m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-        //m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        //m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
-        //m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-        //m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-        //m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-        //m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
-        //m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-        //m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-
-        //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
-    }
-
-    m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
-    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-    m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-    m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-    m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
-    for (int m = 0; m < 1; m++)
-    {
-        XMMATRIX mLight = XMMatrixTranslationFromVector(m_lightDistance * XMLoadFloat4(&m_lightDirs[m]));
-        XMMATRIX mLightScale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        mLight = mLightScale * mLight;
-
-        // Update the world variable to reflect the current light
-        cb.mWorld = XMMatrixTranspose(mLight);
-        cb.vOutputColor = m_lightColors[m];
-        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-        m_pImmediateContext->PSSetShader(m_pPixelShaderSolid.Get(), nullptr, 0);
-        m_pImmediateContext->DrawIndexed(36, 0, 0);
-    }
 
     //스카이박스 드로우
     m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -811,11 +741,53 @@ void MyEngine::MyD3DContext::Render()
     m_pImmediateContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
     m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
-#ifdef _DEBUG
+
+    int modelIdx = 0;
+    for (auto& obj : m_sceneObjects)
+    {
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
+        //m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+        //m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+            
+        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+        m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+
+        m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+        m_pSkinningMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
+
+        //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+    }
+
+    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+    m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    for (int m = 0; m < 1; m++)
+    {
+        XMMATRIX mLight = XMMatrixTranslationFromVector(m_lightDistance * XMLoadFloat4(&m_lightDirs[m]));
+        XMMATRIX mLightScale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+        mLight = mLightScale * mLight;
+
+        // Update the world variable to reflect the current light
+        cb.mWorld = XMMatrixTranspose(mLight);
+        cb.vOutputColor = m_lightColors[m];
+        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(),nullptr, 0);
+        m_pImmediateContext->PSSetShader(m_pPixelShaderSolid.Get(), nullptr, 0);
+        m_pImmediateContext->DrawIndexed(36, 0, 0);
+    }
+
+
+//#ifdef _DEBUG
     m_imgui.BeginFrame();
     m_imgui.Update();
     m_imgui.Render();
-#endif //_DEBUG
+//#endif //_DEBUG
 
     Present();
 }
@@ -823,11 +795,16 @@ void MyEngine::MyD3DContext::Render()
 
 void MyEngine::MyD3DContext::Present()
 {
-    m_pSwapChain->Present(m_vSyncInterval, 0);
+    m_pSwapChain->Present(0, 0);
 }
 
 void MyEngine::MyD3DContext::UninitializeScene()
 {
+    m_pStaticMeshRenderers.clear();
+    m_pRigidMeshRenderers.clear();
+    m_pSkinningMeshRenderers.clear();
+    AssimpConverter::Release();
+
     m_sceneObjects.clear();
     m_pVertexBuffer = nullptr;
     m_pIndexBuffer = nullptr;
@@ -850,7 +827,6 @@ void MyEngine::MyD3DContext::UninitializeScene()
 MyEngine::MyD3DContext::~MyD3DContext()
 {
     Material::ReleaseDefaultShaders();
-
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 #endif //_DEBUG
@@ -865,6 +841,9 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_hWnd = nullptr;
     m_pDefRasterizerState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
+    m_pBlendState = nullptr;
+    m_pOpaqueState = nullptr;
+    m_pTransparentState = nullptr;
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
@@ -922,11 +901,11 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 
     // 스왑 체인 버퍼 크기 재조정
     HRESULT hr = m_pSwapChain->ResizeBuffers(
-        0,                  // 버퍼 개수
+        1,                  // 버퍼 개수
         width,              // 새로운 너비
         height,             // 새로운 높이
         DXGI_FORMAT_UNKNOWN, // 포맷 유지
-        m_swapChainFlags // 플래그
+        0                   // 플래그
     );
 
     if (FAILED(hr)) {

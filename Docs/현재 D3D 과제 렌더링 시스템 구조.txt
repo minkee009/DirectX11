@@ -1,0 +1,14 @@
+StaticMesh
+ ├─ std::vector<Mesh> meshes
+ ├─ std::vector<int> materialIndices  ← 각 Mesh가 어떤 Material을 쓰는지 인덱스로 저장
+ └─ 이름, AABB 등 메타데이터
+
+Material
+ ├─ 셰이더
+ ├─ 텍스처 (diffuse, normal 등)
+ └─ 샘플러, 이름 등
+
+StaticMeshRenderer
+ ├─ StaticMesh* pMesh
+ ├─ std::vector<Material*> materials  ← 렌더러가 사용할 Material 참조들
+ └─ Draw(context) 등 렌더링 함수

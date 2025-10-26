@@ -1,5 +1,5 @@
 #pragma once
-#ifdef _DEBUG
+//#ifdef _DEBUG
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -18,6 +18,7 @@ namespace MyEngine
 		bool m_isImGuiInit = false;
 		bool m_isWin32BackendInit = false;
 		bool m_isD3D11BackendInit = false;
+		void UpdateInfiniteDrag();
 	public:
 		bool Initialize(MyD3DContext* myContext);
 		void BeginFrame();
@@ -27,4 +28,4 @@ namespace MyEngine
 	};
 }
 
-#endif //_DEBUG
+//#endif //_DEBUG

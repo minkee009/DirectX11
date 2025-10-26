@@ -1,8 +1,7 @@
 #define NOMINMAX
 #include "Camera.h"
-#include "Time.h"
-#include <Keyboard.h>
-#include <Mouse.h>
+#include <DirectXTK/Keyboard.h>
+#include <DirectXTK/Mouse.h>
 
 namespace CameraMathf
 {
@@ -144,6 +143,8 @@ void MyEngine::Camera::InputUpdate(float deltaTime)
     {
         targetMovement.Normalize();
     }
+
+    if (kb.LeftShift) targetMovement *= 3.0f;
 
     movement = Vector3::Lerp(movement, targetMovement, 6.0f * deltaTime);
 

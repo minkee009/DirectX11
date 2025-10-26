@@ -1,5 +1,5 @@
 #pragma once
-#include <SimpleMath.h>
+#include <DirectXTK/SimpleMath.h>
 #include <vector>
 
 using namespace DirectX::SimpleMath;

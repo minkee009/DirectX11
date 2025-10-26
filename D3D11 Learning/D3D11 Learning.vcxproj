@@ -104,11 +104,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)imgui-1.92.2b\backends;$(ProjectDir)imgui-1.92.2b;%(AdditionalIncludeDirectories);$(ProjectDir)DirectXTK\Inc;$(projectDir)DirectXTex\Shaders\Compiled;$(ProjectDir)DirectXTex\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -117,114 +120,56 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;IMGUI_DISABLE;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(ProjectDir)DirectXTK\Inc;$(projectDir)DirectXTex\Shaders\Compiled;$(ProjectDir)DirectXTex\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>DirectXTex.lib;DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="DirectXTex\BC.cpp" />
-    <ClCompile Include="DirectXTex\BC4BC5.cpp" />
-    <ClCompile Include="DirectXTex\BC6HBC7.cpp" />
-    <ClCompile Include="DirectXTex\BCDirectCompute.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexCompress.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexCompressGPU.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexConvert.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexD3D11.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexD3D12.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexDDS.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexFlipRotate.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexHDR.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexImage.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexMipmaps.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexMisc.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexNormalMaps.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexPMAlpha.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexResize.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexTGA.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexUtil.cpp" />
-    <ClCompile Include="DirectXTex\DirectXTexWIC.cpp" />
-    <ClCompile Include="DirectXTK\Src\Keyboard.cpp" />
-    <ClCompile Include="DirectXTK\Src\Mouse.cpp" />
-    <ClCompile Include="DirectXTK\Src\SimpleMath.cpp" />
-    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_dx11.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\backends\imgui_impl_win32.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_demo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_draw.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_tables.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="imgui-1.92.2b\imgui_widgets.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="AssimpConverter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
-    <ClCompile Include="MyImGui.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="MyImGui.cpp" />
+    <ClCompile Include="RigidMeshRenderer.cpp" />
+    <ClCompile Include="SkinningMeshRenderer.cpp" />
+    <ClCompile Include="StaticMesh.cpp" />
+    <ClCompile Include="StaticMeshRenderer.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.hpp" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DebugTextRenderer.h" />
-    <ClInclude Include="DirectXTex\BC.h" />
-    <ClInclude Include="DirectXTex\BCDirectCompute.h" />
-    <ClInclude Include="DirectXTex\DDS.h" />
-    <ClInclude Include="DirectXTex\DirectXTex.h" />
-    <ClInclude Include="DirectXTex\DirectXTexP.h" />
-    <ClInclude Include="DirectXTex\filters.h" />
-    <ClInclude Include="DirectXTex\scoped.h" />
-    <ClInclude Include="DirectXTK\Inc\Keyboard.h" />
-    <ClInclude Include="DirectXTK\Inc\Mouse.h" />
-    <ClInclude Include="DirectXTK\Inc\SimpleMath.h" />
-    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_dx11.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\backends\imgui_impl_win32.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\imconfig.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="imgui-1.92.2b\imgui.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Material.h" />
+    <ClInclude Include="AssimpConverter.h" />
     <ClInclude Include="Mesh.h" />
-    <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
+    <ClInclude Include="RigidMeshRenderer.h" />
+    <ClInclude Include="SkinningMeshRenderer.h" />
+    <ClInclude Include="StaticMesh.h" />
+    <ClInclude Include="StaticMeshRenderer.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="VertexType.h" />
+    <ClInclude Include="Material.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DirectXTex\DirectXTex.inl" />
-    <CopyFileToFolders Include="Resources\Shaders\common_inc.hlsli">
+    <CopyFileToFolders Include="Resources\Shaders\common_inc.fxh">
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
@@ -315,37 +260,100 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Resources\Textures\cubemap.dds">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
     <CopyFileToFolders Include="Resources\Textures\spec_mapping.dds">
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Resources\Shaders\VertexShader.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <FileType>Document</FileType>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemap.dds">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Resources\Shaders\PixelShader.hlsl">
+    <CopyFileToFolders Include="Resources\Textures\bark_0021.jpg">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\DB2X2_L01.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_diffuse.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_glow.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_normal.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\ely-vanguardsoldier-kerwinatienza_specular.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\eyes_diff.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\fire_diff.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\hair_diff.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\misc_diff.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\setCave_diff.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\zelda_diff.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Models\Character.fbx">
       <FileType>Document</FileType>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Models</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Models</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Models\Tree.fbx">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Models</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Models</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Models\zeldaPosed001.fbx">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Models</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Models</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\D3D11_Tutorial\Documents\참고용\Resource\DB2X2_L01_Nor.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Textures\Lut.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
@@ -357,24 +365,24 @@
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Resources\Textures\Character_Body.png">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Character_Face.png">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Cloth.png">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Hair.png">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Misc.png">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Weapon.png">
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
@@ -382,10 +390,30 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="Resources\Shaders\OutLinePS.hlsl">
+    <CopyFileToFolders Include="Resources\Models\Miyu_Akey_Rigging.mtl">
       <FileType>Document</FileType>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Shaders</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Models</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Models</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Textures\Outline.png">
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Models\BoxHuman.fbx">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Models</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Models</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Models\SkinningTest.fbx">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Models</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Models</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

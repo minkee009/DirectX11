@@ -1,0 +1,18 @@
+#pragma once
+#include "Mesh.h"
+
+namespace MyEngine
+{
+	class StaticMesh
+	{
+	private:
+		std::vector<Mesh> m_subMesh;
+		std::vector<UINT> m_matIdx;
+	public:
+		void SetSubMesh(std::vector<Mesh>&& subMesh) { m_subMesh = std::move(subMesh); }
+		void SetMatIdx(std::vector<UINT>&& matIdx) { m_matIdx = std::move(matIdx); }
+
+		inline std::vector<Mesh>& GetMeshes() { return m_subMesh; }
+		inline std::vector<UINT>& GetMaterialIndices() { return m_matIdx; }
+	};
+}

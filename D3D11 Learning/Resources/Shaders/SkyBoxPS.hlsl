@@ -1,4 +1,4 @@
-#include "common_inc.hlsli"
+#include "common_inc.fxh"
 
 TextureCube skyBoxTX : register(t0);
 SamplerState samLinear : register(s0);
