@@ -3,7 +3,7 @@
 int DebugStatusUI::StaticMeshRenderer::meshNum = 1;
 bool DebugStatusUI::StaticMeshRenderer::limitDrawOption = false;
 
-void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
+void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
 {
     UINT stride = sizeof(VertexType);
     UINT offset = 0;
@@ -13,9 +13,18 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
 
     for (auto& mesh : m_staticMesh.GetMeshes())
     {
-        mesh.Bind(context);
+        if(bindMesh)
+            mesh.Bind(context);
         auto& materialIndices = m_staticMesh.GetMaterialIndices();
-        m_materials[materialIndices[matCount++]].Bind(context);
+        auto& mat = m_materials[materialIndices[matCount++]];
+        if (bindMaterial)
+        {
+            mat.Bind(context);
+        }
+        else
+        {
+            context->VSSetShader(mat.GetVertexShader(), nullptr, 0);
+        }
         drawCount++;
      
         if (DebugStatusUI::StaticMeshRenderer::limitDrawOption 

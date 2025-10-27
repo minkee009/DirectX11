@@ -593,6 +593,18 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+	matrix LightViewProjection;
 }
 
 cbuffer BoneModelBuffer : register(b2)
@@ -622,6 +634,7 @@ struct PS_INPUT
     float3 Norm : TEXCOORD1;
     float3 Tan : TEXCOORD2;
     float2 Tex : TEXCOORD3;
+	float4 LightPos : TEXCOORD4;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -646,6 +659,10 @@ PS_INPUT VS(VS_INPUT input)
     output.WorldPos = output.Pos.xyz;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
+
+	// finalWorld 행렬이 적용된 위치를 LightViewProjection으로 변환
+    output.LightPos = mul(input.Pos, finalWorld); // input.Pos (로컬)에 finalWorld 곱한 결과
+    output.LightPos = mul(output.LightPos, LightViewProjection);
     
     output.Norm = normalize(mul(input.Norm, (float3x3) finalWorld));
     output.Tan = normalize(mul(input.Tan, (float3x3) finalWorld));
@@ -709,7 +726,7 @@ cbuffer ConstantBuffer : register(b0)
     float specularStr;
     uint shininess;
     float reflectionFactor;
-    bool isPointLight;
+	matrix LightViewProjection;
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -725,6 +742,8 @@ Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
 Texture2D lutMap : register(t5);
 SamplerState samLinear : register(s0);
+Texture2D shadowMap : register(t6); 
+SamplerComparisonState samShadow : register(s1); // 하드웨어 비교를 위한 샘플러
 
 
 struct PS_INPUT
@@ -734,8 +753,41 @@ struct PS_INPUT
     float3 Norm : TEXCOORD1;
     float3 Tan : TEXCOORD2;
     float2 Tex : TEXCOORD3;
-	bool IsFrontFace : SV_IsFrontFace; 
+	float4 LightPos : TEXCOORD4; 
+	uint  IsFrontFace : SV_IsFrontFace; 
 };
+
+// 그림자 테스트 함수 (0.0: 그림자, 1.0: 밝음)
+float CalculateShadow(float4 LightPos)
+{
+    // 1. Perspective Divide (원근 나누기)
+    // LightPos는 LightViewProjection 행렬이 적용된 후의 좌표 (Homogeneous)
+    float3 projCoords = LightPos.xyz / LightPos.w;
+
+    // 2. 텍스처 좌표계 [0, 1]로 변환
+    float2 texCoords = projCoords.xy * float2(0.5f, -0.5f) + 0.5f; 
+    // DirectX는 Y를 뒤집을 필요가 있을 수 있습니다.
+
+    // 3. 뷰포트 밖의 픽셀은 그림자가 없다고 가정
+    if (texCoords.x < 0.0f || texCoords.x > 1.0f || texCoords.y < 0.0f || texCoords.y > 1.0f)
+    {
+        return 1.0f;
+    }
+
+    // 4. 현재 픽셀의 깊이 (광원 공간 Z 값)
+    float currentDepth = projCoords.z;
+
+    // 5. 섀도우 바이어스(Bias) 적용
+    // 섀도우 아티팩트(Acne) 방지. 작은 상수값을 더해줍니다.
+    currentDepth -= 0.0005f; 
+
+    // 6. 하드웨어 비교 샘플러를 사용하여 그림자 테스트 (PCF 구현 시 여러 번 샘플링)
+    // 샘플러에 따라 다르지만, PCF를 간단히 구현하기 위해 주변 샘플을 고려할 수 있습니다.
+    // 여기서는 가장 간단한 비교를 먼저 가정합니다.
+    float shadowFactor = shadowMap.SampleCmpLevelZero(samShadow, texCoords, currentDepth).r;
+    
+    return shadowFactor;
+}
 
 float4 PS(PS_INPUT input) : SV_TARGET
 {
@@ -762,22 +814,24 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 I = normalize(input.WorldPos - CameraPos.xyz);
     float3 R = reflect(I, N);  //큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
-    float3 L = isPointLight ? normalize(vLightPos.xyz - input.WorldPos) : vLightDir.xyz;
+    float3 L = vLightDir.xyz;
     
     // 조명 위치와 픽셀 위치
     float3 toLight = vLightPos - input.WorldPos;
     float distance = length(toLight);
 
     // 감쇠 계수 (1 / d² 형태)
-    float attenuation = 1.0f / (distance * distance);
+    //float attenuation = 1.0f / (distance * distance);
     
-    float lightDist = isPointLight ? attenuation : 1.0f;
+    float lightDist = 1.0f;
     
+	float shadow = CalculateShadow(input.LightPos); // 그림자 인자 계산
+
     float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
 	//diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;
-    float4 diffuse = diffuseStr * diff * vLightColor * lightDist;
+    float4 diffuse = diffuseStr * diff * vLightColor * lightDist * shadow;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
     float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
@@ -786,7 +840,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
     
 	//spec = smoothstep(0.01, 0.02f, spec); // <- 카툰렌더링용 스펙큘러
-	float4 specular = specularStr * specTex * spec * vLightColor * lightDist;
+	float4 specular = specularStr * specTex * spec * vLightColor * lightDist * shadow;
     
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
 

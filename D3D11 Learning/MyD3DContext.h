@@ -53,8 +53,8 @@ namespace MyEngine {
 		FLOAT specularStr;
 		UINT shininess;
 		FLOAT reflectionFactor;
-		BOOL isPointLight;
-		XMFLOAT2 pad3;
+		XMFLOAT3 pad3;
+		XMMATRIX mlightViewProj;
 	};
 
 	class MyD3DContext {
@@ -67,12 +67,14 @@ namespace MyEngine {
 		//Direct3D 관련 변수
 		ComPtr<ID3D11Device> m_pd3dDevice = nullptr;
 		ComPtr<ID3D11Device1> m_pd3dDevice1 = nullptr;
-		ComPtr<ID3D11DeviceContext> m_pImmediateContext = nullptr;
+		ComPtr<ID3D11DeviceContext> m_pContext = nullptr;
 		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
 		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
 		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView = nullptr;
 		ComPtr<ID3D11Texture2D> m_pDepthStencil = nullptr;
 		ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr;
+
+		D3D11_VIEWPORT m_vp;
 
 		D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
 		D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
@@ -114,6 +116,7 @@ namespace MyEngine {
 
 		XMFLOAT4 m_lightDirs[2] = { {1,0,0,1},{0,1,0,1} };
 		XMFLOAT4 m_lightColors[2] = { {1,1,1,1},{1,0,0,1} };
+		Vector3 m_lightDirEulerAngle = { 0,0,0 };
 		FLOAT m_lightDistance = 5.0f;
 
 		XMFLOAT4 m_ambientColor = { 1,1,1,1 };
@@ -136,6 +139,18 @@ namespace MyEngine {
 		UINT m_indexCount = 0;
 		UINT m_skyBoxIndexCount = 0;
 
+
+		const UINT SHADOW_MAP_SIZE = 2048;
+
+		ComPtr<ID3D11Texture2D> m_pShadowTex;
+		ComPtr<ID3D11ShaderResourceView> m_pShadowSRV;
+		ComPtr<ID3D11DepthStencilView> m_pShadowDSV;
+		D3D11_VIEWPORT m_shadowViewport;
+		ComPtr<ID3D11VertexShader> m_pShadowMapVS;
+		ComPtr<ID3D11SamplerState> m_pShadowSampler;
+
+		const float SHADOW_MAP_HEIGHT = 20.0f;
+
 //#ifdef _DEBUG
 		//GUI용 코드 (디버깅 용)
 		friend class MyImGui;
@@ -144,6 +159,7 @@ namespace MyEngine {
 
 		bool InitCube();
 		bool InitSkyBox();
+		bool InitShadowMapTex();
 
 		void Clear();
 		void Present();

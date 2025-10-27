@@ -5,7 +5,7 @@
 #include "StaticMeshRenderer.h"
 #include "Time.h"
 
-void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
+void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial, bool updateMatrix)
 {
 	if (!m_boneMatrixCB)
 	{
@@ -44,7 +44,9 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	}
 
 	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
-	MatrixUpdate();
+	if(updateMatrix)
+		MatrixUpdate();
+
 	RigidBoneMatCB cb1;
 	auto& bones = m_rigidMesh.GetBones();
 
@@ -76,15 +78,23 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	for (auto& mesh : m_rigidMesh.GetMeshes())
 	{
 		RigidBoneMatIdxCB cb2;
-
-		mesh.Bind(context);
+		if(bindMesh)
+			mesh.Bind(context);
 		cb2.index = boneIndices[meshCount];
 
 		context->UpdateSubresource(m_boneMatrixIdxCB.Get(), 0, nullptr, &cb2, 0, 0);
 		context->VSSetConstantBuffers(3, 1, m_boneMatrixIdxCB.GetAddressOf());
 
 		auto& materialIndices = m_rigidMesh.GetMaterialIndices();
-		m_materials[materialIndices[meshCount++]].Bind(context);
+		auto& mat = m_materials[materialIndices[meshCount++]];
+		if (bindMaterial)
+		{
+			mat.Bind(context);
+		}
+		else
+		{
+			context->VSSetShader(mat.GetVertexShader(), nullptr, 0);
+		}
 
 		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
 			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum

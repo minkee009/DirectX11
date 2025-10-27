@@ -36,16 +36,16 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 I = normalize(input.WorldPos - CameraPos.xyz);
     float3 R = reflect(I, norm);  //큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
-    float3 L = isPointLight ? normalize(vLightPos.xyz - input.WorldPos) : vLightDir.xyz;
+    float3 L = vLightDir.xyz; //isPointLight ? normalize(vLightPos.xyz - input.WorldPos) : 
     
     // 조명 위치와 픽셀 위치
     float3 toLight = vLightPos - input.WorldPos;
     float distance = length(toLight);
 
-    // 감쇠 계수 (1 / d² 형태)
-    float attenuation = 1.0f / (distance * distance);
+    // 포인터라이트 감쇠 계수 (1 / d² 형태)
+    // float attenuation = 1.0f / (distance * distance);
     
-    float lightDist = isPointLight ? attenuation : 1.0f;
+    float lightDist = 1.0f;
     
     float diff = max(dot(norm, L), 0.0);
     float4 diffuse = diffuseStr * diff * vLightColor * lightDist;

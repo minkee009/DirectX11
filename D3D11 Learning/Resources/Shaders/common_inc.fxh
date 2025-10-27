@@ -14,5 +14,5 @@ cbuffer ConstantBuffer : register(b0)
     float specularStr;
     uint shininess;
     float reflectionFactor;
-    bool isPointLight;
+    matrix lightViewProj;
 }

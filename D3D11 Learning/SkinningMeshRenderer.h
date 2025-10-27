@@ -45,7 +45,7 @@ namespace MyEngine
 	public:
 		inline void SetMesh(SkinningMesh&& mesh) { m_skinningMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
-		void Draw(ID3D11DeviceContext* context);
+		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true, bool updateMatrix = true);
 
 		// ====== 局聪皋捞记 贸府 ====== //
 	private:

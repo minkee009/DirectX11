@@ -123,7 +123,7 @@ bool MyEngine::MyImGui::Initialize(MyD3DContext* myContext)
 
     this->m_hWnd = m_d3dContext->m_hWnd;
     this->m_pDevice = m_d3dContext->m_pd3dDevice.Get();
-    this->m_pImmediateContext = m_d3dContext->m_pImmediateContext.Get();
+    this->m_pImmediateContext = m_d3dContext->m_pContext.Get();
 
     // 코어 컨텍스트 생성
     if (!ImGui::CreateContext()) {
@@ -391,7 +391,7 @@ void MyEngine::MyImGui::Update()
     if (ImGui::Button(u8"초기값##5")) {
         m_d3dContext->m_lightDistance = 5.0f;
     }
-    ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
+    //ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
 
     //cb.diffuseStr = m_diffuseStrength;
     //cb.specularStr = m_specularStrength;

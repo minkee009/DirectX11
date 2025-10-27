@@ -23,7 +23,7 @@ namespace MyEngine
 	public:
 		inline void SetMesh(StaticMesh&& mesh) { m_staticMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
-		void Draw(ID3D11DeviceContext* context);
+		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true);
 	};
 }
 

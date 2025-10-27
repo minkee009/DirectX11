@@ -5,7 +5,7 @@
 #include "StaticMeshRenderer.h"
 #include "Time.h"
 
-void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
+void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial, bool updateMatrix)
 {
 	if (!m_boneModelMatrixData)
 		m_boneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
@@ -56,7 +56,8 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 	}
 
 	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
-	MatrixUpdate();
+	if(updateMatrix)
+		MatrixUpdate();
 
 	auto& bones = m_skinningMesh.GetBones();
 
@@ -77,6 +78,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		m_boneModelMatrixData->matricies[i] = bone.model;
 	}
 	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_boneModelMatrixData.get(), 0, 0);
+
 	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
 	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
 
@@ -86,10 +88,19 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 	int meshCount = 0;
 	for (auto& mesh : m_skinningMesh.GetMeshes())
 	{
-		mesh.Bind(context);
+		if(bindMesh)
+			mesh.Bind(context);
 
 		auto& materialIndices = m_skinningMesh.GetMaterialIndices();
-		m_materials[materialIndices[meshCount++]].Bind(context);
+		auto& mat = m_materials[materialIndices[meshCount++]];
+		if (bindMaterial)
+		{
+			mat.Bind(context);
+		}
+		else
+		{
+			context->VSSetShader(mat.GetVertexShader(),nullptr,0);
+		}
 
 		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
 			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum

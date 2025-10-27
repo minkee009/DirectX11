@@ -44,13 +44,13 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     {
         m_driverType = driverTypes[driverTypeIndex];
         hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-            D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pImmediateContext.GetAddressOf());
+            D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pContext.GetAddressOf());
 
         if (hr == E_INVALIDARG)
         {
             // DirectX 11.0 플랫폼은 D3D_FEATURE_LEVEL_11_1를 인식하지 못하기 때문에 없이 한번 더 시도
             hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
-                D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pImmediateContext.GetAddressOf());
+                D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pContext.GetAddressOf());
         }
 
         if (SUCCEEDED(hr))
@@ -88,7 +88,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         hr = m_pd3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(m_pd3dDevice1.GetAddressOf()));
         if (SUCCEEDED(hr))
         {
-            (void)m_pImmediateContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(m_pImmediateContext.GetAddressOf()));
+            (void)m_pContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(m_pContext.GetAddressOf()));
         }
 
         DXGI_SWAP_CHAIN_DESC1 sd = {};
@@ -175,17 +175,16 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
 
-    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
 
     // 뷰포트 설정
-    D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)width;
-    vp.Height = (FLOAT)height;
-    vp.MinDepth = 0.0f;
-    vp.MaxDepth = 1.0f;
-    vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
-    m_pImmediateContext->RSSetViewports(1, &vp);
+    m_vp.Width = (FLOAT)width;
+    m_vp.Height = (FLOAT)height;
+    m_vp.MinDepth = 0.0f;
+    m_vp.MaxDepth = 1.0f;
+    m_vp.TopLeftX = 0;
+    m_vp.TopLeftY = 0;
+    m_pContext->RSSetViewports(1, &m_vp);
 
     // 래스터라이저 상태 생성 및 설정
     D3D11_RASTERIZER_DESC rastDesc = {};
@@ -220,7 +219,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
     //래스터라이저 상태 설정
-    m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get());
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
 
     // 샘플러 상태 생성
     D3D11_SAMPLER_DESC sampDesc;
@@ -279,12 +278,13 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
 bool MyEngine::MyD3DContext::InitializeScene()
 {
-    AssimpConverter::Initialize(m_pImmediateContext.Get());
+    AssimpConverter::Initialize(m_pContext.Get());
 
     HRESULT hr = S_OK;
 
     InitCube();
     InitSkyBox();
+    InitShadowMapTex();
 
     //상수 버퍼 생성
     D3D11_BUFFER_DESC cbDesc;
@@ -684,12 +684,112 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     return true;
 }
 
+bool MyEngine::MyD3DContext::InitShadowMapTex()
+{
+    HRESULT hr = S_OK;
+
+    // 깊이 텍스처 생성
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = SHADOW_MAP_SIZE;
+    texDesc.Height = SHADOW_MAP_SIZE;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R32_TYPELESS;  // 깊이+SRV 겸용
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+
+    hr = m_pd3dDevice->CreateTexture2D(&texDesc, nullptr, m_pShadowTex.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    // 깊이 스텐실 뷰 (DSV)
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    hr = m_pd3dDevice->CreateDepthStencilView(m_pShadowTex.Get(), &dsvDesc, m_pShadowDSV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    m_shadowViewport = {};
+    m_shadowViewport.TopLeftX = 0.0f;
+    m_shadowViewport.TopLeftY = 0.0f;
+    m_shadowViewport.Width = (FLOAT)SHADOW_MAP_SIZE;
+    m_shadowViewport.Height = (FLOAT)SHADOW_MAP_SIZE;
+    m_shadowViewport.MinDepth = 0.0f;
+    m_shadowViewport.MaxDepth = 1.0f;
+
+    // 리소스뷰 (RSV)
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    // 수정: TYPELESS 리소스의 SRV 포맷은 R32_FLOAT을 사용합니다.
+    srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+
+    // m_pShadowSRV는 ID3D11ShaderResourceView* 멤버 변수여야 합니다.
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pShadowTex.Get(), &srvDesc, m_pShadowSRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    //컴파일 정보 저장용 객체
+    ID3DBlob* pVSBlob = nullptr;
+
+    // === 정점 셰이더 로드 ===
+    hr = CompileShaderFromFile(L"Resources/Shaders/ShadowMapVS.hlsl", "main", "vs_4_0", &pVSBlob);
+    if (FAILED(hr))
+    {
+        MessageBox(nullptr,
+            L"정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
+        return false;
+    }
+
+    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pShadowMapVS.GetAddressOf());
+    if (FAILED(hr))
+    {
+        pVSBlob->Release();
+        return false;
+    }
+
+    D3D11_SAMPLER_DESC samplerDesc;
+    ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+
+    // 필터 설정: PCF(Percentage Closer Filtering)를 위해 비교 필터 사용
+    samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    // 또는 D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR를 사용하면 더 부드러운 필터링 가능
+
+    // 주소 모드: 텍스처 좌표가 [0, 1] 범위를 벗어날 경우의 동작 지정
+    // Border를 사용하여 텍스처 외부 영역을 '광원 없음(깊이 무한대)'으로 처리
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+
+    // Border Color: 섀도우 맵 경계 밖은 깊이가 무한대(1.0)라고 간주하여 그림자가 없는 것으로 처리
+    samplerDesc.BorderColor[0] = 1.0f;
+    samplerDesc.BorderColor[1] = 1.0f;
+    samplerDesc.BorderColor[2] = 1.0f;
+    samplerDesc.BorderColor[3] = 1.0f;
+
+    // 비교 함수: 섀도우 맵에 저장된 깊이와 현재 픽셀의 깊이를 비교하는 방법
+    // LessEqual을 사용하면 (현재 깊이 <= 섀도우 맵 깊이)일 때 1.0 (밝음) 반환
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+
+    samplerDesc.MipLODBias = 0.0f;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.MinLOD = 0;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    hr = m_pd3dDevice->CreateSamplerState(&samplerDesc, &m_pShadowSampler);
+
+    return true;
+}
+
 void MyEngine::MyD3DContext::Clear()
 {
     float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
 
-    m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView.Get(), ClearColor);
-    m_pImmediateContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    m_pContext->ClearRenderTargetView(m_pRenderTargetView.Get(), ClearColor);
+    m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void MyEngine::MyD3DContext::Render()
@@ -697,11 +797,69 @@ void MyEngine::MyD3DContext::Render()
     // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
     m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
 
-    Clear();
-
-    m_pImmediateContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
+    m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
     MyConstantBuffer cb;
+    cb.mWorld = XMMatrixIdentity();
+
+    //  <=============== 첫번째 패스(그림자 맵)
+    // 컬러 렌더타겟은 사용 안 함
+    m_pContext->PSSetShader(nullptr, nullptr, 0);
+    m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
+
+    cb.vLightColor = m_lightColors[0];
+    cb.vLightDir = m_lightDirs[0];
+
+    // 빛의 방향 (정규화)
+    Vector3 lightDir = { m_lightDirs[0].x, m_lightDirs[0].y, m_lightDirs[0].z };
+    lightDir.Normalize();
+
+    // 그림자를 드리울 장면의 중심점
+    Vector3 target = Vector3::Zero;
+
+    // 광원의 위치: 타겟에서 lightDir의 반대방향으로 일정 거리
+    float lightDistance = 150.0f;
+    Vector3 lightPos = target - lightDir * lightDistance;
+
+    // 뷰, 프로젝션 행렬 생성
+    Matrix lightViewMat = Matrix::CreateLookAt(lightPos, target, {0,0,1});
+    Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, 1.0f, 500.0f);
+
+    // 최종 LightViewProjection 행렬
+    Matrix lightViewProj = lightProj * lightViewMat;
+
+    // 쉐이더 상수 버퍼에 세팅
+    cb.mlightViewProj = lightViewProj.Transpose();
+    cb.mView = lightViewMat.Transpose();
+    cb.mProjection = lightProj.Transpose();
+
+    m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+    // 깊이 초기화
+    m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    // 뷰포트 세팅(텍스쳐 사이즈로)
+    m_pContext->RSSetViewports(1, &m_shadowViewport);
+
+    for (size_t i = 0; i < m_sceneObjects.size(); i++)
+    {
+        auto& obj = m_sceneObjects[i];
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+
+        m_pSkinningMeshRenderers[i]->Draw(m_pContext.Get(), true, false, false);
+    }
+
+    //  <=============== 두번째 패스(장면)
+    Clear();
+    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->RSSetViewports(1, &m_vp);
+    m_pContext->PSSetSamplers(1, 1, &m_pShadowSampler);
+    m_pContext->PSSetShaderResources(6, 1, m_pShadowSRV.GetAddressOf());
+  
     cb.mWorld = XMMatrixIdentity();
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
@@ -710,7 +868,6 @@ void MyEngine::MyD3DContext::Render()
     XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&m_lightDirs[0]), m_lightDistance));
     cb.vLightColor = m_lightColors[0];
     cb.vLightDir = m_lightDirs[0];
-    cb.isPointLight = m_isPointLight;
 
     cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);
     cb.ambientStr = m_ambientStrength;
@@ -721,65 +878,41 @@ void MyEngine::MyD3DContext::Render()
     cb.reflectionFactor = m_reflectionFactor;
 
 
-
     //스카이박스 드로우
-    m_pImmediateContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-    m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
-    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
-    m_pImmediateContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    m_pContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
+    m_pContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
+    m_pContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-    m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
-    m_pImmediateContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pImmediateContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
-    m_pImmediateContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
-    m_pImmediateContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
-    m_pImmediateContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
-    m_pImmediateContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+    m_pContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    m_pContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
+    m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
+    m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
 
     int modelIdx = 0;
     for (auto& obj : m_sceneObjects)
     {
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
-        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pImmediateContext->IASetInputLayout(m_pCubeInputLayout.Get());
-        //m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-        //m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-            
-        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-        m_pImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
 
-        m_pImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-        m_pImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pSkinningMeshRenderers[modelIdx++]->Draw(m_pImmediateContext.Get());
-
-        //m_pImmediateContext->DrawIndexed(m_indexCount, 0, 0);
+        m_pSkinningMeshRenderers[modelIdx++]->Draw(m_pContext.Get());
     }
 
-    m_pImmediateContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-    m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-    for (int m = 0; m < 1; m++)
-    {
-        XMMATRIX mLight = XMMatrixTranslationFromVector(m_lightDistance * XMLoadFloat4(&m_lightDirs[m]));
-        XMMATRIX mLightScale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-        mLight = mLightScale * mLight;
-
-        // Update the world variable to reflect the current light
-        cb.mWorld = XMMatrixTranspose(mLight);
-        cb.vOutputColor = m_lightColors[m];
-        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-        m_pImmediateContext->VSSetShader(m_pVertexShader.Get(),nullptr, 0);
-        m_pImmediateContext->PSSetShader(m_pPixelShaderSolid.Get(), nullptr, 0);
-        m_pImmediateContext->DrawIndexed(36, 0, 0);
-    }
-
+    m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
+    m_pContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 //#ifdef _DEBUG
     m_imgui.BeginFrame();
@@ -820,6 +953,11 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pCubeNormalMapRV = nullptr;
     m_pCubeSpecularMapRV = nullptr;
     m_pSkyBoxTextureRV = nullptr;
+    m_pShadowTex = nullptr;
+    m_pShadowSRV = nullptr;
+    m_pShadowDSV = nullptr;
+    m_pShadowMapVS = nullptr;
+    m_pShadowSampler = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()
@@ -828,7 +966,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 #endif //_DEBUG
-    m_pImmediateContext = nullptr;
+    m_pContext = nullptr;
     m_pd3dDevice1 = nullptr;
     m_pd3dDevice = nullptr;
     m_pSwapChain1 = nullptr;
@@ -879,7 +1017,7 @@ HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, L
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 {
-    if (!m_pSwapChain || !m_pd3dDevice || !m_pImmediateContext)
+    if (!m_pSwapChain || !m_pd3dDevice || !m_pContext)
         return;
 
     // 멤버 변수 업데이트
@@ -889,7 +1027,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     m_pCamera->SetAspectRatio((float)width / (float)height);
 
     // 현재 렌더 타겟이 설정되어 있다면 해제
-    m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+    m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
     // 기존 렌더 타겟 뷰 해제
     m_pRenderTargetView.Reset();
@@ -956,16 +1094,14 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     }
 
     // 렌더 타겟 다시 설정
-    m_pImmediateContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
 
     // 뷰포트 업데이트
-    D3D11_VIEWPORT vp = {};
-    vp.Width = (FLOAT)width;
-    vp.Height = (FLOAT)height;
-    vp.MinDepth = 0.0f;
-    vp.MaxDepth = 1.0f;
-    vp.TopLeftX = 0.0f;
-    vp.TopLeftY = 0.0f;
-    m_pImmediateContext->RSSetViewports(1, &vp);
+    m_vp.Width = (FLOAT)width;
+    m_vp.Height = (FLOAT)height;
+    m_vp.MinDepth = 0.0f;
+    m_vp.MaxDepth = 1.0f;
+    m_vp.TopLeftX = 0;
+    m_vp.TopLeftY = 0;
 }
 
