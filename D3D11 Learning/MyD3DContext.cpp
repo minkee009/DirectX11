@@ -813,7 +813,6 @@ void MyEngine::MyD3DContext::Render()
 
     // 뷰포트 세팅(텍스쳐 사이즈로)
     m_pContext->RSSetViewports(1, &m_shadowViewport);
-
     cb.vLightColor = m_lightColor;
     auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
     m_pDirectionalLightT->SetLocalPosition(Vector3::Zero);
@@ -851,6 +850,7 @@ void MyEngine::MyD3DContext::Render()
 
     //  <=============== 두번째 패스(장면)
     Clear();
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->RSSetViewports(1, &m_vp);
     m_pContext->PSSetSamplers(1, 1, &m_pShadowSampler);

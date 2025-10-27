@@ -778,7 +778,7 @@ float CalculateShadow(float4 LightPos)
 
     // 5. 섀도우 바이어스(Bias) 적용
     // 섀도우 아티팩트(Acne) 방지. 작은 상수값을 더해줍니다.
-    currentDepth -= 0.05f; 
+    currentDepth -= 0.0005f; 
 
     // 6. 하드웨어 비교 샘플러를 사용하여 그림자 테스트 (PCF 구현 시 여러 번 샘플링)
     // 샘플러에 따라 다르지만, PCF를 간단히 구현하기 위해 주변 샘플을 고려할 수 있습니다.
