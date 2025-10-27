@@ -7,7 +7,7 @@
 
 void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
-	if (!m_boneMatrixCB)
+	if (!m_boneModelMatrixCB)
 	{
 		//상수버퍼 만들어주기
 		D3D11_BUFFER_DESC cbDesc;
@@ -20,15 +20,36 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		ID3D11Device* pDevice;
 		context->GetDevice(&pDevice);
 
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatrixCB.GetAddressOf());
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneModelMatrixCB.GetAddressOf());
+		if (FAILED(hr))
+			return;
+	}
+
+	if (!m_boneOffsetMatrixCB)
+	{
+		//상수버퍼 만들어주기
+		D3D11_BUFFER_DESC cbDesc;
+		ZeroMemory(&cbDesc, sizeof(cbDesc));
+		cbDesc.Usage = D3D11_USAGE_DEFAULT;
+		cbDesc.ByteWidth = sizeof(SkinningBoneMatCB);
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = 0;
+
+		ID3D11Device* pDevice;
+		context->GetDevice(&pDevice);
+
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneOffsetMatrixCB.GetAddressOf());
 		if (FAILED(hr))
 			return;
 	}
 
 	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
 	MatrixUpdate();
-	if(!m_boneMatrixData)
-		m_boneMatrixData = std::make_unique<SkinningBoneMatCB>();
+	if(!m_boneModelMatrixData)
+		m_boneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
+
+	if (!m_boneOffsetMatrixData)
+		m_boneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
 
 	auto& bones = m_skinningMesh.GetBones();
 
@@ -46,10 +67,12 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 			bone.model = bone.local;
 		}
 
-		m_boneMatrixData->matricies[i] = bone.model * bone.offset;
+		m_boneModelMatrixData->matricies[i] = bone.model * bone.offset;
 	}
-	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, m_boneMatrixData.get(), 0, 0);
-	context->VSSetConstantBuffers(2, 1, m_boneMatrixCB.GetAddressOf());
+	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_boneModelMatrixData.get(), 0, 0);
+	context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_boneOffsetMatrixData.get(), 0, 0);
+	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
+	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
 
 	UINT stride = sizeof(VertexType);
 	UINT offset = 0;

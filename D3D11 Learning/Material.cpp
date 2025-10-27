@@ -595,9 +595,14 @@ cbuffer ConstantBuffer : register(b0)
     matrix Projection;
 }
 
-cbuffer BoneBuffer : register(b2)
+cbuffer BoneModelBuffer : register(b2)
 {
-	matrix ModelMatricies[256];
+	matrix ModelMatricies[128];
+}
+
+cbuffer BoneOffsetBuffer : register(b3)
+{
+	matrix OffsetMatricies[128];
 }
 
 struct VS_INPUT
@@ -632,10 +637,10 @@ PS_INPUT VS(VS_INPUT input)
 
     for (int i = 0; i < 4; i++)
     {
-        skinningMatrix += ModelMatricies[input.BoneIndices[i]] * input.BoneWeights[i];
+        skinningMatrix +=  ModelMatricies[input.BoneIndices[i]] * input.BoneWeights[i] ;
     }
 
-	matrix finalWorld = mul(skinningMatrix, World);
+	matrix finalWorld = mul(skinningMatrix,World);
 
     output.Pos = mul(input.Pos, finalWorld);
     output.WorldPos = output.Pos.xyz;

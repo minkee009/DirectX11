@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <filesystem>
 
+
 std::unique_ptr<Assimp::Importer> MyEngine::AssimpConverter::s_importer = nullptr;
 uint32_t MyEngine::AssimpConverter::s_importFlags = 0;
 ID3D11Device* MyEngine::AssimpConverter::s_pDevice = nullptr;
@@ -11,6 +12,51 @@ ID3D11DeviceContext* MyEngine::AssimpConverter::s_pContext = nullptr;
 namespace fs = std::filesystem;
 
 //#include <iostream>
+
+std::unordered_set<std::string> MyEngine::AssimpConverter::CollectUsedBoneNames(const aiScene* pScene)
+{
+    std::unordered_set<std::string> usedBones;
+
+    // 모든 메시를 순회하며 실제 스키닝에 사용되는 본 이름 수집
+    for (UINT i = 0; i < pScene->mNumMeshes; i++)
+    {
+        aiMesh* pMesh = pScene->mMeshes[i];
+        if (pMesh->HasBones())
+        {
+            for (UINT j = 0; j < pMesh->mNumBones; j++)
+            {
+                usedBones.insert(pMesh->mBones[j]->mName.C_Str());
+            }
+        }
+    }
+
+    return usedBones;
+}
+
+void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::unordered_set<std::string>& usedBones, std::unordered_set<std::string>& boneHierarchy)
+{
+    std::string nodeName = pNode->mName.C_Str();
+    bool isUsedBone = usedBones.find(nodeName) != usedBones.end();
+    bool hasChildBone = false;
+
+    // 자식들을 먼저 확인
+    for (UINT i = 0; i < pNode->mNumChildren; i++)
+    {
+        CollectBoneHierarchy(pNode->mChildren[i], usedBones, boneHierarchy);
+
+        std::string childName = pNode->mChildren[i]->mName.C_Str();
+        if (boneHierarchy.find(childName) != boneHierarchy.end())
+        {
+           hasChildBone = true;
+        }
+    }
+
+    // 이 노드가 본이거나, 자식 중에 본이 있으면 계층에 포함
+    if (isUsedBone || hasChildBone)
+    {
+        boneHierarchy.insert(nodeName);
+    }
+}
 
 void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes,std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
@@ -63,8 +109,32 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy)
 {
+    std::string nodeName = pNode->mName.C_Str();
+    bool isInBoneHierarchy = boneHierarchy.find(nodeName) != boneHierarchy.end();
+
+    int currentBoneIndex = -1;
+
+    // 본 계층에 포함된 노드만 본으로 생성
+    if (isInBoneHierarchy)
+    {
+        SkinningBone bone;
+        auto& matrix = pNode->mTransformation;
+        bone.index = static_cast<int>(bones.size());
+        bone.parentIndex = parentIndex;
+        bone.local = Matrix(
+            matrix.a1, matrix.a2, matrix.a3, matrix.a4,
+            matrix.b1, matrix.b2, matrix.b3, matrix.b4,
+            matrix.c1, matrix.c2, matrix.c3, matrix.c4,
+            matrix.d1, matrix.d2, matrix.d3, matrix.d4
+        );
+
+        bones.emplace_back(bone);
+        nodeNameToIndexMap.insert({ nodeName, bone.index });
+        currentBoneIndex = bone.index;
+    }
+
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
@@ -83,25 +153,14 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
         }
     }
 
-    SkinningBone bone;
-
-    auto& matrix = pNode->mTransformation;
-    bone.index = static_cast<int>(bones.size());
-    bone.parentIndex = parentIndex;
-    bone.local = Matrix(
-        matrix.a1, matrix.a2, matrix.a3, matrix.a4,
-        matrix.b1, matrix.b2, matrix.b3, matrix.b4,
-        matrix.c1, matrix.c2, matrix.c3, matrix.c4,
-        matrix.d1, matrix.d2, matrix.d3, matrix.d4
-    );
-
-    bones.emplace_back(bone);
-    nodeNameToIndexMap.insert({ pNode->mName.C_Str(),bone.index });
-
     //자식 노드 처리
     for (UINT i = 0; i < pNode->mNumChildren; i++)
     {
-        ProcessNode(bone.index, bones, meshes, matIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap, correctionMap);
+        // 부모 인덱스는 현재 노드가 본인 경우만 전달
+        int childParentIndex = isInBoneHierarchy ? currentBoneIndex : parentIndex;
+        ProcessNode(childParentIndex, bones, meshes, matIDX,
+            pNode->mChildren[i], pScene, nodeNameToIndexMap,
+            correctionMap, boneHierarchy);
     }
 }
 
@@ -451,15 +510,15 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
 
 std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadSkinningMeshRendererFromFile(std::string filePath)
 {
-    //importFlag 세팅
+    // importFlag 세팅
     s_importFlags =
         aiProcess_Triangulate |
         aiProcess_GenNormals |
         aiProcess_CalcTangentSpace |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_SortByPType |
         aiProcess_FlipUVs;
 
+    // _$AssimpFbx$Translation, _$AssimpFbx$_PreRotation, _$AssimpFbx$_Rotation 등의 노드 분기 생성 방지
+    s_importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
     Material::InitBlinnPhongShaders(s_pDevice);
 
@@ -468,6 +527,10 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     if (!pScene) {
         throw std::runtime_error("model load error! :: check model file - " + std::string(s_importer->GetErrorString()));
     }
+
+    auto usedBones = CollectUsedBoneNames(pScene);
+    std::unordered_set<std::string> boneHierarchy;
+    CollectBoneHierarchy(pScene->mRootNode, usedBones, boneHierarchy);
 
     auto pSkinningMeshRenderer = std::make_unique<SkinningMeshRenderer>();
     SkinningMesh sMesh;
@@ -478,7 +541,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     std::vector<CorrectionNode> correctionMap;
 
     std::unordered_map<std::string, UINT> nodeNameToIndex;
-    ProcessNode(-1, skinningBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap);
+    ProcessNode(-1, skinningBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
 
     struct VertexBoneData
     {

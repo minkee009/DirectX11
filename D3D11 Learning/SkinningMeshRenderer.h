@@ -11,7 +11,7 @@ namespace MyEngine
 	//======= Skinning Mesh =======//
 	struct SkinningBoneMatCB
 	{
-		Matrix matricies[256];
+		Matrix matricies[128];
 	};
 
 	struct SkinningBone
@@ -38,8 +38,10 @@ namespace MyEngine
 	private:
 		SkinningMesh m_skinningMesh;
 		std::vector<Material> m_materials;
-		ComPtr<ID3D11Buffer> m_boneMatrixCB;
-		std::unique_ptr<SkinningBoneMatCB> m_boneMatrixData;
+		ComPtr<ID3D11Buffer> m_boneModelMatrixCB;
+		ComPtr<ID3D11Buffer> m_boneOffsetMatrixCB;
+		std::unique_ptr<SkinningBoneMatCB> m_boneModelMatrixData;
+		std::unique_ptr<SkinningBoneMatCB> m_boneOffsetMatrixData;
 	public:
 		inline void SetMesh(SkinningMesh&& mesh) { m_skinningMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
