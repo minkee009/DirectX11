@@ -637,7 +637,7 @@ PS_INPUT VS(VS_INPUT input)
 
     for (int i = 0; i < 4; i++)
     {
-        skinningMatrix +=  mul(OffsetMatricies[input.BoneIndices[i]],ModelMatricies[input.BoneIndices[i]]) * input.BoneWeights[i] ;
+        skinningMatrix += mul(OffsetMatricies[input.BoneIndices[i]],ModelMatricies[input.BoneIndices[i]]) * input.BoneWeights[i] ;
     }
 
 	matrix finalWorld = mul(skinningMatrix,World);
