@@ -114,10 +114,11 @@ namespace MyEngine {
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
 
-		XMFLOAT4 m_lightDirs[2] = { {1,0,0,1},{0,1,0,1} };
-		XMFLOAT4 m_lightColors[2] = { {1,1,1,1},{1,0,0,1} };
-		Vector3 m_lightDirEulerAngle = { 0,0,0 };
+		std::unique_ptr<Transform> m_pDirectionalLightT;
+		XMFLOAT4 m_lightColor = { 1,1,1,1 };
 		FLOAT m_lightDistance = 5.0f;
+		FLOAT m_lightProjectNear = 0.01f;
+		FLOAT m_lightProjectFar = 500.0f;
 
 		XMFLOAT4 m_ambientColor = { 1,1,1,1 };
 		FLOAT m_ambientStrength = 0.1f;
@@ -149,7 +150,7 @@ namespace MyEngine {
 		ComPtr<ID3D11VertexShader> m_pShadowMapVS;
 		ComPtr<ID3D11SamplerState> m_pShadowSampler;
 
-		const float SHADOW_MAP_HEIGHT = 20.0f;
+		const float SHADOW_MAP_DEPTH = 50.0f;
 
 //#ifdef _DEBUG
 		//GUI용 코드 (디버깅 용)

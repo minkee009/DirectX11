@@ -358,31 +358,35 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Text(u8"빛");
 
-    ImGui::ColorEdit3("##Light1Color", &m_d3dContext->m_lightColors[0].x);
+    ImGui::ColorEdit3("##Light1Color", &m_d3dContext->m_lightColor.x);
     if (ImGui::IsItemActive())
     {
         UpdateInfiniteDrag();
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##3")) {
-        m_d3dContext->m_lightColors[0] = { 1,1,1,1 };
+        m_d3dContext->m_lightColor = { 1,1,1,1 };
     }
 
-    constexpr Vector3 light1_defEulerRot = { 0,0,0 };
-    static Vector3 light1_rot = { 0,0,0 };
-    ImGui::DragFloat3("##Light1Dir", &light1_rot.x, 0.1f);
+    constexpr Vector3 light_defEulerRot = { 0,0,0 };
+    static Vector3 light_rot = m_d3dContext->m_pDirectionalLightT->GetLocalEulerRotation();
+
+    if (ImGui::DragFloat3("##LightRot", &light_rot.x, 0.1f))
+    {
+        m_d3dContext->m_pDirectionalLightT->SetLocalEulerRotation(light_rot);
+    }
     if (ImGui::IsItemActive())
     {
         UpdateInfiniteDrag();
     }
-    auto light1_angleRot = Vector3{ XMConvertToRadians(light1_rot.x),XMConvertToRadians(light1_rot.y) ,XMConvertToRadians(light1_rot.z) };
-    auto light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_angleRot.y, light1_angleRot.x, light1_angleRot.z));
-    m_d3dContext->m_lightDirs[0] = { light1_dir.x, light1_dir.y, light1_dir.z, 1 };
+    if (ImGui::IsItemDeactivatedAfterEdit())
+    {
+        m_d3dContext->m_pDirectionalLightT->SetLocalEulerRotation(light_rot);
+    }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##4")) {
-        light1_rot = light1_defEulerRot;
-        light1_dir = Vector3::Transform({ 0,1,0 }, Quaternion::CreateFromYawPitchRoll(light1_rot.y, light1_rot.x, light1_rot.z));
-        m_d3dContext->m_lightDirs[0] = { 1,0,0,1 };
+        light_rot = light_defEulerRot;
+        m_d3dContext->m_pDirectionalLightT->SetLocalEulerRotation(light_defEulerRot);
     }
 
 
@@ -391,11 +395,6 @@ void MyEngine::MyImGui::Update()
     if (ImGui::Button(u8"초기값##5")) {
         m_d3dContext->m_lightDistance = 5.0f;
     }
-    //ImGui::Checkbox(u8"광원설정 - 포인트 라이트", &m_d3dContext->m_isPointLight);
-
-    //cb.diffuseStr = m_diffuseStrength;
-    //cb.specularStr = m_specularStrength;
-    //cb.shininess = m_shininess;
 
     ImGui::Text(u8"환경광(ambient) : 색");
     ImGui::ColorEdit3("##AmbientColor", &m_d3dContext->m_ambientColor.x);
@@ -499,6 +498,42 @@ void MyEngine::MyImGui::Update()
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##12")) {
         animationMeshRenderer->SetSpeed(1.0f);
+    }
+
+    ImGui::End();
+
+    // ImGui 윈도우 어딘가에 추가
+    ImGui::Begin(u8"그림자 맵 디버그");
+
+    // 그림자 맵 SRV를 ImGui로 표시
+    if (m_d3dContext->m_pShadowSRV)
+    {
+        // 크기 지정 (픽셀 단위)
+        ImVec2 imageSize(256, 256);  // 원하는 크기로 조정
+
+        // ImGui::Image는 void* 타입을 받지만, SRV 포인터를 그대로 캐스팅
+        ImGui::Image(
+            (ImTextureID)m_d3dContext->m_pShadowSRV.Get(),  // SRV 포인터
+            ImVec2(256, 256)  // 이미지 크기
+        );
+
+        // 호버 시 확대 표시 (선택사항)
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::Image(
+                (ImTextureID)m_d3dContext->m_pShadowSRV.Get(),  // SRV 포인터
+                ImVec2(512, 512)  // 이미지 크기
+            );
+            ImGui::EndTooltip();
+        }
+
+        ImGui::DragFloat(u8"프로젝션 Near", &m_d3dContext->m_lightProjectNear, 0.01f, 0.01f, 1.0f);
+        ImGui::DragFloat(u8"프로젝션 Far", &m_d3dContext->m_lightProjectFar, 1.0f, 50.0f, 1500.0f);
+    }
+    else
+    {
+        ImGui::Text(u8"Shadow Map이 초기화되지 않음");
     }
 
     ImGui::End();

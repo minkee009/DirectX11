@@ -304,6 +304,8 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pCamera->GetTransform()->SetWorldEulerRotation(-17.0f, -20.0f, 0.0f);
     m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
+    m_pDirectionalLightT = std::make_unique<Transform>();
+
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
     //m_sceneObjects.push_back(std::make_unique<Transform>());
@@ -806,24 +808,22 @@ void MyEngine::MyD3DContext::Render()
     // 컬러 렌더타겟은 사용 안 함
     m_pContext->PSSetShader(nullptr, nullptr, 0);
     m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
+    // 깊이 초기화
+    m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    cb.vLightColor = m_lightColors[0];
-    cb.vLightDir = m_lightDirs[0];
+    // 뷰포트 세팅(텍스쳐 사이즈로)
+    m_pContext->RSSetViewports(1, &m_shadowViewport);
 
-    // 빛의 방향 (정규화)
-    Vector3 lightDir = { m_lightDirs[0].x, m_lightDirs[0].y, m_lightDirs[0].z };
-    lightDir.Normalize();
-
-    // 그림자를 드리울 장면의 중심점
-    Vector3 target = Vector3::Zero;
-
-    // 광원의 위치: 타겟에서 lightDir의 반대방향으로 일정 거리
-    float lightDistance = 150.0f;
-    Vector3 lightPos = target - lightDir * lightDistance;
+    cb.vLightColor = m_lightColor;
+    auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
+    m_pDirectionalLightT->SetLocalPosition(Vector3::Zero);
+    m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
+    auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
+    cb.vLightDir = xmLightDir;
 
     // 뷰, 프로젝션 행렬 생성
-    Matrix lightViewMat = Matrix::CreateLookAt(lightPos, target, {0,0,1});
-    Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, 1.0f, 500.0f);
+    Matrix lightViewMat = m_pDirectionalLightT->GetWorldMatrix().Invert();
+    Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, m_lightProjectNear, m_lightProjectFar);
 
     // 최종 LightViewProjection 행렬
     Matrix lightViewProj = lightProj * lightViewMat;
@@ -835,11 +835,7 @@ void MyEngine::MyD3DContext::Render()
 
     m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-    // 깊이 초기화
-    m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // 뷰포트 세팅(텍스쳐 사이즈로)
-    m_pContext->RSSetViewports(1, &m_shadowViewport);
 
     for (size_t i = 0; i < m_sceneObjects.size(); i++)
     {
@@ -865,9 +861,7 @@ void MyEngine::MyD3DContext::Render()
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
     cb.CameraPos = m_pCamera->GetTransform()->GetLocalPosition();
 
-    XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&m_lightDirs[0]), m_lightDistance));
-    cb.vLightColor = m_lightColors[0];
-    cb.vLightDir = m_lightDirs[0];
+    XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), m_lightDistance));
 
     cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);
     cb.ambientStr = m_ambientStrength;
@@ -937,6 +931,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
     AssimpConverter::Release();
 
     m_sceneObjects.clear();
+    m_pDirectionalLightT.reset();
     m_pVertexBuffer = nullptr;
     m_pIndexBuffer = nullptr;
     m_pSkyBoxVertexBuffer = nullptr;
