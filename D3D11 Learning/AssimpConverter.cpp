@@ -63,7 +63,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
@@ -71,7 +71,6 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         meshes.push_back(ProcessMesh(pMesh, pScene));
         matIDX.push_back(pMesh->mMaterialIndex);
-        boneIDX.push_back(static_cast<int>(bones.size()));
 
         if (pMesh->HasBones())
         {
@@ -102,7 +101,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
     //자식 노드 처리
     for (UINT i = 0; i < pNode->mNumChildren; i++)
     {
-        ProcessNode(bone.index, bones, meshes, matIDX, boneIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap, correctionMap);
+        ProcessNode(bone.index, bones, meshes, matIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap, correctionMap);
     }
 }
 
@@ -475,12 +474,11 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     std::vector<Mesh> meshes;
     std::vector<UINT> matIndices;
-    std::vector<UINT> boneIndices;
     std::vector<SkinningBone> skinningBones;
     std::vector<CorrectionNode> correctionMap;
 
     std::unordered_map<std::string, UINT> nodeNameToIndex;
-    ProcessNode(-1, skinningBones, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap);
+    ProcessNode(-1, skinningBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap);
 
     struct VertexBoneData
     {
@@ -502,8 +500,6 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         allMeshBoneData[i].resize(meshes[i].GetVertices().size());
     }
 
-
-    std::unordered_set<std::string> correctBone;
     for (size_t i = 0; i < correctionMap.size(); i++)
     {
         auto& node = correctionMap[i];

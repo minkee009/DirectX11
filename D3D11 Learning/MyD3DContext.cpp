@@ -720,13 +720,11 @@ void MyEngine::MyD3DContext::Render()
     cb.vAmbientColor = m_ambientColor;
     cb.reflectionFactor = m_reflectionFactor;
 
-    m_pImmediateContext->PSSetShaderResources(5, 1, m_pCubeTextureRV.GetAddressOf());
-    m_pImmediateContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pImmediateContext->PSSetShaderResources(2, 1, m_pCubeNormalMapRV.GetAddressOf());
-    m_pImmediateContext->PSSetShaderResources(3, 1, m_pCubeSpecularMapRV.GetAddressOf());
-    m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+
 
     //스카이박스 드로우
+    m_pImmediateContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pImmediateContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
     m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_pImmediateContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
     m_pImmediateContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);

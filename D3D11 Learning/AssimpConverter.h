@@ -29,7 +29,7 @@ namespace MyEngine
 
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
 		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap);
-		static void ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap);
+		static void ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap);
 		static Mesh ProcessMesh(aiMesh* pMesh, const aiScene* pScene);
 		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene,const BoneType& boneType);
 
