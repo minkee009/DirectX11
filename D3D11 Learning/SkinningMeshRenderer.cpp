@@ -7,6 +7,8 @@
 
 void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
+	if (!m_boneModelMatrixData)
+		m_boneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
 	if (!m_boneModelMatrixCB)
 	{
 		//상수버퍼 만들어주기
@@ -25,6 +27,8 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 			return;
 	}
 
+	if (!m_boneOffsetMatrixData)
+		m_boneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
 	if (!m_boneOffsetMatrixCB)
 	{
 		//상수버퍼 만들어주기
@@ -41,15 +45,18 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneOffsetMatrixCB.GetAddressOf());
 		if (FAILED(hr))
 			return;
+
+		//본 offset 행렬은 최초 1회 초기화
+		auto& bones = m_skinningMesh.GetBones();
+		for (size_t i = 0; i < bones.size(); i++)
+		{
+			m_boneOffsetMatrixData->matricies[i] = bones[i].offset;
+		}
+		context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_boneOffsetMatrixData.get(), 0, 0);
 	}
 
 	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
 	MatrixUpdate();
-	if(!m_boneModelMatrixData)
-		m_boneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
-
-	if (!m_boneOffsetMatrixData)
-		m_boneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
 
 	auto& bones = m_skinningMesh.GetBones();
 
@@ -68,10 +75,8 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		}
 
 		m_boneModelMatrixData->matricies[i] = bone.model;
-		m_boneOffsetMatrixData->matricies[i] = bone.offset;
 	}
 	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_boneModelMatrixData.get(), 0, 0);
-	context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_boneOffsetMatrixData.get(), 0, 0);
 	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
 	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
 
