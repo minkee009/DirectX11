@@ -67,7 +67,8 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 			bone.model = bone.local;
 		}
 
-		m_boneModelMatrixData->matricies[i] = bone.model * bone.offset;
+		m_boneModelMatrixData->matricies[i] = bone.model;
+		m_boneOffsetMatrixData->matricies[i] = bone.offset;
 	}
 	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_boneModelMatrixData.get(), 0, 0);
 	context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_boneOffsetMatrixData.get(), 0, 0);
