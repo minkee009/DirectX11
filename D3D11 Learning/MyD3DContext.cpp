@@ -890,7 +890,8 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->RSSetViewports(1, &m_vp);
     m_pContext->PSSetSamplers(1, 1, &m_pShadowSampler);
     m_pContext->PSSetShaderResources(6, 1, m_pShadowSRV.GetAddressOf());
-  
+    m_pContext->PSSetShaderResources(5, 1, m_pCubeTextureRV.GetAddressOf());
+
     cb.mWorld = XMMatrixIdentity();
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());

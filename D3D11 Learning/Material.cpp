@@ -758,7 +758,7 @@ Texture2D emmisiveMap : register(t4);
 Texture2D lutMap : register(t5);
 SamplerState samLinear : register(s0);
 Texture2D shadowMap : register(t6); 
-SamplerComparisonState samShadow : register(s1); // 하드웨어 비교를 위한 샘플러
+SamplerComparisonState samShadow : register(s1);
 
 
 struct PS_INPUT
@@ -821,7 +821,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 {
     float4 ambient = ambientStr * vAmbientColor;
     
-    float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; //정규화
+    float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; // 정규화
 
 
 	float3 N = normalize(input.Norm);
@@ -832,11 +832,11 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	float3 B = cross(N, T);
 	float3x3 TBN = float3x3(T, B, N);
     
-    normalTex = normalize(mul(normalTex, TBN)); //TBN 행렬을 곱해서 월드공간으로 변환
+    normalTex = normalize(mul(normalTex, TBN)); // TBN 행렬을 곱해서 월드공간으로 변환
     
     N = lerp(N, normalTex, (textureFlags & 4) != 0);
     float3 I = normalize(input.WorldPos - CameraPos.xyz);
-    float3 R = reflect(I, N);  //큐브맵 반사를 위한 리플렉트 벡터
+    float3 R = reflect(I, N);  // 큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
     float3 L = -vLightDir.xyz;
     
@@ -854,11 +854,11 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
-	//diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;
+	//diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
     float4 diffuse = diffuseStr * diff * vLightColor * lightDist * shadow;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
-    float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
+    float3 halfDir = normalize(viewDir + L); // 스펙큘러연산을 위한 하프 벡터
     
     float specTex = lerp(1.0f, specularMap.Sample(samLinear, input.Tex).r,(textureFlags & 2) != 0);
     float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
