@@ -305,6 +305,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
     m_pDirectionalLightT = std::make_unique<Transform>();
+    m_pDirectionalLightT->SetLocalEulerRotation({ 90,0,0 });
 
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
@@ -810,6 +811,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
     // 깊이 초기화
     m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
 
     // 뷰포트 세팅(텍스쳐 사이즈로)
     m_pContext->RSSetViewports(1, &m_shadowViewport);
@@ -825,7 +827,7 @@ void MyEngine::MyD3DContext::Render()
     Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, m_lightProjectNear, m_lightProjectFar);
 
     // 최종 LightViewProjection 행렬
-    Matrix lightViewProj = lightProj * lightViewMat;
+    Matrix lightViewProj = lightViewMat * lightProj;
 
     // 쉐이더 상수 버퍼에 세팅
     cb.mlightViewProj = lightViewProj.Transpose();

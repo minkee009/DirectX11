@@ -368,7 +368,7 @@ void MyEngine::MyImGui::Update()
         m_d3dContext->m_lightColor = { 1,1,1,1 };
     }
 
-    constexpr Vector3 light_defEulerRot = { 0,0,0 };
+    constexpr Vector3 light_defEulerRot = { 90,0,0 };
     static Vector3 light_rot = m_d3dContext->m_pDirectionalLightT->GetLocalEulerRotation();
 
     if (ImGui::DragFloat3("##LightRot", &light_rot.x, 0.1f))
