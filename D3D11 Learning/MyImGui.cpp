@@ -253,6 +253,7 @@ void MyEngine::MyImGui::Update()
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
     static std::vector<Vector3> objDefPoses{};
+    static std::vector<Vector3> objDefRots{};
     static std::vector<Vector3> objDefScales{};
     static bool objDefIsLoaded = false;
 
@@ -261,6 +262,7 @@ void MyEngine::MyImGui::Update()
         for (auto& sObj : m_d3dContext->m_sceneObjects)
         {
             objDefPoses.push_back(sObj->GetLocalPosition());
+            objDefRots.push_back(sObj->GetLocalEulerRotation());
             objDefScales.push_back(sObj->GetLocalScale());
         }
         objDefIsLoaded = true;
@@ -277,6 +279,11 @@ void MyEngine::MyImGui::Update()
 
     auto obj = m_d3dContext->m_sceneObjects[objIdx].get();
     auto obj_pos = obj->GetLocalPosition();
+
+    if (objIdxChanged)
+    {
+        obj_pos = obj->GetLocalPosition();
+    }
 
     ImGui::Text(u8"오브젝트 월드 위치");
     if (ImGui::DragFloat3("##obj_pos", &obj_pos.x, 0.05f))
@@ -299,13 +306,11 @@ void MyEngine::MyImGui::Update()
 
 
     ImGui::Text(u8"오브젝트 회전 값 (오일러)");
-    constexpr Vector3 obj_defEulerRot = { 0,0,0 };
     static Vector3 obj_rot = obj->GetLocalEulerRotation();
 
     if (objIdxChanged)
     {
         obj_rot = obj->GetLocalEulerRotation();
-        objIdxChanged = false;
     }
 
     if (ImGui::DragFloat3("##obj1_rot", &obj_rot.x,0.1f))
@@ -322,8 +327,8 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##2")) {
-        obj_rot = obj_defEulerRot;
-        obj->SetLocalEulerRotation(obj_defEulerRot);
+        obj_rot = objDefRots[objIdx];
+        obj->SetLocalEulerRotation(objDefRots[objIdx]);
     }
 
 
@@ -387,13 +392,6 @@ void MyEngine::MyImGui::Update()
     if (ImGui::Button(u8"초기값##4")) {
         light_rot = light_defEulerRot;
         m_d3dContext->m_pDirectionalLightT->SetLocalEulerRotation(light_defEulerRot);
-    }
-
-
-    ImGui::SliderFloat("##LightDist", &m_d3dContext->m_lightDistance, 0.0f, 12.0f);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##5")) {
-        m_d3dContext->m_lightDistance = 5.0f;
     }
 
     ImGui::Text(u8"환경광(ambient) : 색");

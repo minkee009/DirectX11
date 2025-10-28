@@ -421,6 +421,18 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+	matrix LightViewProjection;
 }
 
 struct VS_INPUT
@@ -440,6 +452,7 @@ struct PS_INPUT
     float3 Norm : TEXCOORD1;
     float3 Tan : TEXCOORD2;
     float2 Tex : TEXCOORD3;
+	float4 LightPos : TEXCOORD4;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -451,6 +464,9 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
     
+	// finalWorld 행렬이 적용된 위치를 LightViewProjection으로 변환
+	output.LightPos = mul(float4(output.WorldPos, 1.0f),LightViewProjection);
+
     output.Norm = normalize(mul(input.Norm, (float3x3) World));
     output.Tan = normalize(mul(input.Tan, (float3x3) World));
     output.Tex = input.Tex;

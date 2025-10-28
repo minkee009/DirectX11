@@ -310,22 +310,23 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
-    //m_sceneObjects.push_back(std::make_unique<Transform>());
+    m_sceneObjects.push_back(std::make_unique<Transform>());
     //m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, 0);
     obj1->SetLocalScale(0.072f, 0.072f, 0.072f);
 
-    //auto obj2 = m_sceneObjects[1].get();
-    //obj2->SetWorldPosition(0.0f, 0.0f, -1.0f);
-    //obj2->SetLocalScale(5.0f, 5.0f, 5.0f);
+    auto obj2 = m_sceneObjects[1].get();
+    obj2->SetWorldPosition(0.0f, 10.6f, 1.5f);
+    obj2->SetLocalEulerRotation(90.0f, 0.0f, 0.0f);
+    obj2->SetLocalScale(0.03f, 0.03f, 0.03f);
 
     //auto obj3 = m_sceneObjects[2].get();
     //obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
     //obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
     m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
@@ -785,6 +786,22 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
 
     hr = m_pd3dDevice->CreateSamplerState(&samplerDesc, &m_pShadowSampler);
 
+    D3D11_RASTERIZER_DESC rd;
+    ZeroMemory(&rd, sizeof(rd));
+    rd.CullMode = D3D11_CULL_BACK;
+    rd.FillMode = D3D11_FILL_SOLID;
+    rd.FrontCounterClockwise = TRUE;
+    rd.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
+    rd.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
+    rd.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    rd.DepthClipEnable = TRUE;
+    rd.ScissorEnable = FALSE;
+    rd.MultisampleEnable = FALSE;
+    rd.AntialiasedLineEnable = FALSE;
+    hr = m_pd3dDevice->CreateRasterizerState(&rd, &m_pShadowMapRasterizerState);
+    if (FAILED(hr))
+        return hr;
+
     return true;
 }
 
@@ -814,6 +831,9 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
 
+
+    m_pContext->RSSetState(m_pShadowMapRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
     // 뷰포트 세팅(텍스쳐 사이즈로)
     m_pContext->RSSetViewports(1, &m_shadowViewport);
     cb.vLightColor = m_lightColor;
@@ -837,19 +857,28 @@ void MyEngine::MyD3DContext::Render()
 
     m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
+    auto& obj1 = m_sceneObjects[0];
+    cb.mWorld = XMMatrixTranspose(obj1->GetWorldMatrix());
+    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
 
-    for (size_t i = 0; i < m_sceneObjects.size(); i++)
-    {
-        auto& obj = m_sceneObjects[i];
-        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+    m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false, false);
 
-        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+    auto& obj2 = m_sceneObjects[1];
+    cb.mWorld = XMMatrixTranspose(obj2->GetWorldMatrix());
+    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
-        m_pSkinningMeshRenderers[i]->Draw(m_pContext.Get(), true, false, false);
-    }
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+
+    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false);
+
+    //for (size_t i = 0; i < m_sceneObjects.size(); i++)
+    //{
+    //    
+    //}
 
     //  <=============== 두번째 패스(장면)
     Clear();
@@ -905,7 +934,12 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        m_pSkinningMeshRenderers[modelIdx++]->Draw(m_pContext.Get());
+        if (modelIdx == 0)
+            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
+        if (modelIdx == 1)
+            m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
+        modelIdx++;
+
     }
 
     m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
@@ -956,6 +990,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pShadowDSV = nullptr;
     m_pShadowMapVS = nullptr;
     m_pShadowSampler = nullptr;
+    m_pShadowMapRasterizerState = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()
