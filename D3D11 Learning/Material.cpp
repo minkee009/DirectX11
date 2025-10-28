@@ -774,7 +774,7 @@ float CalculateShadow(float4 LightPos)
     float diff = currentDepth - shadowDepth;
 
     if(shadowDepth < currentDepth)
-		return shadowDepth;
+		return 0.0f;
 	return 1.0f;
 }
 

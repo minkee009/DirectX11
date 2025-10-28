@@ -818,7 +818,8 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->RSSetViewports(1, &m_shadowViewport);
     cb.vLightColor = m_lightColor;
     auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
-    m_pDirectionalLightT->SetLocalPosition(m_pCamera->GetTransform()->GetWorldPosition() + lightFwd * -SHADOW_MAP_DEPTH);
+    //m_pDirectionalLightT->SetLocalPosition(m_pCamera->GetTransform()->GetWorldPosition() + lightFwd * -SHADOW_MAP_DEPTH);
+    m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
     auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
     cb.vLightDir = xmLightDir;
 
