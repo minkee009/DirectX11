@@ -306,6 +306,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_pDirectionalLightT = std::make_unique<Transform>();
     m_pDirectionalLightT->SetLocalEulerRotation({ 90,0,0 });
+    m_pDirectionalLightT->SetLocalScale({ 1,1,-1 });
 
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
@@ -817,8 +818,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->RSSetViewports(1, &m_shadowViewport);
     cb.vLightColor = m_lightColor;
     auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
-    m_pDirectionalLightT->SetLocalPosition(Vector3::Zero);
-    m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
+    m_pDirectionalLightT->SetLocalPosition(m_pCamera->GetTransform()->GetWorldPosition() + lightFwd * -SHADOW_MAP_DEPTH);
     auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
     cb.vLightDir = xmLightDir;
 

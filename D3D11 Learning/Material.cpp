@@ -759,42 +759,7 @@ struct PS_INPUT
 // 그림자 테스트 함수 (0.0: 그림자, 1.0: 밝음)
 float CalculateShadow(float4 LightPos)
 {
-    // 1. Perspective Divide (원근 나누기)
-    // LightPos는 LightViewProjection 행렬이 적용된 후의 좌표 (Homogeneous)
     float3 projCoords = LightPos.xyz / LightPos.w;
-
-    // 2. 텍스처 좌표계 [0, 1]로 변환
-    float2 texCoords; 
-	texCoords.x = projCoords.x * 0.5f + 0.5f;
-	texCoords.y = -projCoords.y * 0.5f + 0.5f;
-    // DirectX는 Y를 뒤집을 필요가 있을 수 있습니다.
-
-    // 3. 뷰포트 밖의 픽셀은 그림자가 없다고 가정
-    if (texCoords.x < 0.0f || texCoords.x > 1.0f || texCoords.y < 0.0f || texCoords.y > 1.0f)
-    {
-        return 1.0f;
-    }
-
-    // 4. 현재 픽셀의 깊이 (광원 공간 Z 값)
-    float currentDepth = projCoords.z;
-
-	if (currentDepth > 1.0f)
-	{
-		return 1.0f; // Far plane 너머는 그림자 없음
-	}
-
-    // 5. 섀도우 바이어스(Bias) 적용
-    // 섀도우 아티팩트(Acne) 방지. 작은 상수값을 더해줍니다.
-    currentDepth -= 0.001f; 
-
-    float shadowFactor = shadowMap.SampleCmpLevelZero(samShadow, texCoords, currentDepth).r;
-    
-    return shadowFactor;
-}
-
-float4 PS(PS_INPUT input) : SV_TARGET
-{
-	float3 projCoords = input.LightPos.xyz / input.LightPos.w;
     float2 texCoords; 
     texCoords.x = projCoords.x * 0.5f + 0.5f;
     texCoords.y = -projCoords.y * 0.5f + 0.5f;
@@ -803,22 +768,82 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float shadowDepth = shadowMap.Sample(samLinear, texCoords).r;
     
     // 현재 픽셀의 깊이
-    float currentDepth = projCoords.z;
+    float currentDepth = projCoords.z + 0.001f;
     
     // 깊이 차이 시각화
     float diff = currentDepth - shadowDepth;
 
     if(shadowDepth < currentDepth)
-		return float4(0, 0, 0, 1.0f);
-	return float4(1,1, 1, 1.0f);
-    
-    // 디버그 출력
-    return float4(shadowDepth, 0, 0, 1.0f);
-    // R: 현재 깊이 (빨강)
-    // G: 그림자 맵 깊이 (초록)
-    // B: 차이 (파랑)
+		return shadowDepth;
+	return 1.0f;
+}
 
-    //return float4(finalRGB, baseTex.a);
+float4 PS(PS_INPUT input) : SV_TARGET
+{
+    float4 ambient = ambientStr * vAmbientColor;
+    
+    float3 normalTex = normalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; //정규화
+
+
+	float3 N = normalize(input.Norm);
+  
+
+	float3 T = normalize(input.Tan);
+	T = normalize(T - dot(T, N) * N); // N에 직교하도록 조정
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
+    
+    normalTex = normalize(mul(normalTex, TBN)); //TBN 행렬을 곱해서 월드공간으로 변환
+    
+    N = lerp(N, normalTex, (textureFlags & 4) != 0);
+    float3 I = normalize(input.WorldPos - CameraPos.xyz);
+    float3 R = reflect(I, N);  //큐브맵 반사를 위한 리플렉트 벡터
+    R.x = -R.x;
+    float3 L = -vLightDir.xyz;
+    
+    // 조명 위치와 픽셀 위치
+    float3 toLight = vLightPos - input.WorldPos;
+    float distance = length(toLight);
+
+    // 감쇠 계수 (1 / d² 형태)
+    //float attenuation = 1.0f / (distance * distance);
+    
+    float lightDist = 1.0f;
+    
+	float shadow = CalculateShadow(input.LightPos); // 그림자 인자 계산
+
+    float diff = saturate(dot(N, L));
+	//float bandLevel = 1.0f;
+	//diff = ceil(diff * bandLevel)/bandLevel;
+	//diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;
+    float4 diffuse = diffuseStr * diff * vLightColor * lightDist * shadow;
+    
+    float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
+    float3 halfDir = normalize(viewDir + L); //스펙큘러연산을 위한 하프 벡터
+    
+    float specTex = lerp(1.0f, specularMap.Sample(samLinear, input.Tex).r,(textureFlags & 2) != 0);
+    float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
+    
+	//spec = smoothstep(0.01, 0.02f, spec); // <- 카툰렌더링용 스펙큘러
+	float4 specular = specularStr * specTex * spec * vLightColor * lightDist * shadow;
+    
+	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
+
+    // 알파 클리핑용 디퓨즈 샘플링
+    float4 baseTex = lerp(baseColor, txDiffuse.Sample(samLinear, input.Tex),(textureFlags & 1) != 0);
+
+    // 알파 임계값 설정 (0.1~0.5 정도 보통 사용)
+    const float alphaCutoff = 0.5f;
+
+    // 알파가 낮으면 픽셀 폐기
+    clip(baseTex.a - alphaCutoff);
+    
+    float3 baseRGB = (specular + diffuse + ambient).rgb * baseTex.rgb + emmisive.rgb;
+    float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
+    
+    float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
+
+    return float4(finalRGB, baseTex.a);
 }
 )";
 
