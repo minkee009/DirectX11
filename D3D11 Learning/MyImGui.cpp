@@ -336,7 +336,7 @@ void MyEngine::MyImGui::Update()
         objIdxChanged = false;
     }
 
-    if (ImGui::DragFloat3("##obj1_scale", &obj_scale.x, 0.1f))
+    if (ImGui::DragFloat3("##obj1_scale", &obj_scale.x, 0.001f))
     {
         obj->SetLocalScale(obj_scale);
     }
