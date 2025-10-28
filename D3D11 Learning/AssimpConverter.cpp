@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <filesystem>
 
+#include <iostream>
 
 std::unique_ptr<Assimp::Importer> MyEngine::AssimpConverter::s_importer = nullptr;
 uint32_t MyEngine::AssimpConverter::s_importFlags = 0;
@@ -273,6 +274,9 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
                             formatExt = L"." + std::wstring(hint.begin(), hint.end());
                         }
 
+
+                        std::cout << "embedded - " << embeddedTexture->mFilename.C_Str() << std::endl;
+
                         mat.InitAndConvertTextureFromMemory(
                             s_pContext,
                             myType,
@@ -289,6 +293,8 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
                     fs::path original_path(path.C_Str());
                     fs::path filename_only = original_path.filename();
                     fs::path final_texPath = base_directory / filename_only;
+
+                    std::wcout << filename_only.c_str() << std::endl;
 
                     mat.InitAndConvertTexture(
                         s_pContext,

@@ -780,18 +780,41 @@ float CalculateShadow(float4 LightPos)
     texCoords.x = projCoords.x * 0.5f + 0.5f;
     texCoords.y = -projCoords.y * 0.5f + 0.5f;
     
-    // 그림자 맵의 깊이 값 직접 읽기 (비교 없이)
-    float shadowDepth = shadowMap.Sample(samLinear, texCoords).r;
-    
-    // 현재 픽셀의 깊이
-    float currentDepth = projCoords.z + 0.001f;
-    
-    // 깊이 차이 시각화
-    float diff = currentDepth - shadowDepth;
+    if (texCoords.x < 0.0f || texCoords.x > 1.0f || 
+        texCoords.y < 0.0f || texCoords.y > 1.0f)
+    {
+        return 1.0f;
+    }
 
-    if(shadowDepth < currentDepth)
-		return 0.0f;
-	return 1.0f;
+
+    float currentDepth = projCoords.z;
+    
+    if (currentDepth < 0.0f)
+    {
+        return 1.0f;
+    }
+    
+    float bias = 0.001f;
+    
+    // 텍셀 크기 계산
+    float2 texelSize = 1.0f / 2048.0f;  // SHADOW_MAP_SIZE
+
+	// 3x3 PCF
+    float shadow = 0.0f;
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float2 offset = float2(x, y) * texelSize;
+            float sampleDepth = shadowMap.Sample(samLinear, texCoords + offset).r;
+            
+            // 오른손 좌표계 비교
+            shadow += (currentDepth - bias > sampleDepth) ? 0.0f : 1.0f;
+        }
+    }
+    
+    shadow /= 9.0f;
+	return lerp(0.3f, 1.0f, shadow);
 }
 
 float4 PS(PS_INPUT input) : SV_TARGET

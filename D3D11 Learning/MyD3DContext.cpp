@@ -306,12 +306,12 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_pDirectionalLightT = std::make_unique<Transform>();
     m_pDirectionalLightT->SetLocalEulerRotation({ 90,0,0 });
-    m_pDirectionalLightT->SetLocalScale({ 1,1,-1 });
+    m_pDirectionalLightT->SetLocalScale({ 1,1,1 });
 
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
-    //m_sceneObjects.push_back(std::make_unique<Transform>());
+    m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, 0);
@@ -320,15 +320,15 @@ bool MyEngine::MyD3DContext::InitializeScene()
     auto obj2 = m_sceneObjects[1].get();
     obj2->SetWorldPosition(0.0f, 10.6f, 1.5f);
     obj2->SetLocalEulerRotation(90.0f, 0.0f, 0.0f);
-    obj2->SetLocalScale(0.03f, 0.03f, 0.03f);
+    obj2->SetLocalScale(5, 5, 5);
 
-    //auto obj3 = m_sceneObjects[2].get();
-    //obj3->SetWorldPosition(12.0f, 0.0f, -9.0f);
-    //obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
+    auto obj3 = m_sceneObjects[2].get();
+    obj3->SetWorldPosition(0, 0, 0);
+    obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Character.fbx"));
     m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
-    //m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
     return true;
@@ -800,7 +800,7 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     rd.AntialiasedLineEnable = FALSE;
     hr = m_pd3dDevice->CreateRasterizerState(&rd, &m_pShadowMapRasterizerState);
     if (FAILED(hr))
-        return hr;
+        return false;
 
     return true;
 }
@@ -870,10 +870,13 @@ void MyEngine::MyD3DContext::Render()
     cb.mWorld = XMMatrixTranspose(obj2->GetWorldMatrix());
     m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
-    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false, { 1,5 });
 
-    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false);
+    auto& obj3 = m_sceneObjects[2];
+    cb.mWorld = XMMatrixTranspose(obj3->GetWorldMatrix());
+    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+    m_pStaticMeshRenderers[1]->Draw(m_pContext.Get(), true, false);
 
     //for (size_t i = 0; i < m_sceneObjects.size(); i++)
     //{
@@ -938,6 +941,8 @@ void MyEngine::MyD3DContext::Render()
             m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
         if (modelIdx == 1)
             m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
+        if (modelIdx == 2)
+            m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
         modelIdx++;
 
     }
