@@ -305,7 +305,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
     m_pDirectionalLightT = std::make_unique<Transform>();
-    m_pDirectionalLightT->SetLocalEulerRotation({ 90,0,0 });
+    m_pDirectionalLightT->SetLocalEulerRotation({ -90,0,0 });
     m_pDirectionalLightT->SetLocalScale({ 1,1,1 });
 
     //오브젝트 생성
