@@ -253,5 +253,14 @@
     <CopyFileToFolders Include="Resources\Models\Ground.fbx">
       <Filter>모델 파일</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\floor_tile_s.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\floor_tile_n.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\floor_tile_a.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
