@@ -773,7 +773,7 @@ struct PS_INPUT
 };
 
 // 그림자 테스트 함수 (0.0: 그림자, 1.0: 밝음)
-float CalculateShadow(float4 LightPos)
+float CalculateShadow(float4 LightPos, float3 normal, float3 lightDir)
 {
     float3 projCoords = LightPos.xyz / LightPos.w;
     float2 texCoords; 
@@ -782,39 +782,57 @@ float CalculateShadow(float4 LightPos)
     
     if (texCoords.x < 0.0f || texCoords.x > 1.0f || 
         texCoords.y < 0.0f || texCoords.y > 1.0f)
-    {
         return 1.0f;
-    }
-
-
+    
     float currentDepth = projCoords.z;
-    
-    if (currentDepth < 0.0f)
-    {
+    if (currentDepth < 0.0f || currentDepth > 1.0f)
         return 1.0f;
-    }
     
-    float bias = 0.001f;
+    // 각도 기반 동적 바이어스 (가장 효과적!)
+    float cosTheta = saturate(dot(normal, lightDir));
+    float bias = 0.0005f * tan(acos(cosTheta));
+    bias = clamp(bias, 0.0f, 0.01f);
     
-    // 텍셀 크기 계산
-    float2 texelSize = 1.0f / 2048.0f;  // SHADOW_MAP_SIZE
+    currentDepth -= bias;
+    
+    float shadow = shadowMap.SampleCmpLevelZero(samShadow, texCoords, currentDepth);
+    return shadow;
+}
 
-	// 3x3 PCF
+// 수동 PCF
+float CalculateShadowPCF(float4 LightPos)
+{
+    float3 projCoords = LightPos.xyz / LightPos.w;
+    float2 texCoords; 
+    texCoords.x = projCoords.x * 0.5f + 0.5f;
+    texCoords.y = -projCoords.y * 0.5f + 0.5f;
+    
+    if (texCoords.x < 0.0f || texCoords.x > 1.0f || 
+        texCoords.y < 0.0f || texCoords.y > 1.0f)
+        return 1.0f;
+    
+    float currentDepth = projCoords.z;
+    if (currentDepth < 0.0f || currentDepth > 1.0f)
+        return 1.0f;
+    
+    float bias = 0.005f;
+    currentDepth -= bias;
+    
+    // 3x3 PCF
     float shadow = 0.0f;
+    float2 texelSize = 1.0f / 2048.0f; // Shadow Map 크기
+    
     for (int x = -1; x <= 1; ++x)
     {
         for (int y = -1; y <= 1; ++y)
         {
             float2 offset = float2(x, y) * texelSize;
-            float sampleDepth = shadowMap.Sample(samLinear, texCoords + offset).r;
-            
-            // 오른손 좌표계 비교
-            shadow += (currentDepth - bias > sampleDepth) ? 0.0f : 1.0f;
+            shadow += shadowMap.SampleCmpLevelZero(samShadow, texCoords + offset, currentDepth);
         }
     }
-    
     shadow /= 9.0f;
-	return lerp(0.3f, 1.0f, shadow);
+    
+    return shadow;
 }
 
 float4 PS(PS_INPUT input) : SV_TARGET
@@ -849,7 +867,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float lightDist = 1.0f;
     
-	float shadow = CalculateShadow(input.LightPos); // 그림자 인자 계산
+	float shadow = CalculateShadowPCF(input.LightPos); // 그림자 인자 계산
 
     float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;

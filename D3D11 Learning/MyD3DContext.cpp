@@ -716,14 +716,6 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     if (FAILED(hr))
         return false;
 
-    m_shadowViewport = {};
-    m_shadowViewport.TopLeftX = 0.0f;
-    m_shadowViewport.TopLeftY = 0.0f;
-    m_shadowViewport.Width = (FLOAT)SHADOW_MAP_SIZE;
-    m_shadowViewport.Height = (FLOAT)SHADOW_MAP_SIZE;
-    m_shadowViewport.MinDepth = 0.0f;
-    m_shadowViewport.MaxDepth = 1.0f;
-
     // 리소스뷰 (RSV)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     // 수정: TYPELESS 리소스의 SRV 포맷은 R32_FLOAT을 사용합니다.
@@ -759,24 +751,14 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     D3D11_SAMPLER_DESC samplerDesc;
     ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
 
-    // 필터 설정: PCF(Percentage Closer Filtering)를 위해 비교 필터 사용
     samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-    // 또는 D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR를 사용하면 더 부드러운 필터링 가능
-
-    // 주소 모드: 텍스처 좌표가 [0, 1] 범위를 벗어날 경우의 동작 지정
-    // Border를 사용하여 텍스처 외부 영역을 '광원 없음(깊이 무한대)'으로 처리
     samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
     samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
     samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
-
-    // Border Color: 섀도우 맵 경계 밖은 깊이가 무한대(1.0)라고 간주하여 그림자가 없는 것으로 처리
     samplerDesc.BorderColor[0] = 1.0f;
     samplerDesc.BorderColor[1] = 1.0f;
     samplerDesc.BorderColor[2] = 1.0f;
     samplerDesc.BorderColor[3] = 1.0f;
-
-    // 비교 함수: 섀도우 맵에 저장된 깊이와 현재 픽셀의 깊이를 비교하는 방법
-    // LessEqual을 사용하면 (현재 깊이 <= 섀도우 맵 깊이)일 때 1.0 (밝음) 반환
     samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 
     samplerDesc.MipLODBias = 0.0f;
@@ -785,6 +767,8 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
     hr = m_pd3dDevice->CreateSamplerState(&samplerDesc, &m_pShadowSampler);
+    if (FAILED(hr))
+        return false;
 
     D3D11_RASTERIZER_DESC rd;
     ZeroMemory(&rd, sizeof(rd));
@@ -801,6 +785,15 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     hr = m_pd3dDevice->CreateRasterizerState(&rd, &m_pShadowMapRasterizerState);
     if (FAILED(hr))
         return false;
+
+
+    m_shadowViewport = {};
+    m_shadowViewport.TopLeftX = 0.0f;
+    m_shadowViewport.TopLeftY = 0.0f;
+    m_shadowViewport.Width = (FLOAT)SHADOW_MAP_SIZE;
+    m_shadowViewport.Height = (FLOAT)SHADOW_MAP_SIZE;
+    m_shadowViewport.MinDepth = 0.0f;
+    m_shadowViewport.MaxDepth = 1.0f;
 
     return true;
 }
@@ -888,7 +881,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->RSSetViewports(1, &m_vp);
-    m_pContext->PSSetSamplers(1, 1, &m_pShadowSampler);
+    m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
     m_pContext->PSSetShaderResources(6, 1, m_pShadowSRV.GetAddressOf());
     m_pContext->PSSetShaderResources(5, 1, m_pCubeTextureRV.GetAddressOf());
 

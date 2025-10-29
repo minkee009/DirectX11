@@ -370,7 +370,7 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##3")) {
-        m_d3dContext->m_lightColor = { 1,1,1,1 };
+        m_d3dContext->m_lightColor = { 1,0.988f,0.952f,1 };
     }
 
     constexpr Vector3 light_defEulerRot = { -90,0,0 };
@@ -402,14 +402,14 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##6")) {
-        m_d3dContext->m_ambientColor = { 1,1,1,1 };
+        m_d3dContext->m_ambientColor = { 0.85f,0.93f,1,1 };
     }
 
     ImGui::Text(u8"환경광(ambient) : 강도");
     ImGui::SliderFloat("##AmbientStrength", &m_d3dContext->m_ambientStrength,0.0f,1.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##7")) {
-        m_d3dContext->m_ambientStrength = 0.1f;
+        m_d3dContext->m_ambientStrength = 0.4f;
     }
 
     ImGui::Text(u8"확산광(diffuse) : 강도");
@@ -441,7 +441,7 @@ void MyEngine::MyImGui::Update()
     ImGui::SliderFloat("##reflectionFactor", &m_d3dContext->m_reflectionFactor, 0.0f, 1.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##11")) {
-        m_d3dContext->m_reflectionFactor = 0.3f;
+        m_d3dContext->m_reflectionFactor = 0.005f;
     }
     
     std::string toStringStext = std::to_string(m_d3dContext->m_shininess);
