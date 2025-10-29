@@ -535,6 +535,13 @@ void MyEngine::MyImGui::Update()
     }
 
     ImGui::End();
+
+    ImGui::Begin(u8"아웃라인 디버그");
+
+	ImGui::DragFloat(u8"아웃라인 높이 바이어스", &m_d3dContext->m_outLineHeightBias, 0.001f);
+	ImGui::DragFloat(u8"아웃라인 두께", &m_d3dContext->m_outLineWidth, 0.001f);
+
+    ImGui::End();
 }
 
 void MyEngine::MyImGui::Render()

@@ -54,8 +54,8 @@ namespace MyEngine
 		double m_time = 0;
 		double m_speed = 1.0;
 		UINT m_animationIdx = 0;
-		void MatrixUpdate();
 	public:
+		void MatrixUpdate();
 		inline void SetAnimations(std::vector<std::unordered_map<UINT, AnimationClip>>&& animations) { m_boneAnimations = std::move(animations); }
 
 		void Play();

@@ -314,12 +314,12 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
-    obj1->SetWorldPosition(0, 0, 0);
+    obj1->SetWorldPosition(0, 0, -45.0f);
     obj1->SetLocalScale(0.072f, 0.072f, 0.072f);
 
     auto obj2 = m_sceneObjects[1].get();
-    obj2->SetWorldPosition(0.0f, 10.6f, 1.5f);
-    obj2->SetLocalEulerRotation(90.0f, 0.0f, 0.0f);
+    obj2->SetWorldPosition(0.0f, 0.0f, 1.5f);
+    obj2->SetLocalEulerRotation(0.0, 0.0f, 0.0f);
     obj2->SetLocalScale(5, 5, 5);
 
     auto obj3 = m_sceneObjects[2].get();
@@ -920,6 +920,43 @@ void MyEngine::MyD3DContext::Render()
 
 
     int modelIdx = 0;
+    // <<======= 아웃라인 드로우
+    for (auto& obj : m_sceneObjects)
+    {
+		auto orginalScale = obj->GetLocalScale();
+        auto orginalPos = obj->GetWorldPosition();
+
+        obj->SetLocalScale(orginalScale * (1.0f + m_outLineWidth));
+        obj->SetLocalPosition(obj->GetLocalPosition() + Vector3{ 0, -m_outLineHeightBias, 0 });
+        m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+
+        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+   
+        m_pContext->VSSetShader(Material::GetDefaultVertexShader(), nullptr, 0);
+        m_pContext->PSSetShader(Material::GetDefaultPixelShader(), nullptr, 0);
+
+        if (modelIdx == 0)
+            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(),true,false,false);
+        //if (modelIdx == 1)
+        //    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true,false);
+        //if (modelIdx == 2)
+        //    m_pStaticMeshRenderers[1]->Draw(m_pContext.Get(), true, false);
+        modelIdx++;
+
+        m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+		obj->SetLocalScale(orginalScale);
+		obj->SetWorldPosition(orginalPos);
+    }
+
+    modelIdx = 0;
     for (auto& obj : m_sceneObjects)
     {
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());

@@ -115,6 +115,9 @@ namespace MyEngine {
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
 
+		FLOAT m_outLineHeightBias = 0.249f;
+		FLOAT m_outLineWidth = 0.025f;
+
 		std::unique_ptr<Transform> m_pDirectionalLightT;
 		XMFLOAT4 m_lightColor = { 1,0.988f,0.952f,1 };
 		FLOAT m_lightDistance = 5.0f;

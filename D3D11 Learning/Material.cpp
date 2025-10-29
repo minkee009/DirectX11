@@ -359,7 +359,7 @@ struct PS_INPUT
 			                                                   
 float4 PS(PS_INPUT input) : SV_Target             
 {                                                 
-	return float4(1.0f, 0.0f, 1.0f, 1.0f);        
+	return float4(0.0f, 0.0f, 0.0f, 1.0f);        
 }  
 )";
 
@@ -868,12 +868,16 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float lightDist = 1.0f;
     
 	float shadow = CalculateShadowPCF(input.LightPos); // 그림자 인자 계산
-
+	float shadowLut = lutMap.Sample(samLinear, float2(shadow * 0.5f + 0.495f, 0.5f)).r;
+	
     float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
-	//diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
-    float4 diffuse = diffuseStr * diff * vLightColor * lightDist * shadow;
+	diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
+	
+	float diffShadow = shadowLut > diff ? diff : shadowLut; // 그림자와 조명값 중 작은 값을 사용
+
+    float4 diffuse = diffuseStr * vLightColor * lightDist * diffShadow;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
     float3 halfDir = normalize(viewDir + L); // 스펙큘러연산을 위한 하프 벡터
@@ -881,7 +885,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float specTex = lerp(1.0f, specularMap.Sample(samLinear, input.Tex).r,(textureFlags & 2) != 0);
     float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
     
-	//spec = smoothstep(0.01, 0.02f, spec); // <- 카툰렌더링용 스펙큘러
+	spec = smoothstep(0.01, 0.02f, spec); // <- 카툰렌더링용 스펙큘러
 	float4 specular = specularStr * specTex * spec * vLightColor * lightDist * shadow;
     
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
