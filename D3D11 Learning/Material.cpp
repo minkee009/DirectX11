@@ -742,6 +742,7 @@ cbuffer ConstantBuffer : register(b0)
     uint shininess;
     float reflectionFactor;
 	matrix LightViewProjection;
+	float gradientIntensity;
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -857,6 +858,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 R = reflect(I, N);  // 큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
     float3 L = -vLightDir.xyz;
+	float NdotL = dot(vLightPos, N);
     
     // 조명 위치와 픽셀 위치
     float3 toLight = vLightPos - input.WorldPos;
@@ -886,7 +888,9 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float spec = pow(saturate(dot(halfDir, N)), shininess) * sqrt(diff); // * sqrt(diff) <- 이걸 쓰면 shininess < 32 에서 아티팩트가 사라짐..!!! 
     
 	spec = smoothstep(0.01, 0.02f, spec); // <- 카툰렌더링용 스펙큘러
-	float4 specular = specularStr * specTex * spec * vLightColor * lightDist * shadow;
+	shadowLut = shadowLut > 0.999f ? 1.0f : 0.0f; // 카툰렌더링용 그림자
+	shadowLut = diff > 0.6f ? shadowLut : 0.0f; // 디퓨즈가 낮으면 그림자 제거
+	float4 specular = specularStr * specTex * spec * vLightColor * lightDist * shadowLut;
     
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
 
@@ -898,11 +902,40 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     // 알파가 낮으면 픽셀 폐기
     clip(baseTex.a - alphaCutoff);
+
+
+	float minusNdotL  = dot(-vLightPos.xyz , N);
+
+	// 림 라이트
+	float _RimAmount = 0.716;
+	float4 rimDot = 1 - dot(viewDir, N);
+	float rimIntensity = rimDot * NdotL;
+	rimIntensity = smoothstep(_RimAmount - 0.01, _RimAmount + 0.01, rimIntensity);
+
+	float rimMinusIntensity = rimDot * minusNdotL;
+	rimMinusIntensity = smoothstep(_RimAmount - 0.01, _RimAmount + 0.01, rimMinusIntensity);
+
+	float4 minusRim = rimMinusIntensity * vAmbientColor;
+	
+	float4 rim = rimIntensity * vLightColor;
     
-    float3 baseRGB = (specular + diffuse + ambient).rgb * baseTex.rgb + emmisive.rgb;
+    float3 baseRGB = (specular + diffuse + ambient + rim + rimMinusIntensity).rgb * baseTex.rgb + emmisive.rgb ;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
     
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
+
+	// y 범위 값들
+    float yMin = -12; // 0
+    float yMax = 6; // 10
+
+    // 안전하게 분모가 0이 되는 경우 방지
+    float span = max(0.00001, yMax - yMin);
+
+    // 0..1 로 정규화 (y=0 -> 0, y=10 -> 1)
+    float gradient = saturate( (input.WorldPos.y - yMin) / span );
+	gradient = smoothstep(0.0, 1.0, gradient);
+
+	finalRGB = lerp(vAmbientColor , finalRGB, lerp(1.0,gradient,gradientIntensity)); // 흰색으로 보간
 
     return float4(finalRGB, baseTex.a);
 }

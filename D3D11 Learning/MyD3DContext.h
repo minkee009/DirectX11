@@ -55,6 +55,7 @@ namespace MyEngine {
 		FLOAT reflectionFactor;
 		XMFLOAT3 pad3;
 		XMMATRIX mlightViewProj;
+		FLOAT gradientIntensity;
 	};
 
 	class MyD3DContext {
@@ -120,15 +121,15 @@ namespace MyEngine {
 
 		std::unique_ptr<Transform> m_pDirectionalLightT;
 		XMFLOAT4 m_lightColor = { 1,0.988f,0.952f,1 };
-		FLOAT m_lightDistance = 5.0f;
+		FLOAT m_lightDistance = 3.0f;
 		FLOAT m_lightProjectNear = 0.01f;
 		FLOAT m_lightProjectFar = 50.0f;
 
 		XMFLOAT4 m_ambientColor = { 0.85f,0.93f,1,1 };
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
-		FLOAT m_specularStrength = 1.0f;
-		UINT m_shininess = 256;
+		FLOAT m_specularStrength = 0.228f;
+		UINT m_shininess = 512;
 
 		FLOAT m_reflectionFactor = 0.005f;
 		bool m_isPointLight = false;

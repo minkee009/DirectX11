@@ -889,8 +889,9 @@ void MyEngine::MyD3DContext::Render()
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
     cb.CameraPos = m_pCamera->GetTransform()->GetLocalPosition();
+    cb.gradientIntensity = 1.0f;
 
-    XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), m_lightDistance));
+    XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), -1.25f));
 
     cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);
     cb.ambientStr = m_ambientStrength;
@@ -973,7 +974,11 @@ void MyEngine::MyD3DContext::Render()
         if (modelIdx == 1)
             m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
         if (modelIdx == 2)
+        {
+            cb.gradientIntensity = 0.0f;
+            m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
             m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
+        }
         modelIdx++;
 
     }

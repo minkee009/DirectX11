@@ -423,17 +423,17 @@ void MyEngine::MyImGui::Update()
     ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 1.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##9")) {
-        m_d3dContext->m_specularStrength = 1.0f;
+        m_d3dContext->m_specularStrength = 0.228f;
     }
 
     ImGui::Text(u8"광택지수(shininess)");
-    static int shininessLevel = 8; //1~12
+    static int shininessLevel = 9; //1~12
     ImVec2 shininessUIPos = ImGui::GetCursorPos();
     ImGui::SliderInt("##shininess", &shininessLevel, 1, 12,"");
     m_d3dContext->m_shininess = pow(2, shininessLevel);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##10")) {
-        shininessLevel = 8;
+        shininessLevel = 9;
         m_d3dContext->m_shininess = pow(2,shininessLevel);
     }
 
