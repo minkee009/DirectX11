@@ -772,6 +772,13 @@ struct PS_INPUT
 	uint  IsFrontFace : SV_IsFrontFace; 
 };
 
+struct PS_OUTPUT
+{
+    float4 position : SV_Target0;
+    float4 normal : SV_Target1;
+    float4 color : SV_Target2;
+};
+
 // 그림자 테스트 함수 (0.0: 그림자, 1.0: 밝음)
 float CalculateShadow(float4 LightPos, float3 normal, float3 lightDir)
 {
@@ -900,7 +907,13 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
 
-    return float4(finalRGB, baseTex.a);
+	PS_OUTPUT output;
+	
+	output.position = float4(input.WorldPos, 1.0f);
+	output.normal = float4(N,1.0f); 
+	output.color = float4(finalRGB, baseTex.a);
+
+    return output;
 }
 )";
 

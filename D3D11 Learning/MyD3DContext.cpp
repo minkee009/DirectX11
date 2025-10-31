@@ -135,14 +135,40 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // ·»´õ Å¸°Ù ºä »ý¼º
-    ID3D11Texture2D* pBackBuffer = nullptr;
+	ID3D11Texture2D* pBackBuffer = nullptr;
     hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBuffer));
     if (FAILED(hr))
         return false;
-
     hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, m_pRenderTargetView.GetAddressOf());
-    pBackBuffer->Release();
+    m_pScenePosition->Release();
+    if (FAILED(hr))
+        return false;
+
+
+	// G-¹öÆÛ ·»´õ Å¸°Ù ºä »ý¼º
+    hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(m_pScenePosition.GetAddressOf()));
+    if (FAILED(hr))
+        return false;
+    hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(m_pSceneNormal.GetAddressOf()));
+    if (FAILED(hr))
+        return false;
+    hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(m_pSceneColor.GetAddressOf()));
+    if (FAILED(hr))
+        return false;
+
+    // G-¹öÆÛ¿ë ·»´õ Å¸°Ùºä »ý¼º
+	m_gBufferRTVs.resize(3);
+
+    hr = m_pd3dDevice->CreateRenderTargetView(m_pScenePosition.Get(), nullptr, m_gBufferRTVs[2].GetAddressOf());
+    m_pScenePosition->Release();
+    if (FAILED(hr))
+        return false;
+    hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneNormal.Get(), nullptr, m_gBufferRTVs[1].GetAddressOf());
+    m_pSceneNormal->Release();
+    if (FAILED(hr))
+        return false;
+    hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColor.Get(), nullptr, m_gBufferRTVs[0].GetAddressOf());
+    m_pSceneColor->Release();
     if (FAILED(hr))
         return false;
 
@@ -173,9 +199,6 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
     if (FAILED(hr))
         return false;
-
-
-    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
 
     // ºäÆ÷Æ® ¼³Á¤
     m_vp.Width = (FLOAT)width;

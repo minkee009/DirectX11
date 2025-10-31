@@ -70,7 +70,15 @@ namespace MyEngine {
 		ComPtr<ID3D11DeviceContext> m_pContext = nullptr;
 		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
 		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
-		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView = nullptr;
+
+		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView; // ¸ÞÀÎ ·»´õ Å¸°Ù
+
+		// ===> G-Buffer °ü·Ã º¯¼ö <===
+		std::vector<ComPtr<ID3D11RenderTargetView>> m_gBufferRTVs;
+		ComPtr<ID3D11Texture2D> m_pScenePosition = nullptr;
+		ComPtr<ID3D11Texture2D> m_pSceneNormal = nullptr;
+		ComPtr<ID3D11Texture2D> m_pSceneColor = nullptr;
+
 		ComPtr<ID3D11Texture2D> m_pDepthStencil = nullptr;
 		ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr;
 
