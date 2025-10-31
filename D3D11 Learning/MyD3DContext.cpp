@@ -315,11 +315,11 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
-    obj1->SetWorldPosition(0, 0, -45.0f);
+    obj1->SetWorldPosition(7.500f, 0.250f, -8.450f);
     obj1->SetLocalScale(0.072f, 0.072f, 0.072f);
 
     auto obj2 = m_sceneObjects[1].get();
-    obj2->SetWorldPosition(0.0f, 0.0f, 1.5f);
+    obj2->SetWorldPosition(4.950f, 0.250f, 4.700f);
     obj2->SetLocalEulerRotation(0.0, 0.0f, 0.0f);
     obj2->SetLocalScale(5, 5, 5);
 
@@ -328,7 +328,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
     auto obj4 = m_sceneObjects[3].get();
-    obj4->SetWorldPosition(0, 0, 0);
+    obj4->SetWorldPosition(0, 0.800f, 0.300f);
     obj4->SetLocalScale(0.05f, 0.05f, 0.05f);
 
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
