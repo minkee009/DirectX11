@@ -35,13 +35,18 @@ namespace MyEngine
 		static void ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string,UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy);
 		static Mesh ProcessMesh(aiMesh* pMesh, const aiScene* pScene);
 		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene,const BoneType& boneType);
-
 	public:
+		enum class LoadMaterialType { BlinnPhong, BlinnPhongToon };
+
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
 		static std::unique_ptr<RigidMeshRenderer> LoadRigidMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<StaticMeshRenderer> LoadStaticMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<SkinningMeshRenderer> LoadSkinningMeshRendererFromFile(std::string filePath);
+		static void SetLoadMaterialType(LoadMaterialType type);
+
+	private:
+		static LoadMaterialType s_materialType;
 	};
 
 }

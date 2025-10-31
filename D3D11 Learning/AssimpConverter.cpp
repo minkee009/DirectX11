@@ -212,8 +212,17 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
         mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader_SkinningBone(), Material::GetBlinnPhongVSBlob());
         break;
     }
-    mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongToonPixelShader(), nullptr);
-    
+
+    switch (s_materialType)
+    {
+    case LoadMaterialType::BlinnPhong:
+        mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongPixelShader(), nullptr);
+        break;
+    case LoadMaterialType::BlinnPhongToon:
+        mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongToonPixelShader(), nullptr);
+        break;
+    }
+
     //색상 불러오기
     aiColor4D diffuseColor;
     if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor))
@@ -754,4 +763,11 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     }
 
     return pSkinningMeshRenderer;
+}
+
+MyEngine::AssimpConverter::LoadMaterialType MyEngine::AssimpConverter::s_materialType = MyEngine::AssimpConverter::LoadMaterialType::BlinnPhong;
+
+void MyEngine::AssimpConverter::SetLoadMaterialType(LoadMaterialType type)
+{
+    s_materialType = type;
 }
