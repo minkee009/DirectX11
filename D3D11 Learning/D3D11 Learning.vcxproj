@@ -143,6 +143,7 @@
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
+    <ClCompile Include="PostProcessingFX.cpp" />
     <ClCompile Include="RigidMeshRenderer.cpp" />
     <ClCompile Include="SkinningMeshRenderer.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
@@ -159,6 +160,7 @@
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
+    <ClInclude Include="PostProcessingFX.h" />
     <ClInclude Include="RigidMeshRenderer.h" />
     <ClInclude Include="SkinningMeshRenderer.h" />
     <ClInclude Include="StaticMesh.h" />
