@@ -24,10 +24,6 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindM
         {
             mat.Bind(context);
         }
-        else
-        {
-            context->VSSetShader(mat.GetVertexShader(), nullptr, 0);
-        }
         drawCount++;
      
         if (DebugStatusUI::StaticMeshRenderer::limitDrawOption 

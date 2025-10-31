@@ -82,12 +82,17 @@ namespace MyEngine
 		
 		static ComPtr<ID3D11VertexShader> s_pDefaultVertexShader;
 		static ComPtr<ID3D11PixelShader>  s_pDefaultPixelShader;
+		static ComPtr<ID3D11VertexShader> s_pOutlineVertexShader;
+		static ComPtr<ID3D11VertexShader> s_pOutlineVertexShader_useRigidBone;
+		static ComPtr<ID3D11VertexShader> s_pOutlineVertexShader_useSkinningBone;
+		static ComPtr<ID3D11PixelShader>  s_pOutlinePixelShader;
 		static ComPtr<ID3DBlob> s_pDefaultVSBlob;
 
 		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader;
 		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader_useRigidBone;
 		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader_useSkinningBone;
 		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongPixelShader;
+		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongToonPixelShader;
 		static ComPtr<ID3DBlob> s_pBlinnPhongVSBlob;
 	public:
 		Material() = default;
@@ -116,8 +121,13 @@ namespace MyEngine
 		static void InitDefaultShaders(ID3D11Device* device);
 		static void ReleaseDefaultShaders();
 		static void BindDefaultShaders(ID3D11DeviceContext* context);
+		static void BindOutlineShaders(ID3D11DeviceContext* context);
 		inline static ID3D11VertexShader* GetDefaultVertexShader() { return s_pDefaultVertexShader.Get(); }
+		inline static ID3D11VertexShader* GetOutlineVertexShader_RigidBone() { return s_pOutlineVertexShader_useRigidBone.Get(); }
+		inline static ID3D11VertexShader* GetOutlineVertexShader_SkinningBone() { return s_pOutlineVertexShader_useSkinningBone.Get(); }
 		inline static ID3D11PixelShader* GetDefaultPixelShader() { return s_pDefaultPixelShader.Get(); }
+		inline static ID3D11VertexShader* GetOutlineVertexShader() { return s_pOutlineVertexShader.Get(); }
+		inline static ID3D11PixelShader* GetOutlinePixelShader() { return s_pOutlinePixelShader.Get(); }
 		inline static ID3DBlob* GetDefaultVSBlob() { return s_pDefaultVSBlob.Get(); }
 
 		//Blinn Phong ºŒ¿Ã¥ı
@@ -127,6 +137,7 @@ namespace MyEngine
 		inline static ID3D11VertexShader* GetBlinnPhongVertexShader_RigidBone() { return s_pBlinnPhongVertexShader_useRigidBone.Get(); }
 		inline static ID3D11VertexShader* GetBlinnPhongVertexShader_SkinningBone() { return s_pBlinnPhongVertexShader_useSkinningBone.Get(); }
 		inline static ID3D11PixelShader* GetBlinnPhongPixelShader() { return s_pBlinnPhongPixelShader.Get(); }
+		inline static ID3D11PixelShader* GetBlinnPhongToonPixelShader() { return s_pBlinnPhongToonPixelShader.Get(); }
 		inline static ID3DBlob* GetBlinnPhongVSBlob() { return s_pBlinnPhongVSBlob.Get(); }
 	};
 }

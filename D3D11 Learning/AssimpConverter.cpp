@@ -212,7 +212,7 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
         mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader_SkinningBone(), Material::GetBlinnPhongVSBlob());
         break;
     }
-    mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongPixelShader(), nullptr);
+    mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongToonPixelShader(), nullptr);
     
     //색상 불러오기
     aiColor4D diffuseColor;

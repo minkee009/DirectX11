@@ -91,10 +91,6 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 		{
 			mat.Bind(context);
 		}
-		else
-		{
-			context->VSSetShader(mat.GetVertexShader(), nullptr, 0);
-		}
 
 		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
 			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum

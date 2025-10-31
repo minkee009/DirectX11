@@ -97,10 +97,6 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 		{
 			mat.Bind(context);
 		}
-		else
-		{
-			context->VSSetShader(mat.GetVertexShader(),nullptr,0);
-		}
 
 		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
 			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum

@@ -312,6 +312,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
+    m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, -45.0f);
@@ -326,9 +327,14 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj3->SetWorldPosition(0, 0, 0);
     obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    auto obj4 = m_sceneObjects[3].get();
+    obj4->SetWorldPosition(0, 0, 0);
+    obj4->SetLocalScale(0.05f, 0.05f, 0.05f);
+
+    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/Zombie_Run.fbx"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
+    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
     //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
     return true;
@@ -857,19 +863,30 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
 
+
+    m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader_SkinningBone(), nullptr, 0);
     m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false, false);
 
     auto& obj2 = m_sceneObjects[1];
     cb.mWorld = XMMatrixTranspose(obj2->GetWorldMatrix());
     m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
+    m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader(), nullptr, 0);
     m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false, { 1,5 });
 
     auto& obj3 = m_sceneObjects[2];
     cb.mWorld = XMMatrixTranspose(obj3->GetWorldMatrix());
     m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
+    m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader(), nullptr, 0);
     m_pStaticMeshRenderers[1]->Draw(m_pContext.Get(), true, false);
+
+    auto& obj4 = m_sceneObjects[3];
+    cb.mWorld = XMMatrixTranspose(obj4->GetWorldMatrix());
+    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+    m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader(), nullptr, 0);
+    m_pStaticMeshRenderers[2]->Draw(m_pContext.Get(), true, false);
 
     //for (size_t i = 0; i < m_sceneObjects.size(); i++)
     //{
@@ -924,11 +941,6 @@ void MyEngine::MyD3DContext::Render()
     // <<======= 아웃라인 드로우
     for (auto& obj : m_sceneObjects)
     {
-		auto orginalScale = obj->GetLocalScale();
-        auto orginalPos = obj->GetWorldPosition();
-
-        obj->SetLocalScale(orginalScale * (1.0f + m_outLineWidth));
-        obj->SetLocalPosition(obj->GetLocalPosition() + Vector3{ 0, -m_outLineHeightBias, 0 });
         m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
 
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
@@ -940,21 +952,21 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-   
-        m_pContext->VSSetShader(Material::GetDefaultVertexShader(), nullptr, 0);
-        m_pContext->PSSetShader(Material::GetDefaultPixelShader(), nullptr, 0);
+
+        Material::BindOutlineShaders(m_pContext.Get());
 
         if (modelIdx == 0)
-            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(),true,false,false);
+        {
+            m_pContext->VSSetShader(Material::GetOutlineVertexShader_SkinningBone(), nullptr, 0);
+            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false, false);
+        }
         //if (modelIdx == 1)
         //    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true,false);
-        //if (modelIdx == 2)
-        //    m_pStaticMeshRenderers[1]->Draw(m_pContext.Get(), true, false);
+        if (modelIdx == 3)
+            m_pStaticMeshRenderers[2]->Draw(m_pContext.Get(), true, false);
         modelIdx++;
 
         m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
-		obj->SetLocalScale(orginalScale);
-		obj->SetWorldPosition(orginalPos);
     }
 
     modelIdx = 0;
@@ -970,14 +982,27 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
         if (modelIdx == 0)
+        {
+            m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader_SkinningBone(), nullptr, 0);
+            m_pContext->PSSetShader(Material::GetBlinnPhongToonPixelShader(), nullptr, 0);
             m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
+        }
         if (modelIdx == 1)
+        {
+            m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader(), nullptr, 0);
+            m_pContext->PSSetShader(Material::GetBlinnPhongToonPixelShader(), nullptr, 0);
             m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
+        }
         if (modelIdx == 2)
         {
             cb.gradientIntensity = 0.0f;
             m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
             m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
+        }
+        if (modelIdx == 3)
+        {
+            m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+            m_pStaticMeshRenderers[2]->Draw(m_pContext.Get());
         }
         modelIdx++;
 
