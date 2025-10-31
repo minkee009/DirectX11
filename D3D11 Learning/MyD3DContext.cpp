@@ -331,7 +331,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj4->SetWorldPosition(0, 0, 0);
     obj4->SetLocalScale(0.05f, 0.05f, 0.05f);
 
-    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/Zombie_Run.fbx"));
+    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
