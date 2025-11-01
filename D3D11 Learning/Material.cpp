@@ -1349,9 +1349,12 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
-	diff = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
+	float diffLut = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
 	
-	float diffShadow = shadowLut > diff ? diff : shadowLut; // 그림자와 조명값 중 작은 값을 사용
+	
+
+	float diffShadow = shadowLut > diffLut ? diffLut : shadowLut; // 그림자와 조명값 중 작은 값을 사용
+	diffShadow = diffShadow > 0.95 ? diffShadow : (dot(N, -L) * 0.15 + 0.15);
 
     float4 diffuse = diffuseStr * vLightColor * lightDist * diffShadow;
     
@@ -1386,14 +1389,16 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	float rimIntensity = rimDot * NdotL;
 	rimIntensity = smoothstep(_RimAmount - 0.01, _RimAmount + 0.01, rimIntensity);
 
-	float rimMinusIntensity = rimDot * minusNdotL;
-	rimMinusIntensity = smoothstep(_RimAmount - 0.01, _RimAmount + 0.01, rimMinusIntensity);
 
-	float4 minusRim = rimMinusIntensity * vAmbientColor;
+	float _negativeRimAmount = 0.58;
+	float rimMinusIntensity = rimDot * minusNdotL;
+	rimMinusIntensity = smoothstep(_negativeRimAmount - 0.21, _negativeRimAmount + 0.21, rimMinusIntensity);
+
+	float4 minusRim = rimMinusIntensity * vAmbientColor * 0.35;
 	
 	float4 rim = rimIntensity * vLightColor;
     
-    float3 baseRGB = (specular + diffuse + ambient + rim + rimMinusIntensity).rgb * baseTex.rgb + emmisive.rgb ;
+    float3 baseRGB = (specular + diffuse + ambient + rim + minusRim).rgb * baseTex.rgb + emmisive.rgb ;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
     
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
