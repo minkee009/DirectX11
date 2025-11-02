@@ -376,14 +376,19 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
-}                                       
+}         
+
+cbuffer ConstantBuffer : register(b4)
+{
+    float OutlineThickness;
+}                                 
 			                                                   
 PS_INPUT VS(VS_INPUT input)                       
 {                                                 
 	PS_INPUT output = (PS_INPUT)0;                
 			                     
 	float3 N = normalize(input.Norm);
-	float3 expanded = input.Pos + N * 0.2;
+	float3 expanded = input.Pos + N * OutlineThickness;
 	float4 expandedPos = float4(expanded, 1.0);
                               
 	// º¯È¯                                        
@@ -459,6 +464,11 @@ cbuffer BoneOffsetBuffer : register(b3)
 	matrix OffsetMatricies[128];
 }
 
+cbuffer ConstantBuffer : register(b4)
+{
+    float OutlineThickness;
+}               
+
 struct VS_INPUT
 {
     float4 Pos : POSITION;
@@ -499,7 +509,7 @@ PS_INPUT VS(VS_INPUT input)
 
 				                     
 	float3 N = normalize(input.Norm);
-	float3 expanded = input.Pos + N * 0.2;
+	float3 expanded = input.Pos + N * OutlineThickness;
 	float4 expandedPos = float4(expanded, 1.0);
 
     output.Pos = mul(expandedPos, finalWorld);

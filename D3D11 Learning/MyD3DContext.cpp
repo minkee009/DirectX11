@@ -353,6 +353,16 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    cbDesc = {};
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.ByteWidth = sizeof(OutlineCB);
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = 0;
+
+    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pOutlineCB.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
@@ -998,6 +1008,12 @@ void MyEngine::MyD3DContext::Render()
 
 
     int modelIdx = 0;
+
+    OutlineCB olCB = {};
+    olCB.Thickness = m_outlineThickness;
+    m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &olCB, 0, 0);
+    m_pContext->VSSetConstantBuffers(4, 1, m_pOutlineCB.GetAddressOf());
+
     // <<======= 아웃라인 드로우
     for (auto& obj : m_sceneObjects)
     {

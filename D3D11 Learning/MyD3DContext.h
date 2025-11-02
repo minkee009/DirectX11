@@ -60,6 +60,13 @@ namespace MyEngine {
 		FLOAT diffGradientDistHalf;
 		FLOAT diffGradientDepth;
 		FLOAT rimLightStr;
+		XMFLOAT3 pad4;
+	};
+
+	struct OutlineCB
+	{
+		FLOAT Thickness;
+		XMFLOAT3 pad;
 	};
 
 	class MyD3DContext {
@@ -113,6 +120,7 @@ namespace MyEngine {
 		ComPtr<ID3D11Buffer> m_pSkyBoxIndexBuffer = nullptr;
 
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pOutlineCB = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeTextureRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeNormalMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeSpecularMapRV = nullptr;
@@ -120,9 +128,6 @@ namespace MyEngine {
 
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
-
-		FLOAT m_outLineHeightBias = 0.249f;
-		FLOAT m_outLineWidth = 0.025f;
 
 		std::unique_ptr<Transform> m_pDirectionalLightT;
 		XMFLOAT4 m_lightColor = { 1,0.988f,0.952f,1 };
@@ -137,6 +142,8 @@ namespace MyEngine {
 		FLOAT m_specularStrength = 0.228f;
 		FLOAT m_rimLightStrength = 1.0f;
 		UINT m_shininess = 512;
+
+		FLOAT m_outlineThickness = 0.2f;
 
 		FLOAT m_reflectionFactor = 0.005f;
 		bool m_isPointLight = false;
