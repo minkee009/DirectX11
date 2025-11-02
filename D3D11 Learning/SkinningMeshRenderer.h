@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "directxtk/SimpleMath.h"
 #include "Animation.hpp"
+#include "AABB.h"
 
 namespace MyEngine
 {
@@ -19,8 +20,10 @@ namespace MyEngine
 		int index = -1;
 		int parentIndex = -1;
 
+
+		AABB boundBox;
 		Matrix offset;  //바인드 역행렬 <- 상수 값
-		Matrix local; //상수 값 - 로드할 때 한번만 연산
+		Matrix local; //로컬행렬 프레임당 한번만 연산
 		Matrix model; //프레임당 한번만 연산
 	};
 

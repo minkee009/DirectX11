@@ -129,6 +129,8 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
             matrix.d1, matrix.d2, matrix.d3, matrix.d4
         );
 
+        bone.boundBox = { {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
+
         bones.emplace_back(bone);
         nodeNameToIndexMap.insert({ nodeName, bone.index });
         currentBoneIndex = bone.index;
