@@ -3,11 +3,53 @@
 #include <dxgi.h>
 #include <directxcolors.h>
 #include <d3dcompiler.h>
+#include <wincodec.h>
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
 using namespace DirectX;
+
+namespace MyEngine::GlobalLogic::ToonShader
+{
+    bool GetLutOnePixelColor(const wchar_t* file, BYTE outRGBA[4])
+    {
+        IWICImagingFactory* factory = nullptr;
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory))))
+            return false;
+
+        IWICBitmapDecoder* decoder = nullptr;
+        if (FAILED(factory->CreateDecoderFromFilename(file, nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder)))
+            return false;
+
+        IWICBitmapFrameDecode* frame = nullptr;
+        decoder->GetFrame(0, &frame);
+
+        IWICFormatConverter* converter = nullptr;
+        factory->CreateFormatConverter(&converter);
+        converter->Initialize(frame, GUID_WICPixelFormat32bppRGBA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom);
+
+        // (0,0) 픽셀만 읽기
+        WICRect rect = { 0,0,1,1 };
+        converter->CopyPixels(&rect, 4, 4, outRGBA);
+
+        converter->Release();
+        frame->Release();
+        decoder->Release();
+        factory->Release();
+        return true;
+    }
+    
+    BYTE GetLutOnePixelR(const wchar_t* file)
+    {
+        BYTE outCol[4];
+        if (GetLutOnePixelColor(file, &outCol[0]))
+        {
+            return outCol[0];
+        }
+        return 0;
+    }
+}
 
 bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 {
@@ -225,13 +267,26 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     D3D11_SAMPLER_DESC sampDesc;
     ZeroMemory(&sampDesc, sizeof(sampDesc));
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
     sampDesc.MinLOD = 0;
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
     hr = m_pd3dDevice->CreateSamplerState(&sampDesc, m_pSamplerLinear.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    sampDesc = {};
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = m_pd3dDevice->CreateSamplerState(&sampDesc, m_pSamplerPoint.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -775,7 +830,7 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     samplerDesc.MinLOD = 0;
     samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-    hr = m_pd3dDevice->CreateSamplerState(&samplerDesc, &m_pShadowSampler);
+    hr = m_pd3dDevice->CreateSamplerState(&samplerDesc, m_pShadowSampler.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -791,7 +846,7 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     rd.ScissorEnable = FALSE;
     rd.MultisampleEnable = FALSE;
     rd.AntialiasedLineEnable = FALSE;
-    hr = m_pd3dDevice->CreateRasterizerState(&rd, &m_pShadowMapRasterizerState);
+    hr = m_pd3dDevice->CreateRasterizerState(&rd, m_pShadowMapRasterizerState.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -857,6 +912,16 @@ void MyEngine::MyD3DContext::Render()
     cb.mView = lightViewMat.Transpose();
     cb.mProjection = lightProj.Transpose();
 
+    cb.rimLightStr = m_rimLightStrength;
+
+    static BYTE lowlutPixel = MyEngine::GlobalLogic::ToonShader::GetLutOnePixelR(L"Resources/Textures/Lut.png");
+    cb.lowLut = pow((float)lowlutPixel / 255.0f, 2.2f); // 정규화 후 감마 색상표로 전환 
+
+    float colorMapA = cb.lowLut - m_diffuseGradientStrength;
+    float colorMapB = cb.lowLut;
+    cb.diffGradientDistHalf = abs(colorMapB - colorMapA) * 0.5f;
+    cb.diffGradientDepth = colorMapB - cb.diffGradientDistHalf;
+
     m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
     auto& obj1 = m_sceneObjects[0];
@@ -916,6 +981,7 @@ void MyEngine::MyD3DContext::Render()
     //스카이박스 드로우
     m_pContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
     m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
     m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_pContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
     m_pContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);

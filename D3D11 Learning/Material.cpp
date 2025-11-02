@@ -1215,8 +1215,12 @@ cbuffer ConstantBuffer : register(b0)
     float specularStr;
     uint shininess;
     float reflectionFactor;
-	matrix LightViewProjection;
-	float gradientIntensity;
+    matrix LightViewProjection;
+    float gradientIntensity;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -1232,6 +1236,7 @@ Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
 Texture2D lutMap : register(t5);
 SamplerState samLinear : register(s0);
+SamplerState samPoint : register(s2);
 Texture2D shadowMap : register(t6); 
 SamplerComparisonState samShadow : register(s1);
 
@@ -1295,7 +1300,7 @@ float CalculateShadowPCF(float4 LightPos)
     
     // 3x3 PCF
     float shadow = 0.0f;
-    float2 texelSize = 1.0f / 2048.0f; // Shadow Map 크기
+    float2 texelSize = 1.0f / 8192.0f; // Shadow Map 크기
     
     for (int x = -1; x <= 1; ++x)
     {
@@ -1332,31 +1337,32 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 R = reflect(I, N);  // 큐브맵 반사를 위한 리플렉트 벡터
     R.x = -R.x;
     float3 L = -vLightDir.xyz;
-	float NdotL = dot(vLightPos, N);
+	float RimNdotL = dot(vLightPos, N);
+	float NdotL = saturate(dot(N, L));
     
     // 조명 위치와 픽셀 위치
-    float3 toLight = vLightPos - input.WorldPos;
-    float distance = length(toLight);
+    //float3 toLight =  - input.WorldPos;
+    //float distance = length(toLight);
 
     // 감쇠 계수 (1 / d² 형태)
     //float attenuation = 1.0f / (distance * distance);
     
-    float lightDist = 1.0f;
+    //float lightDist = attenuation;
     
 	float shadow = CalculateShadowPCF(input.LightPos); // 그림자 인자 계산
-	float shadowLut = lutMap.Sample(samLinear, float2(shadow * 0.5f + 0.495f, 0.5f)).r;
+	float shadowLut = lutMap.Sample(samPoint, float2(shadow * 0.5f + 0.495f, 0.5f)).r;
+
+    float diff = NdotL;
 	
-    float diff = saturate(dot(N, L));
 	//float bandLevel = 1.0f;
 	//diff = ceil(diff * bandLevel)/bandLevel;
-	float diffLut = lutMap.Sample(samLinear, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
-	
+	float diffLut = lutMap.Sample(samPoint, float2((diff * 0.5f) + 0.495f,0.5f)).r;  // 카툰렌더링 활성화
 	
 
-	float diffShadow = shadowLut > diffLut ? diffLut : shadowLut; // 그림자와 조명값 중 작은 값을 사용
-	diffShadow = diffShadow > 0.95 ? diffShadow : (dot(N, -L) * 0.15 + 0.15);
+	float diffShadow = min(shadowLut, diffLut); // 그림자와 조명값 중 작은 값을 사용
+	diffShadow = diffShadow > lowLut ? diffShadow : (dot(N, -L) * diffGradientDistHalf + diffGradientDepth);
 
-    float4 diffuse = diffuseStr * vLightColor * lightDist * diffShadow;
+    float4 diffuse = diffuseStr * vLightColor * diffShadow;
     
     float3 viewDir = normalize(CameraPos.xyz - input.WorldPos);
     float3 halfDir = normalize(viewDir + L); // 스펙큘러연산을 위한 하프 벡터
@@ -1367,7 +1373,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	spec = smoothstep(0.01, 0.02f, spec); // <- 카툰렌더링용 스펙큘러
 	shadowLut = shadowLut > 0.999f ? 1.0f : 0.0f; // 카툰렌더링용 그림자
 	shadowLut = diff > 0.6f ? shadowLut : 0.0f; // 디퓨즈가 낮으면 그림자 제거
-	float4 specular = specularStr * specTex * spec * vLightColor * lightDist * shadowLut;
+	float4 specular = specularStr * specTex * spec * vLightColor * shadowLut;
     
 	float4 emmisive = lerp(float4(0, 0, 0, 0), emmisiveMap.Sample(samLinear, input.Tex),(textureFlags & 8) != 0);
 
@@ -1381,22 +1387,22 @@ float4 PS(PS_INPUT input) : SV_TARGET
     clip(baseTex.a - alphaCutoff);
 
 
-	float minusNdotL  = dot(-vLightPos.xyz , N);
+	float minusRimNdotL  = dot(-vLightPos.xyz , N);
 
 	// 림 라이트
 	float _RimAmount = 0.716;
 	float4 rimDot = 1 - dot(viewDir, N);
-	float rimIntensity = rimDot * NdotL;
+	float rimIntensity = rimDot * RimNdotL;
 	rimIntensity = smoothstep(_RimAmount - 0.01, _RimAmount + 0.01, rimIntensity);
 
 
 	float _negativeRimAmount = 0.58;
-	float rimMinusIntensity = rimDot * minusNdotL;
+	float rimMinusIntensity = rimDot * minusRimNdotL;
 	rimMinusIntensity = smoothstep(_negativeRimAmount - 0.21, _negativeRimAmount + 0.21, rimMinusIntensity);
 
-	float4 minusRim = rimMinusIntensity * vAmbientColor * 0.35;
+	float4 minusRim = rimMinusIntensity * vAmbientColor * 0.35 * rimLightStr;
 	
-	float4 rim = rimIntensity * vLightColor;
+	float4 rim = rimIntensity * vLightColor * rimLightStr;
     
     float3 baseRGB = (specular + diffuse + ambient + rim + minusRim).rgb * baseTex.rgb + emmisive.rgb ;
     float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;

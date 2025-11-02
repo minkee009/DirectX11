@@ -56,6 +56,10 @@ namespace MyEngine {
 		XMFLOAT3 pad3;
 		XMMATRIX mlightViewProj;
 		FLOAT gradientIntensity;
+		FLOAT lowLut;
+		FLOAT diffGradientDistHalf;
+		FLOAT diffGradientDepth;
+		FLOAT rimLightStr;
 	};
 
 	class MyD3DContext {
@@ -84,6 +88,7 @@ namespace MyEngine {
 		ComPtr<ID3D11RasterizerState> m_pClockWiseRasterizerState = nullptr;		//반시계방향 컬링 (스카이 박스용)
 		ComPtr<ID3D11RasterizerState> m_pShadowMapRasterizerState = nullptr;
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
+		ComPtr<ID3D11SamplerState> m_pSamplerPoint = nullptr;
 		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
@@ -128,7 +133,9 @@ namespace MyEngine {
 		XMFLOAT4 m_ambientColor = { 0.85f,0.93f,1,1 };
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
+		FLOAT m_diffuseGradientStrength = 0.3125f;
 		FLOAT m_specularStrength = 0.228f;
+		FLOAT m_rimLightStrength = 1.0f;
 		UINT m_shininess = 512;
 
 		FLOAT m_reflectionFactor = 0.005f;
@@ -146,7 +153,7 @@ namespace MyEngine {
 		UINT m_skyBoxIndexCount = 0;
 
 
-		const UINT SHADOW_MAP_SIZE = 2048;
+		const UINT SHADOW_MAP_SIZE = 8192;
 
 		ComPtr<ID3D11Texture2D> m_pShadowTex;
 		ComPtr<ID3D11ShaderResourceView> m_pShadowSRV;

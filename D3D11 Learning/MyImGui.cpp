@@ -248,7 +248,7 @@ void MyEngine::MyImGui::Update()
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(5, 390), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(220, 374), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(260, 374), ImGuiCond_Once);
 
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
@@ -419,11 +419,25 @@ void MyEngine::MyImGui::Update()
         m_d3dContext->m_diffuseStrength = 1.0f;
     }
 
+    ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
+    ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##그라디언트")) {
+        m_d3dContext->m_diffuseGradientStrength = 0.3125f;
+    }
+
     ImGui::Text(u8"정반사광(specular) : 강도");
     ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 1.0f);
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##9")) {
         m_d3dContext->m_specularStrength = 0.228f;
+    }
+
+    ImGui::Text(u8"역광(rim light) : 강도");
+    ImGui::SliderFloat("##RimLightStrength", &m_d3dContext->m_rimLightStrength, 0.0f, 1.0f);
+    ImGui::SameLine();
+    if (ImGui::Button(u8"초기값##16")) {
+        m_d3dContext->m_rimLightStrength = 1.0f;
     }
 
     ImGui::Text(u8"광택지수(shininess)");
@@ -449,7 +463,7 @@ void MyEngine::MyImGui::Update()
     auto textSize = ImGui::CalcTextSize(stext);
 
     // 별도의 숫자 표시 (항상 맨 마지막에)
-    ImVec2 pos = ImVec2((220 - textSize.x) * 0.5f - 32, shininessUIPos.y + 3); // 윈도우 안에서의 좌표
+    ImVec2 pos = ImVec2((260 - textSize.x) * 0.5f - 39, shininessUIPos.y + 3); // 윈도우 안에서의 좌표
     ImGui::SetCursorPos(pos);
     ImGui::Text("%d", m_d3dContext->m_shininess);
 
@@ -526,7 +540,7 @@ void MyEngine::MyImGui::Update()
             ImGui::EndTooltip();
         }
 
-        ImGui::DragFloat(u8"프로젝션 Near", &m_d3dContext->m_lightProjectNear, 0.01f, 0.01f, 1.0f);
+        ImGui::DragFloat(u8"프로젝션 Near", &m_d3dContext->m_lightProjectNear, 0.01f, 0.01f, 50.0f);
         ImGui::DragFloat(u8"프로젝션 Far", &m_d3dContext->m_lightProjectFar, 1.0f, 50.0f, 1500.0f);
     }
     else
