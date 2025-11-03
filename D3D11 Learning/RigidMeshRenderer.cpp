@@ -5,7 +5,12 @@
 #include "StaticMeshRenderer.h"
 #include "Time.h"
 
-void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial, bool updateMatrix)
+MyEngine::RigidMeshRenderer::RigidMeshRenderer()
+{
+	m_pBoneMatrixData = std::make_unique<RigidBoneMatCB>();
+}
+
+void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
 {
 	if (!m_boneMatrixCB)
 	{
@@ -43,30 +48,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 			return;
 	}
 
-	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
-	if(updateMatrix)
-		MatrixUpdate();
-
-	RigidBoneMatCB cb1;
-	auto& bones = m_rigidMesh.GetBones();
-
-	for (UINT i = 0; i < bones.size(); i++)
-	{
-		auto& bone = bones[i];
-		
-		if (bone.parentIndex != -1)
-		{
-			auto& boneParent = bones[bone.parentIndex];
-			bone.model = boneParent.model * bone.local;
-		}
-		else
-		{
-			bone.model = bone.local;
-		}
-
-		cb1.matricies[i] = bone.model;
-	}
-	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, &cb1, 0, 0);
+	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, m_pBoneMatrixData.get(), 0, 0);
 	context->VSSetConstantBuffers(2, 1, m_boneMatrixCB.GetAddressOf());
 
 	UINT stride = sizeof(VertexType);
@@ -100,8 +82,29 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
 	}
 }
-
 void MyEngine::RigidMeshRenderer::MatrixUpdate()
+{
+	auto& bones = m_rigidMesh.GetBones();
+
+	for (UINT i = 0; i < bones.size(); i++)
+	{
+		auto& bone = bones[i];
+
+		if (bone.parentIndex != -1)
+		{
+			auto& boneParent = bones[bone.parentIndex];
+			bone.model = boneParent.model * bone.local;
+		}
+		else
+		{
+			bone.model = bone.local;
+		}
+
+		m_pBoneMatrixData->matricies[i] = bone.model;
+	}
+}
+
+void MyEngine::RigidMeshRenderer::AnimationUpdate()
 {
 	if (m_boneAnimations.empty() || !m_playing)
 		return;

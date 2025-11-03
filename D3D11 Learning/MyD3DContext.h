@@ -157,7 +157,11 @@ namespace MyEngine {
 		FLOAT m_rimLightStrength = 1.0f;
 		UINT m_shininess = 512;
 
-		FLOAT m_outlineThickness = 0.2f;
+		FLOAT m_outlineThickness = 0.02f;
+
+		XMFLOAT4 m_gradientColorTop = { 0.674f, 0.602f, 0.743f, 1.0f };
+		XMFLOAT4 m_gradientColorBottom = { 0.674f, 0.602f, 0.743f, 1.0f };
+		FLOAT m_gradientIntensity = 1.0f;
 
 		FLOAT m_reflectionFactor = 0.005f;
 		bool m_isPointLight = false;

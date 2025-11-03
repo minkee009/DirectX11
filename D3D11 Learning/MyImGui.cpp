@@ -560,7 +560,7 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"�ʱⰪ")) {
-        m_d3dContext->m_outlineThickness = 0.2f;
+        m_d3dContext->m_outlineThickness = 0.02f;
     }
 
     ImGui::End();

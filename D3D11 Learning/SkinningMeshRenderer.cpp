@@ -5,10 +5,14 @@
 #include "StaticMeshRenderer.h"
 #include "Time.h"
 
-void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial, bool updateMatrix)
+MyEngine::SkinningMeshRenderer::SkinningMeshRenderer()
 {
-	if (!m_boneModelMatrixData)
-		m_boneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
+	m_pBoneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
+	m_pBoneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
+}
+
+void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
+{
 	if (!m_boneModelMatrixCB)
 	{
 		//상수버퍼 만들어주기
@@ -27,8 +31,6 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 			return;
 	}
 
-	if (!m_boneOffsetMatrixData)
-		m_boneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
 	if (!m_boneOffsetMatrixCB)
 	{
 		//상수버퍼 만들어주기
@@ -50,34 +52,12 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 		auto& bones = m_skinningMesh.GetBones();
 		for (size_t i = 0; i < bones.size(); i++)
 		{
-			m_boneOffsetMatrixData->matricies[i] = bones[i].offset;
+			m_pBoneOffsetMatrixData->matricies[i] = bones[i].offset;
 		}
-		context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_boneOffsetMatrixData.get(), 0, 0);
+		context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_pBoneOffsetMatrixData.get(), 0, 0);
 	}
 
-	//상수버퍼에 올릴 model버퍼 연산 및 집어넣기
-	if(updateMatrix)
-		MatrixUpdate();
-
-	auto& bones = m_skinningMesh.GetBones();
-
-	for (UINT i = 0; i < bones.size(); i++)
-	{
-		auto& bone = bones[i];
-
-		if (bone.parentIndex != -1)
-		{
-			auto& boneParent = bones[bone.parentIndex];
-			bone.model = boneParent.model * bone.local;
-		}
-		else
-		{
-			bone.model = bone.local;
-		}
-
-		m_boneModelMatrixData->matricies[i] = bone.model;
-	}
-	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_boneModelMatrixData.get(), 0, 0);
+	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_pBoneModelMatrixData.get(), 0, 0);
 
 	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
 	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
@@ -108,6 +88,28 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 }
 
 void MyEngine::SkinningMeshRenderer::MatrixUpdate()
+{
+	auto& bones = m_skinningMesh.GetBones();
+	for (UINT i = 0; i < bones.size(); i++)
+	{
+		auto& bone = bones[i];
+
+		if (bone.parentIndex != -1)
+		{
+			auto& boneParent = bones[bone.parentIndex];
+			bone.model = boneParent.model * bone.local;
+		}
+		else
+		{
+			bone.model = bone.local;
+		}
+
+		if(m_pBoneModelMatrixData)
+			m_pBoneModelMatrixData->matricies[i] = bone.model;
+	}
+}
+
+void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 {
 	if (m_boneAnimations.empty() || !m_playing)
 		return;
@@ -152,3 +154,40 @@ void MyEngine::SkinningMeshRenderer::Pause()
 	m_playing = false;
 }
 
+void MyEngine::SkinningMesh::CalcAABB()
+{
+	m_aabb.min.x = FLT_MAX;
+	m_aabb.min.y = FLT_MAX;
+	m_aabb.min.z = FLT_MAX;
+
+	m_aabb.max.x = -FLT_MAX;
+	m_aabb.max.y = -FLT_MAX;
+	m_aabb.max.z = -FLT_MAX;
+
+	for (auto& bone : m_bones)
+	{
+		if (bone.boundBox.min.x == FLT_MAX) continue;
+
+		auto& bbox = bone.boundBox;
+		auto corners = bbox.ExtractCorners();
+
+		for (size_t i = 0; i < corners.size(); i++)
+		{
+			corners[i] = Vector3::Transform(corners[i], bone.model);
+
+			if (m_aabb.min.x > corners[i].x)
+				m_aabb.min.x = corners[i].x;
+			if (m_aabb.min.y > corners[i].y)
+				m_aabb.min.y = corners[i].y;
+			if (m_aabb.min.z > corners[i].z)
+				m_aabb.min.z = corners[i].z;
+
+			if (m_aabb.max.x < corners[i].x)
+				m_aabb.max.x = corners[i].x;
+			if (m_aabb.max.y < corners[i].y)
+				m_aabb.max.y = corners[i].y;
+			if (m_aabb.max.z < corners[i].z)
+				m_aabb.max.z = corners[i].z;
+		}
+	}
+}

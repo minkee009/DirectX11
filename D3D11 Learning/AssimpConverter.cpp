@@ -643,6 +643,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
                     vertex.boneIndices[i] = boneData[i].first;
                     vertex.boneWeights[i] = boneData[i].second;
                     totalWeight += boneData[i].second;
+
                 }
                 else
                 {
@@ -659,6 +660,19 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
                 for (int i = 0; i < 4; ++i)
                 {
                     vertex.boneWeights[i] *= factor;
+
+                    if (skinningBones[vertex.boneIndices[i]].boundBox.min.x > vertex.position.x)
+                        skinningBones[vertex.boneIndices[i]].boundBox.min.x = vertex.position.x;
+                    if (skinningBones[vertex.boneIndices[i]].boundBox.min.y > vertex.position.y)
+                        skinningBones[vertex.boneIndices[i]].boundBox.min.y = vertex.position.y;
+                    if (skinningBones[vertex.boneIndices[i]].boundBox.min.z > vertex.position.z)
+                        skinningBones[vertex.boneIndices[i]].boundBox.min.z = vertex.position.z;
+                    if (skinningBones[vertex.boneIndices[i]].boundBox.max.x < vertex.position.x)
+                        skinningBones[vertex.boneIndices[i]].boundBox.max.x = vertex.position.x;
+                    if (skinningBones[vertex.boneIndices[i]].boundBox.max.y < vertex.position.y)
+                        skinningBones[vertex.boneIndices[i]].boundBox.max.y = vertex.position.y;
+                    if (skinningBones[vertex.boneIndices[i]].boundBox.max.z < vertex.position.z)
+                        skinningBones[vertex.boneIndices[i]].boundBox.max.z = vertex.position.z;
                 }
             }
 
@@ -666,11 +680,45 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         }
     }
 
+    for (auto& sbone : skinningBones)
+    {
+        //auto& bbox = sbone.boundBox;
+        //auto corners = bbox.ExtractCorners();
+
+        //float minX = FLT_MAX;
+        //float minY = FLT_MAX;
+        //float minZ = FLT_MAX;
+
+        //float maxX = -FLT_MAX;
+        //float maxY = -FLT_MAX;
+        //float maxZ = -FLT_MAX;
+
+        //for (size_t i = 0; i < corners.size(); i++)
+        //{
+        //    corners[i] = Vector3::Transform(corners[i], sbone.offset);
+
+        //    if (minX > corners[i].x)
+        //        bbox.min.x = corners[i].x;
+        //    if (minY > corners[i].y)
+        //        bbox.min.y = corners[i].y;
+        //    if (minZ > corners[i].z)
+        //        bbox.min.z = corners[i].z;
+
+        //    if (maxX < corners[i].x)
+        //        bbox.max.x = corners[i].x;
+        //    if (maxY < corners[i].y)
+        //        bbox.max.y = corners[i].y;
+        //    if (maxZ < corners[i].z)
+        //        bbox.max.z = corners[i].z;
+        //}
+    }
+
     sMesh.SetSubMesh(std::move(meshes));
     sMesh.SetMatIdx(std::move(matIndices));
     sMesh.SetBones(std::move(skinningBones));
+    sMesh.CalcAABB();
     pSkinningMeshRenderer->SetMesh(std::move(sMesh));
-
+    pSkinningMeshRenderer->MatrixUpdate();
 
     if (pScene->HasAnimations())
     {

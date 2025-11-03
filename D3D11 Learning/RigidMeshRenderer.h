@@ -47,10 +47,13 @@ namespace MyEngine
 		std::vector<Material> m_materials;
 		ComPtr<ID3D11Buffer> m_boneMatrixCB;
 		ComPtr<ID3D11Buffer> m_boneMatrixIdxCB;
+		std::unique_ptr<RigidBoneMatCB> m_pBoneMatrixData;
 	public:
+		RigidMeshRenderer();
 		inline void SetMesh(RigidMesh&& mesh) { m_rigidMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
-		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true, bool updateMatrix = true);
+		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true);
+		void MatrixUpdate();
 
 		// ====== 局聪皋捞记 贸府 ====== //
 	private:
@@ -61,7 +64,7 @@ namespace MyEngine
 		UINT m_animationIdx = 0;
 		
 	public:
-		void MatrixUpdate();
+		void AnimationUpdate();
 
 		inline void SetAnimations(std::vector<std::unordered_map<UINT, AnimationClip>>&& animations) { m_boneAnimations = std::move(animations); }
 

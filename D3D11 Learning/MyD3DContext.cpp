@@ -970,7 +970,7 @@ void MyEngine::MyD3DContext::Render()
 
 
     m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader_SkinningBone(), nullptr, 0);
-    m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false, false);
+    m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false);
 
     m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader(), nullptr, 0);
 
@@ -1060,12 +1060,17 @@ void MyEngine::MyD3DContext::Render()
         if (modelIdx == 0)
         {
             m_pContext->VSSetShader(Material::GetOutlineVertexShader_SkinningBone(), nullptr, 0);
-            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false, false);
+            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false);
         }
-        //if (modelIdx == 1)
-        //    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true,false);
+        if (modelIdx == 1)
+        {
+            m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false, { 1,5 });
+        }
+          
         if (modelIdx == 3)
+        {
             m_pStaticMeshRenderers[2]->Draw(m_pContext.Get(), true, false);
+        }
         modelIdx++;
 
         m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
@@ -1073,9 +1078,9 @@ void MyEngine::MyD3DContext::Render()
     modelIdx = 0;
     
     GradientCB gradeintCB = {};
-    gradeintCB.ColorTop = { 1,1,1,1 };
-	gradeintCB.ColorBottom = { 0,0,0,1 };
-    gradeintCB.intensity = 1.0f;
+    gradeintCB.ColorTop = m_gradientColorTop;
+	gradeintCB.ColorBottom = m_gradientColorBottom;
+    gradeintCB.intensity = m_gradientIntensity;
     gradeintCB.minY = 0;
 	gradeintCB.maxY = 10.0f;
     m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
@@ -1101,11 +1106,29 @@ void MyEngine::MyD3DContext::Render()
 
         if (modelIdx == 0)
         {
+            gradeintCB.intensity = 1.0f;
+            gradeintCB.minY = FLT_MAX;
+            gradeintCB.maxY = -FLT_MAX;
+
+            //꼭지점 추출
+            auto corners = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB().ExtractCorners();
+
+            for (auto& vert : corners)
+            {
+                Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
+                if (worldPos.y < gradeintCB.minY)
+                    gradeintCB.minY = worldPos.y;
+                if (worldPos.y > gradeintCB.maxY)
+                    gradeintCB.maxY = worldPos.y;
+            }
+
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
             m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
+            m_pSkinningMeshRenderers[0]->AnimationUpdate();
+            m_pSkinningMeshRenderers[0]->MatrixUpdate();
         }
         if (modelIdx == 1)
         {
-            gradeintCB.intensity = 1.0f;
             gradeintCB.minY = FLT_MAX;
             gradeintCB.maxY = -FLT_MAX;
 
@@ -1126,14 +1149,12 @@ void MyEngine::MyD3DContext::Render()
         }
         if (modelIdx == 2)
         {
-            gradeintCB.intensity = 0.0f;
             m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
             m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
             m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
         }
         if (modelIdx == 3)
         {
-            gradeintCB.intensity = 1.0f;
             gradeintCB.minY = FLT_MAX;
             gradeintCB.maxY = -FLT_MAX;
 
@@ -1156,9 +1177,9 @@ void MyEngine::MyD3DContext::Render()
     }
 
     //debug draw
-    //m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-    //m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
-    //m_pContext->RSSetState(m_states->CullNone());
+    m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+    m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
+    m_pContext->RSSetState(m_states->CullNone());
 
     m_effect->SetView(m_pCamera->GetViewMatrix());
     m_effect->SetProjection(m_pCamera->GetProjMatrix());
@@ -1169,22 +1190,72 @@ void MyEngine::MyD3DContext::Render()
     auto lookPos = m_pCamera->GetTransform()->GetLocalPosition() + m_pCamera->GetTransform()->GetWorldMatrix().Forward() * 2.0f;
     auto shadowPos = lightFwd * -10 + lookPos;
 
-    auto pSMR2_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
+    auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
 
-    auto pSMR2_scaledExtend = Vector3{ pSMR2_AABB.GetExtent().x * obj4->GetLocalScale().x,pSMR2_AABB.GetExtent().y * obj4->GetLocalScale().y,pSMR2_AABB.GetExtent().z * obj4->GetLocalScale().z };
+    auto pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj4->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj4->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj4->GetLocalScale().z };
 
-    BoundingOrientedBox obb(Vector3::Transform(pSMR2_AABB.GetCenter(),obj4->GetWorldMatrix()), pSMR2_scaledExtend, obj4->GetLocalRotation());
-    DX::Draw(m_batch.get(), obb, Colors::Aqua); // BoundingSphere
+    BoundingOrientedBox obb(Vector3::Transform(pSMR_AABB.GetCenter(),obj4->GetWorldMatrix()), pSMR_scaledExtend, obj4->GetLocalRotation());
+    DX::Draw(m_batch.get(), obb, Colors::Aqua);
 
-    BoundingSphere sphere(lookPos, 0.125f);
-    DX::Draw(m_batch.get(), sphere, Colors::Blue); // BoundingSphere
+    pSMR_AABB = m_pStaticMeshRenderers[0]->GetMesh().GetAABB();
 
-    BoundingSphere sphere2(shadowPos, 0.125f);
-    DX::Draw(m_batch.get(), sphere2, Colors::Red); // BoundingSphere
+    pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj2->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj2->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj2->GetLocalScale().z };
 
-    auto ray1 = Ray(lookPos, shadowPos - lookPos);
+    obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj2->GetWorldMatrix()), pSMR_scaledExtend, obj2->GetLocalRotation() };
+    DX::Draw(m_batch.get(), obb, Colors::Aqua);
 
-    DX::DrawRay(m_batch.get(), ray1.position, ray1.direction, false, Colors::Green); // Light Direction
+    //pSMR_AABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB();
+
+    //pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj1->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj1->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj1->GetLocalScale().z };
+
+
+    //obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
+    //DX::Draw(m_batch.get(), obb, Colors::Aqua);
+
+    auto& bones = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBones();
+
+    for (auto& sbone : bones)
+    {
+        if (sbone.parentIndex == -1)
+            continue;
+
+        auto finMat = sbone.model.Transpose() * obj1->GetWorldMatrix();
+        auto startPos = Vector3::Transform(Vector3::Zero, finMat);
+
+        auto finMat2 = obj1->GetWorldMatrix();
+        auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
+
+        finMat2 = bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].model.Transpose() * obj1->GetWorldMatrix();
+        endPos = Vector3::Transform(Vector3::Zero, finMat2);
+
+        BoundingSphere sphr{ startPos,0.025f };
+        DX::Draw(m_batch.get(), sphr, Colors::LightGreen);
+        DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
+    }
+
+
+    for (auto& sbone : bones)
+    {
+        if (sbone.parentIndex == -1)
+            continue;
+
+        auto bone_aabb = sbone.boundBox;
+        auto bone_center = sbone.boundBox.GetCenter();
+        auto bone_extend = sbone.boundBox.GetExtent();
+
+        bone_center = Vector3::Transform(bone_center, sbone.offset.Transpose());
+        bone_center = Vector3::Transform(bone_center, sbone.model.Transpose());
+        bone_center = Vector3::Transform(bone_center, obj1->GetWorldMatrix());
+
+        auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.offset.Transpose());
+        bone_rot = bone_rot * Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
+        bone_rot = bone_rot * obj1->GetLocalRotation();
+
+        bone_extend = Vector3{ bone_extend.x * obj1->GetLocalScale().x, bone_extend.y * obj1->GetLocalScale().y, bone_extend.z * obj1->GetLocalScale().z };
+        obb = { bone_center, bone_extend, bone_rot };
+        DX::Draw(m_batch.get(), obb, Colors::Aqua);
+    }
+
 
     m_batch->End();
 

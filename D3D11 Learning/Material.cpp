@@ -386,14 +386,15 @@ cbuffer ConstantBuffer : register(b4)
 PS_INPUT VS(VS_INPUT input)                       
 {                                                 
 	PS_INPUT output = (PS_INPUT)0;                
-			                     
-	float3 N = normalize(input.Norm);
-	float3 expanded = input.Pos + N * OutlineThickness;
-	float4 expandedPos = float4(expanded, 1.0);
                               
 	// 변환                                        
-	float4 worldPos = mul(expandedPos, World);     
-	float4 viewPos = mul(worldPos, View);                     
+	float4 worldPos = mul(input.Pos, World);     
+
+	float3 N = normalize(input.Norm);
+	float3 expanded = worldPos + N * OutlineThickness;
+	float4 expandedPos = float4(expanded, 1.0);
+
+	float4 viewPos = mul(expandedPos, View);                     
 	output.Pos = mul(viewPos, Projection);                    
 			                                                   
 	return output;                                
@@ -508,13 +509,16 @@ PS_INPUT VS(VS_INPUT input)
 	matrix finalWorld = mul(skinningMatrix,World);
 
 				                     
+
+    output.Pos = mul(input.Pos, finalWorld);
+    output.WorldPos = output.Pos.xyz;
+
 	float3 N = normalize(input.Norm);
-	float3 expanded = input.Pos + N * OutlineThickness;
+	float3 expanded = output.WorldPos + N * OutlineThickness;
 	float4 expandedPos = float4(expanded, 1.0);
 
-    output.Pos = mul(expandedPos, finalWorld);
-    output.WorldPos = output.Pos.xyz;
-    output.Pos = mul(output.Pos, View);
+
+    output.Pos = mul(expandedPos, View);
     output.Pos = mul(output.Pos, Projection);
 
 	// finalWorld 행렬이 적용된 위치를 LightViewProjection으로 변환
