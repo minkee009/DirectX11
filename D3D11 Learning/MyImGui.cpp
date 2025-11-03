@@ -564,6 +564,14 @@ void MyEngine::MyImGui::Update()
     }
 
     ImGui::End();
+
+
+    ImGui::Begin(u8"디버그 드로잉");
+
+    ImGui::Checkbox(u8"활성화", &m_d3dContext->m_enableDebugDraw);
+    ImGui::Checkbox(u8"zbuffer 사용", &m_d3dContext->m_enableDebugDrawZbuffer);
+
+    ImGui::End();
 }
 
 void MyEngine::MyImGui::Render()

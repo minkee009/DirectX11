@@ -682,35 +682,38 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     for (auto& sbone : skinningBones)
     {
-        //auto& bbox = sbone.boundBox;
-        //auto corners = bbox.ExtractCorners();
+        if (sbone.boundBox.min.x == FLT_MAX)
+            continue;
 
-        //float minX = FLT_MAX;
-        //float minY = FLT_MAX;
-        //float minZ = FLT_MAX;
+        auto& bbox = sbone.boundBox;
+        auto corners = bbox.ExtractCorners();
 
-        //float maxX = -FLT_MAX;
-        //float maxY = -FLT_MAX;
-        //float maxZ = -FLT_MAX;
+        bbox.min.x = FLT_MAX;
+        bbox.min.y = FLT_MAX;
+        bbox.min.z = FLT_MAX;
 
-        //for (size_t i = 0; i < corners.size(); i++)
-        //{
-        //    corners[i] = Vector3::Transform(corners[i], sbone.offset);
+        bbox.max.x = -FLT_MAX;
+        bbox.max.y = -FLT_MAX;
+        bbox.max.z = -FLT_MAX;
+       
+        for (size_t i = 0; i < corners.size(); i++)
+        {
+            corners[i] = Vector3::Transform(corners[i], sbone.offset.Transpose());
 
-        //    if (minX > corners[i].x)
-        //        bbox.min.x = corners[i].x;
-        //    if (minY > corners[i].y)
-        //        bbox.min.y = corners[i].y;
-        //    if (minZ > corners[i].z)
-        //        bbox.min.z = corners[i].z;
+            if (bbox.min.x > corners[i].x)
+                bbox.min.x = corners[i].x;
+            if (bbox.min.y > corners[i].y)
+                bbox.min.y = corners[i].y;
+            if (bbox.min.z > corners[i].z)
+                bbox.min.z = corners[i].z;
 
-        //    if (maxX < corners[i].x)
-        //        bbox.max.x = corners[i].x;
-        //    if (maxY < corners[i].y)
-        //        bbox.max.y = corners[i].y;
-        //    if (maxZ < corners[i].z)
-        //        bbox.max.z = corners[i].z;
-        //}
+            if (bbox.max.x < corners[i].x)
+                bbox.max.x = corners[i].x;
+            if (bbox.max.y < corners[i].y)
+                bbox.max.y = corners[i].y;
+            if (bbox.max.z < corners[i].z)
+                bbox.max.z = corners[i].z;
+        }
     }
 
     sMesh.SetSubMesh(std::move(meshes));

@@ -107,6 +107,8 @@ void MyEngine::SkinningMeshRenderer::MatrixUpdate()
 		if(m_pBoneModelMatrixData)
 			m_pBoneModelMatrixData->matricies[i] = bone.model;
 	}
+
+	m_skinningMesh.CalcAABB();
 }
 
 void MyEngine::SkinningMeshRenderer::AnimationUpdate()
@@ -166,14 +168,14 @@ void MyEngine::SkinningMesh::CalcAABB()
 
 	for (auto& bone : m_bones)
 	{
-		if (bone.boundBox.min.x == FLT_MAX) continue;
+		if (bone.boundBox.min.x == FLT_MAX || bone.parentIndex == -1) continue;
 
 		auto& bbox = bone.boundBox;
 		auto corners = bbox.ExtractCorners();
 
 		for (size_t i = 0; i < corners.size(); i++)
 		{
-			corners[i] = Vector3::Transform(corners[i], bone.model);
+			corners[i] = Vector3::Transform(corners[i], bone.model.Transpose());
 
 			if (m_aabb.min.x > corners[i].x)
 				m_aabb.min.x = corners[i].x;

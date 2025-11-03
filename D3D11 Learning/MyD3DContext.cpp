@@ -1177,87 +1177,94 @@ void MyEngine::MyD3DContext::Render()
     }
 
     //debug draw
-    m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-    m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
-    m_pContext->RSSetState(m_states->CullNone());
-
-    m_effect->SetView(m_pCamera->GetViewMatrix());
-    m_effect->SetProjection(m_pCamera->GetProjMatrix());
-    m_effect->Apply(m_pContext.Get());
-    m_pContext->IASetInputLayout(m_pDebugDrawIL.Get());
-
-    m_batch->Begin();
-    auto lookPos = m_pCamera->GetTransform()->GetLocalPosition() + m_pCamera->GetTransform()->GetWorldMatrix().Forward() * 2.0f;
-    auto shadowPos = lightFwd * -10 + lookPos;
-
-    auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
-
-    auto pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj4->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj4->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj4->GetLocalScale().z };
-
-    BoundingOrientedBox obb(Vector3::Transform(pSMR_AABB.GetCenter(),obj4->GetWorldMatrix()), pSMR_scaledExtend, obj4->GetLocalRotation());
-    DX::Draw(m_batch.get(), obb, Colors::Aqua);
-
-    pSMR_AABB = m_pStaticMeshRenderers[0]->GetMesh().GetAABB();
-
-    pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj2->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj2->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj2->GetLocalScale().z };
-
-    obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj2->GetWorldMatrix()), pSMR_scaledExtend, obj2->GetLocalRotation() };
-    DX::Draw(m_batch.get(), obb, Colors::Aqua);
-
-    //pSMR_AABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB();
-
-    //pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj1->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj1->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj1->GetLocalScale().z };
-
-
-    //obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
-    //DX::Draw(m_batch.get(), obb, Colors::Aqua);
-
-    auto& bones = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBones();
-
-    for (auto& sbone : bones)
+    if (m_enableDebugDraw)
     {
-        if (sbone.parentIndex == -1)
-            continue;
+        if (!m_enableDebugDrawZbuffer)
+        {
+            m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+            m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
+            m_pContext->RSSetState(m_states->CullNone());
+        }
 
-        auto finMat = sbone.model.Transpose() * obj1->GetWorldMatrix();
-        auto startPos = Vector3::Transform(Vector3::Zero, finMat);
+        m_effect->SetView(m_pCamera->GetViewMatrix());
+        m_effect->SetProjection(m_pCamera->GetProjMatrix());
+        m_effect->Apply(m_pContext.Get());
+        m_pContext->IASetInputLayout(m_pDebugDrawIL.Get());
 
-        auto finMat2 = obj1->GetWorldMatrix();
-        auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
+        m_batch->Begin();
+        auto lookPos = m_pCamera->GetTransform()->GetLocalPosition() + m_pCamera->GetTransform()->GetWorldMatrix().Forward() * 2.0f;
+        auto shadowPos = lightFwd * -10 + lookPos;
 
-        finMat2 = bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].model.Transpose() * obj1->GetWorldMatrix();
-        endPos = Vector3::Transform(Vector3::Zero, finMat2);
+        auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
 
-        BoundingSphere sphr{ startPos,0.025f };
-        DX::Draw(m_batch.get(), sphr, Colors::LightGreen);
-        DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
-    }
+        auto pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj4->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj4->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj4->GetLocalScale().z };
 
-
-    for (auto& sbone : bones)
-    {
-        if (sbone.parentIndex == -1)
-            continue;
-
-        auto bone_aabb = sbone.boundBox;
-        auto bone_center = sbone.boundBox.GetCenter();
-        auto bone_extend = sbone.boundBox.GetExtent();
-
-        bone_center = Vector3::Transform(bone_center, sbone.offset.Transpose());
-        bone_center = Vector3::Transform(bone_center, sbone.model.Transpose());
-        bone_center = Vector3::Transform(bone_center, obj1->GetWorldMatrix());
-
-        auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.offset.Transpose());
-        bone_rot = bone_rot * Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
-        bone_rot = bone_rot * obj1->GetLocalRotation();
-
-        bone_extend = Vector3{ bone_extend.x * obj1->GetLocalScale().x, bone_extend.y * obj1->GetLocalScale().y, bone_extend.z * obj1->GetLocalScale().z };
-        obb = { bone_center, bone_extend, bone_rot };
+        BoundingOrientedBox obb(Vector3::Transform(pSMR_AABB.GetCenter(), obj4->GetWorldMatrix()), pSMR_scaledExtend, obj4->GetLocalRotation());
         DX::Draw(m_batch.get(), obb, Colors::Aqua);
+
+        pSMR_AABB = m_pStaticMeshRenderers[0]->GetMesh().GetAABB();
+
+        pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj2->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj2->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj2->GetLocalScale().z };
+
+        obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj2->GetWorldMatrix()), pSMR_scaledExtend, obj2->GetLocalRotation() };
+        DX::Draw(m_batch.get(), obb, Colors::Aqua);
+
+        pSMR_AABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB();
+
+        pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj1->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj1->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj1->GetLocalScale().z };
+
+
+        obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
+        DX::Draw(m_batch.get(), obb, Colors::Aqua);
+
+        auto& bones = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBones();
+
+        for (auto& sbone : bones)
+        {
+            if (sbone.parentIndex == -1)
+                continue;
+
+            auto finMat = sbone.model.Transpose() * obj1->GetWorldMatrix();
+            auto startPos = Vector3::Transform(Vector3::Zero, finMat);
+
+            auto finMat2 = obj1->GetWorldMatrix();
+            auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
+
+            finMat2 = bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].model.Transpose() * obj1->GetWorldMatrix();
+            endPos = Vector3::Transform(Vector3::Zero, finMat2);
+
+            BoundingSphere sphr{ startPos,0.025f };
+            DX::Draw(m_batch.get(), sphr, Colors::LightGreen);
+            DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
+        }
+
+
+        for (auto& sbone : bones)
+        {
+            if (sbone.parentIndex == -1)
+                continue;
+
+            auto bone_aabb = sbone.boundBox;
+            auto bone_center = sbone.boundBox.GetCenter();
+            auto bone_extend = sbone.boundBox.GetExtent();
+
+            //bone_center = Vector3::Transform(bone_center, sbone.offset.Transpose());
+            bone_center = Vector3::Transform(bone_center, sbone.model.Transpose());
+            bone_center = Vector3::Transform(bone_center, obj1->GetWorldMatrix());
+
+            //auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.offset.Transpose());
+            //bone_rot = bone_rot * Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
+            auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
+            bone_rot = bone_rot * obj1->GetLocalRotation();
+
+            bone_extend = Vector3{ bone_extend.x * obj1->GetLocalScale().x, bone_extend.y * obj1->GetLocalScale().y, bone_extend.z * obj1->GetLocalScale().z };
+            obb = { bone_center, bone_extend, bone_rot };
+            DX::Draw(m_batch.get(), obb, Colors::Aqua);
+        }
+
+
+        m_batch->End();
     }
-
-
-    m_batch->End();
 
     m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
     m_pContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
