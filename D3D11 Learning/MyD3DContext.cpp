@@ -363,6 +363,16 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    cbDesc = {};
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.ByteWidth = sizeof(GradientCB);
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = 0;
+
+    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pGradientCB.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
@@ -975,7 +985,6 @@ void MyEngine::MyD3DContext::Render()
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
     cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
     cb.CameraPos = m_pCamera->GetTransform()->GetLocalPosition();
-    cb.gradientIntensity = 1.0f;
 
     XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), -1.25f));
 
@@ -1044,8 +1053,17 @@ void MyEngine::MyD3DContext::Render()
 
         m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     }
-
     modelIdx = 0;
+    
+    GradientCB gradeintCB = {};
+    gradeintCB.ColorTop = { 1,1,1,1 };
+	gradeintCB.ColorBottom = { 0,0,0,1 };
+    gradeintCB.intensity = 1.0f;
+    gradeintCB.minY = 0;
+	gradeintCB.maxY = 10.0f;
+    m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
+    m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
+    
     // <<======= 씬 드로우
     for (auto& obj : m_sceneObjects)
     {
@@ -1059,26 +1077,65 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
 
+        //min max 구하기
+
+        //m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &olCB, 0, 0);
+        //m_pContext->VSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
+
         if (modelIdx == 0)
         {
             m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
         }
         if (modelIdx == 1)
         {
+            gradeintCB.intensity = 1.0f;
+            gradeintCB.minY = FLT_MAX;
+            gradeintCB.maxY = -FLT_MAX;
+
+            //꼭지점 추출
+            auto corners = m_pStaticMeshRenderers[0]->GetMesh().GetAABB().ExtractCorners();
+  
+            for (auto& vert : corners)
+            {
+				Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
+				if (worldPos.y < gradeintCB.minY)
+					gradeintCB.minY = worldPos.y;
+				if (worldPos.y > gradeintCB.maxY)
+					gradeintCB.maxY = worldPos.y;
+            }
+
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
             m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
         }
         if (modelIdx == 2)
         {
-            cb.gradientIntensity = 0.0f;
+            gradeintCB.intensity = 0.0f;
             m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
             m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
         }
         if (modelIdx == 3)
         {
+            gradeintCB.intensity = 1.0f;
+            gradeintCB.minY = FLT_MAX;
+            gradeintCB.maxY = -FLT_MAX;
+
+            //꼭지점 추출
+            auto corners = m_pStaticMeshRenderers[2]->GetMesh().GetAABB().ExtractCorners();
+
+            for (auto& vert : corners)
+            {
+                Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
+                if (worldPos.y < gradeintCB.minY)
+                    gradeintCB.minY = worldPos.y;
+                if (worldPos.y > gradeintCB.maxY)
+                    gradeintCB.maxY = worldPos.y;
+            }
+
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
             m_pStaticMeshRenderers[2]->Draw(m_pContext.Get());
         }
         modelIdx++;
-
     }
 
     m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);

@@ -55,18 +55,26 @@ namespace MyEngine {
 		FLOAT reflectionFactor;
 		XMFLOAT3 pad3;
 		XMMATRIX mlightViewProj;
-		FLOAT gradientIntensity;
 		FLOAT lowLut;
 		FLOAT diffGradientDistHalf;
 		FLOAT diffGradientDepth;
 		FLOAT rimLightStr;
-		XMFLOAT3 pad4;
 	};
 
 	struct OutlineCB
 	{
 		FLOAT Thickness;
 		XMFLOAT3 pad;
+	};
+
+	struct GradientCB
+	{
+		XMFLOAT4 ColorTop;
+		XMFLOAT4 ColorBottom;
+		FLOAT minY;
+		FLOAT maxY;
+		FLOAT intensity;
+		FLOAT pad1;
 	};
 
 	class MyD3DContext {
@@ -121,6 +129,8 @@ namespace MyEngine {
 
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pOutlineCB = nullptr;
+		ComPtr<ID3D11Buffer> m_pGradientCB = nullptr;
+
 		ComPtr<ID3D11ShaderResourceView> m_pCubeTextureRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeNormalMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pCubeSpecularMapRV = nullptr;

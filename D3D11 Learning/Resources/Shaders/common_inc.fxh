@@ -15,7 +15,6 @@ cbuffer ConstantBuffer : register(b0)
     uint shininess;
     float reflectionFactor;
     matrix lightViewProj;
-    float gradientIntensity;
     float lowLut;
     float diffGradientDistHalf;
     float diffGradientDepth;

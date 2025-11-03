@@ -6,7 +6,6 @@ MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<
     , m_indices(indices)
     , m_aabb(aabb)
 {
-
 }
 
 void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)

@@ -151,6 +151,7 @@
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.h" />
     <ClInclude Include="Animation.hpp" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DebugTextRenderer.h" />

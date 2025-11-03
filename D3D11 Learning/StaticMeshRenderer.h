@@ -22,6 +22,8 @@ namespace MyEngine
 		std::vector<Material> m_materials;
 		std::unordered_set<UINT> m_dontDrawMeshNums;
 	public:
+		inline const StaticMesh& GetMesh() const { return m_staticMesh; }
+
 		inline void SetMesh(StaticMesh&& mesh) { m_staticMesh = std::move(mesh); }
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
 		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true, std::initializer_list<UINT> dontDrawMeshNums = {});

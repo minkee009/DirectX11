@@ -1011,7 +1011,6 @@ cbuffer ConstantBuffer : register(b0)
     uint shininess;
     float reflectionFactor;
 	matrix LightViewProjection;
-	float gradientIntensity;
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -1226,7 +1225,6 @@ cbuffer ConstantBuffer : register(b0)
     uint shininess;
     float reflectionFactor;
     matrix LightViewProjection;
-    float gradientIntensity;
     float lowLut;
     float diffGradientDistHalf;
     float diffGradientDepth;
@@ -1237,6 +1235,15 @@ cbuffer MaterialBuffer : register(b1)
 {
 	uint textureFlags; 
 	float4 baseColor;
+}
+
+cbuffer GradientBuffer : register(b5)
+{
+	float4 GradientTop;
+	float4 GradientBottom;
+	float minY;
+	float maxY;
+	float gradientIntensity;
 }
 
 Texture2D txDiffuse : register(t0);
@@ -1420,8 +1427,8 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
 
 	// y 범위 값들
-    float yMin = -12; // 0
-    float yMax = 6; // 10
+    float yMin = minY; // 0
+    float yMax = maxY; // 10
 
     // 안전하게 분모가 0이 되는 경우 방지
     float span = max(0.00001, yMax - yMin);
@@ -1430,7 +1437,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float gradient = saturate( (input.WorldPos.y - yMin) / span );
 	gradient = smoothstep(0.0, 1.0, gradient);
 
-	finalRGB = lerp(vAmbientColor , finalRGB, lerp(1.0,gradient,gradientIntensity)); // 흰색으로 보간
+	finalRGB = lerp(vAmbientColor , finalRGB, lerp(1.0, gradient, 1)); // 흰색으로 보간
 
     return float4(finalRGB, baseTex.a);
 }

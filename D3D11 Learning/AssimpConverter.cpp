@@ -206,6 +206,9 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
             indices.push_back(face.mIndices[j]);
     }
 
+    aabb.min = { minx,miny,minz };
+    aabb.max = { maxx,maxy,maxz };
+
     return Mesh(vertices, indices, aabb);
 }
 
