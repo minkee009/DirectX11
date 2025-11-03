@@ -12,6 +12,10 @@
 #include "RigidMeshRenderer.h"
 #include "SkinningMeshRenderer.h"
 
+#include <directxtk/CommonStates.h>
+#include <directxtk/Effects.h>
+#include "DebugDraw.h"
+
 //#ifdef _DEBUG
 #include "MyImGui.h"
 //#endif
@@ -169,7 +173,6 @@ namespace MyEngine {
 		UINT m_indexCount = 0;
 		UINT m_skyBoxIndexCount = 0;
 
-
 		const UINT SHADOW_MAP_SIZE = 8192;
 
 		ComPtr<ID3D11Texture2D> m_pShadowTex;
@@ -180,6 +183,15 @@ namespace MyEngine {
 		ComPtr<ID3D11SamplerState> m_pShadowSampler;
 
 		const float SHADOW_MAP_DEPTH = 25.0f;
+
+		// ================ Debug Draw
+		using VertexType = DirectX::VertexPositionColor;
+
+		std::unique_ptr<DirectX::CommonStates> m_states;
+		std::unique_ptr<DirectX::BasicEffect> m_effect;
+		std::unique_ptr<DirectX::PrimitiveBatch<VertexType>> m_batch;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_pDebugDrawIL;
+		// ================
 
 //#ifdef _DEBUG
 		//GUI용 코드 (디버깅 용)

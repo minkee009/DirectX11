@@ -415,6 +415,23 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
     //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
 
+    // DebugDraw
+    m_states = std::make_unique<CommonStates>(m_pd3dDevice.Get());
+    m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(m_pContext.Get());
+    m_effect = std::make_unique<BasicEffect>(m_pd3dDevice.Get());
+    m_effect->SetVertexColorEnabled(true);
+    {
+        void const* shaderByteCode;
+        size_t byteCodeLength;
+
+        m_effect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
+
+        m_pd3dDevice->CreateInputLayout(
+            VertexPositionColor::InputElements, VertexPositionColor::InputElementCount,
+            shaderByteCode, byteCodeLength,
+            m_pDebugDrawIL.ReleaseAndGetAddressOf());
+    }
+
     return true;
 }
 
@@ -1137,6 +1154,39 @@ void MyEngine::MyD3DContext::Render()
         }
         modelIdx++;
     }
+
+    //debug draw
+    //m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+    //m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
+    //m_pContext->RSSetState(m_states->CullNone());
+
+    m_effect->SetView(m_pCamera->GetViewMatrix());
+    m_effect->SetProjection(m_pCamera->GetProjMatrix());
+    m_effect->Apply(m_pContext.Get());
+    m_pContext->IASetInputLayout(m_pDebugDrawIL.Get());
+
+    m_batch->Begin();
+    auto lookPos = m_pCamera->GetTransform()->GetLocalPosition() + m_pCamera->GetTransform()->GetWorldMatrix().Forward() * 2.0f;
+    auto shadowPos = lightFwd * -10 + lookPos;
+
+    auto pSMR2_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
+
+    auto pSMR2_scaledExtend = Vector3{ pSMR2_AABB.GetExtent().x * obj4->GetLocalScale().x,pSMR2_AABB.GetExtent().y * obj4->GetLocalScale().y,pSMR2_AABB.GetExtent().z * obj4->GetLocalScale().z };
+
+    BoundingOrientedBox obb(Vector3::Transform(pSMR2_AABB.GetCenter(),obj4->GetWorldMatrix()), pSMR2_scaledExtend, obj4->GetLocalRotation());
+    DX::Draw(m_batch.get(), obb, Colors::Aqua); // BoundingSphere
+
+    BoundingSphere sphere(lookPos, 0.125f);
+    DX::Draw(m_batch.get(), sphere, Colors::Blue); // BoundingSphere
+
+    BoundingSphere sphere2(shadowPos, 0.125f);
+    DX::Draw(m_batch.get(), sphere2, Colors::Red); // BoundingSphere
+
+    auto ray1 = Ray(lookPos, shadowPos - lookPos);
+
+    DX::DrawRay(m_batch.get(), ray1.position, ray1.direction, false, Colors::Green); // Light Direction
+
+    m_batch->End();
 
     m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
     m_pContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
