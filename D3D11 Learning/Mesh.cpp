@@ -1,9 +1,10 @@
 #include "Mesh.h"
 #include <stdexcept>
 
-MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices)
+MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, const AABB& aabb)
     : m_vertices(vertices)
     , m_indices(indices)
+    , m_aabb(aabb)
 {
 
 }

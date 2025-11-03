@@ -170,12 +170,25 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
 {
     std::vector<VertexType> vertices;
     std::vector<UINT> indices;
+    AABB aabb;
+
+	float minx, miny, minz;
+	float maxx, maxy, maxz;
+	minx = miny = minz = FLT_MAX;
+	maxx = maxy = maxz = -FLT_MAX;
 
     for (UINT i = 0; i < pMesh->mNumVertices; i++)
     {
         VertexType vertex;
 
         vertex.position = { pMesh->mVertices[i].x,pMesh->mVertices[i].y,pMesh->mVertices[i].z };
+        
+		if (vertex.position.x < minx) minx = vertex.position.x;
+		if (vertex.position.y < miny) miny = vertex.position.y;
+		if (vertex.position.z < minz) minz = vertex.position.z;
+		if (vertex.position.x > maxx) maxx = vertex.position.x;
+		if (vertex.position.y > maxy) maxy = vertex.position.y;
+		if (vertex.position.z > maxz) maxz = vertex.position.z;
 
         vertex.normal = { pMesh->mNormals[i].x,pMesh->mNormals[i].y,pMesh->mNormals[i].z};
         vertex.tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
@@ -193,7 +206,7 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
             indices.push_back(face.mIndices[j]);
     }
 
-    return Mesh(vertices, indices);
+    return Mesh(vertices, indices, aabb);
 }
 
 MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, const aiScene* pScene, const BoneType& boneType)
@@ -508,6 +521,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     ProcessNode(meshes, indices, pScene->mRootNode, pScene);
     sMesh.SetSubMesh(std::move(meshes));
     sMesh.SetMatIdx(std::move(indices));
+    sMesh.CalcAABB();
     pStaticMeshRenderer->SetMesh(std::move(sMesh));
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)

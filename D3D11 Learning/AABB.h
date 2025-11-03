@@ -43,5 +43,13 @@ namespace MyEngine
 
             return corners;
 		}
+		inline const Vector3 GetCenter() const
+		{
+			return (min + max) * 0.5f;
+		}
+		inline const Vector3 GetExtent() const
+		{
+			return (max - min) * 0.5f;
+		}
 	};
 }
