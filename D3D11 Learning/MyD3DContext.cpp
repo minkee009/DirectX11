@@ -1158,9 +1158,11 @@ void MyEngine::MyD3DContext::Render()
             XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
             XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
 
-            gradientOBB.Intersects(simdOrigin, simdDirection, dist);
+            if (gradientOBB.Intersects(simdOrigin, simdDirection, dist))
+            {
+                gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
+            }
 
-            gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
 
 			debugPos3 = gradientCB.GradientPos;
             //gradientCB.minY = gradientAABB.min.y;
@@ -1171,7 +1173,7 @@ void MyEngine::MyD3DContext::Render()
             m_pSkinningMeshRenderers[0]->AnimationUpdate();
             m_pSkinningMeshRenderers[0]->MatrixUpdate();
         }
-        if (modelIdx == 1)
+        else if (modelIdx == 1)
         {
             //gradientCB.minY = FLT_MAX;
             //gradientCB.maxY = -FLT_MAX;
@@ -1222,13 +1224,13 @@ void MyEngine::MyD3DContext::Render()
             m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
             m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
         }
-        if (modelIdx == 2)
+        else if (modelIdx == 2)
         {
             m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
             m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
             m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
         }
-        if (modelIdx == 3)
+        else if (modelIdx == 3)
         {
             //gradientCB.minY = FLT_MAX;
             //gradientCB.maxY = -FLT_MAX;
