@@ -175,7 +175,7 @@ namespace MyEngine {
 		UINT m_indexCount = 0;
 		UINT m_skyBoxIndexCount = 0;
 
-		const UINT SHADOW_MAP_SIZE = 8192;
+		const UINT SHADOW_MAP_SIZE = 4096;
 
 		ComPtr<ID3D11Texture2D> m_pShadowTex;
 		ComPtr<ID3D11ShaderResourceView> m_pShadowSRV;

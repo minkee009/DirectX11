@@ -25,5 +25,10 @@ void MyEngine::Time::Update()
 	m_deltaTime = std::chrono::duration<float>(currentTime - m_lastTime).count();
 	m_totalTime = std::chrono::duration<float>(currentTime - m_startTime).count();
 	m_lastTime = currentTime;
+
+	if (m_deltaTime > 0.05f)
+	{
+		m_deltaTime = 0.05f;
+	}
 }
 

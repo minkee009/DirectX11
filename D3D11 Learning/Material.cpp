@@ -1397,7 +1397,7 @@ float CalculateShadowPCF(float4 LightPos)
     
     // 3x3 PCF
     float shadow = 0.0f;
-    float2 texelSize = 1.0f / 8192.0f; // Shadow Map 크기
+    float2 texelSize = 1.0f / 4096.0f; // Shadow Map 크기
     
     for (int x = -1; x <= 1; ++x)
     {
