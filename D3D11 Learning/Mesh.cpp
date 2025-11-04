@@ -28,6 +28,7 @@ void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
         initData.pSysMem = &m_vertices[0];
 
         hr = pDevice->CreateBuffer(&vbd, &initData, m_pVertexBuffer.GetAddressOf());
+        pDevice->Release();
         if (FAILED(hr)) {
             m_pVertexBuffer->Release();
             throw std::runtime_error("Failed to create vertex buffer.");
@@ -52,6 +53,7 @@ void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
         initData.pSysMem = &m_indices[0];
 
         hr = pDevice->CreateBuffer(&ibd, &initData, m_pIndexBuffer.GetAddressOf());
+        pDevice->Release();
         if (FAILED(hr)) {
             m_pVertexBuffer->Release();
             m_pIndexBuffer->Release();

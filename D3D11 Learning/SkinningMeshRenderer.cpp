@@ -27,6 +27,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 		context->GetDevice(&pDevice);
 
 		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneModelMatrixCB.GetAddressOf());
+		pDevice->Release();
 		if (FAILED(hr))
 			return;
 	}
@@ -45,6 +46,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 		context->GetDevice(&pDevice);
 
 		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneOffsetMatrixCB.GetAddressOf());
+		pDevice->Release();
 		if (FAILED(hr))
 			return;
 

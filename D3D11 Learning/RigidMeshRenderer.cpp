@@ -26,6 +26,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 		context->GetDevice(&pDevice);
 
 		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatrixCB.GetAddressOf());
+		pDevice->Release();
 		if (FAILED(hr))
 			return;
 	}
@@ -44,6 +45,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 		context->GetDevice(&pDevice);
 
 		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneMatrixIdxCB.GetAddressOf());
+		pDevice->Release();
 		if (FAILED(hr))
 			return;
 	}

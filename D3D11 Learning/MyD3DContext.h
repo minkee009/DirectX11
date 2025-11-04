@@ -75,10 +75,8 @@ namespace MyEngine {
 	{
 		XMFLOAT4 ColorTop;
 		XMFLOAT4 ColorBottom;
-		FLOAT minY;
-		FLOAT maxY;
+		XMFLOAT3 GradientPos;
 		FLOAT intensity;
-		FLOAT pad1;
 	};
 
 	class MyD3DContext {
@@ -194,7 +192,7 @@ namespace MyEngine {
 		std::unique_ptr<DirectX::CommonStates> m_states;
 		std::unique_ptr<DirectX::BasicEffect> m_effect;
 		std::unique_ptr<DirectX::PrimitiveBatch<VertexType>> m_batch;
-		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_pDebugDrawIL;
+		ComPtr<ID3D11InputLayout> m_pDebugDrawIL;
 
 		bool m_enableDebugDraw = true;
 		bool m_enableDebugDrawZbuffer = false;

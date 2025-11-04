@@ -1077,15 +1077,21 @@ void MyEngine::MyD3DContext::Render()
     }
     modelIdx = 0;
     
-    GradientCB gradeintCB = {};
-    gradeintCB.ColorTop = m_gradientColorTop;
-	gradeintCB.ColorBottom = m_gradientColorBottom;
-    gradeintCB.intensity = m_gradientIntensity;
-    gradeintCB.minY = 0;
-	gradeintCB.maxY = 10.0f;
-    m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
+    GradientCB gradientCB = {};
+    gradientCB.ColorTop = m_gradientColorTop;
+    gradientCB.ColorBottom = m_gradientColorBottom;
+    gradientCB.intensity = m_gradientIntensity;
+    //gradientCB.minY = 0;
+    //gradientCB.maxY = 10.0f;
+    m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
     m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
-    
+
+    Vector3 debugPos1;
+	Vector3 debugPos2;
+	Vector3 debugPos3;
+
+	BoundingOrientedBox debugOBB;
+
     // <<======= 씬 드로우
     for (auto& obj : m_sceneObjects)
     {
@@ -1106,71 +1112,170 @@ void MyEngine::MyD3DContext::Render()
 
         if (modelIdx == 0)
         {
-            gradeintCB.intensity = 1.0f;
-            gradeintCB.minY = FLT_MAX;
-            gradeintCB.maxY = -FLT_MAX;
+            //gradientCB.minY = FLT_MAX;
+            //gradientCB.maxY = -FLT_MAX;
 
             //꼭지점 추출
-            auto corners = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB().ExtractCorners();
+            auto meshAABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB();
+            auto corners = meshAABB.ExtractCorners();
+
+            BoundingOrientedBox gradientOBB{ 
+                Vector3::Transform(meshAABB.GetCenter(),obj->GetWorldMatrix()), 
+                {meshAABB.GetExtent().x * obj->GetWorldScale().x,
+                meshAABB.GetExtent().y * obj->GetWorldScale().y,
+                meshAABB.GetExtent().z * obj->GetWorldScale().z}, 
+                obj->GetWorldRotation()
+            };
+
+            debugOBB = gradientOBB;
+
+            AABB gradientAABB{ {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
 
             for (auto& vert : corners)
             {
                 Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
-                if (worldPos.y < gradeintCB.minY)
-                    gradeintCB.minY = worldPos.y;
-                if (worldPos.y > gradeintCB.maxY)
-                    gradeintCB.maxY = worldPos.y;
+                if (gradientAABB.min.x > worldPos.x)
+                    gradientAABB.min.x = worldPos.x;
+                if (gradientAABB.min.y > worldPos.y)
+                    gradientAABB.min.y = worldPos.y;
+                if (gradientAABB.min.z > worldPos.z)
+                    gradientAABB.min.z = worldPos.z;
+                if (gradientAABB.max.x < worldPos.x)
+                    gradientAABB.max.x = worldPos.x;
+                if (gradientAABB.max.y < worldPos.y)
+                    gradientAABB.max.y = worldPos.y;
+                if (gradientAABB.max.z < worldPos.z)
+                    gradientAABB.max.z = worldPos.z;
             }
 
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
+            float dist = -gradientAABB.GetExtent().Length();
+			debugPos1 = gradientAABB.GetCenter();
+            gradientCB.GradientPos = gradientAABB.GetCenter() + (lightFwd * dist);
+			debugPos2 = gradientCB.GradientPos;
+
+            dist = -dist;
+
+            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
+            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
+
+            gradientOBB.Intersects(simdOrigin, simdDirection, dist);
+
+            gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
+
+			debugPos3 = gradientCB.GradientPos;
+            //gradientCB.minY = gradientAABB.min.y;
+			//gradientCB.maxY = gradientAABB.max.y;
+
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
             m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
             m_pSkinningMeshRenderers[0]->AnimationUpdate();
             m_pSkinningMeshRenderers[0]->MatrixUpdate();
         }
         if (modelIdx == 1)
         {
-            gradeintCB.minY = FLT_MAX;
-            gradeintCB.maxY = -FLT_MAX;
+            //gradientCB.minY = FLT_MAX;
+            //gradientCB.maxY = -FLT_MAX;
 
             //꼭지점 추출
-            auto corners = m_pStaticMeshRenderers[0]->GetMesh().GetAABB().ExtractCorners();
-  
+            auto meshAABB = m_pStaticMeshRenderers[0]->GetMesh().GetAABB();
+            auto corners = meshAABB.ExtractCorners();
+
+            AABB gradientAABB{ {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
+
+            BoundingOrientedBox gradientOBB{
+                Vector3::Transform(meshAABB.GetCenter(),obj->GetWorldMatrix()),
+                {meshAABB.GetExtent().x * obj->GetWorldScale().x,
+                meshAABB.GetExtent().y * obj->GetWorldScale().y,
+                meshAABB.GetExtent().z * obj->GetWorldScale().z},
+                obj->GetWorldRotation()
+            };
+
             for (auto& vert : corners)
             {
-				Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
-				if (worldPos.y < gradeintCB.minY)
-					gradeintCB.minY = worldPos.y;
-				if (worldPos.y > gradeintCB.maxY)
-					gradeintCB.maxY = worldPos.y;
+                Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
+                if (gradientAABB.min.x > worldPos.x)
+                    gradientAABB.min.x = worldPos.x;
+                if (gradientAABB.min.y > worldPos.y)
+                    gradientAABB.min.y = worldPos.y;
+                if (gradientAABB.min.z > worldPos.z)
+                    gradientAABB.min.z = worldPos.z;
+                if (gradientAABB.max.x < worldPos.x)
+                    gradientAABB.max.x = worldPos.x;
+                if (gradientAABB.max.y < worldPos.y)
+                    gradientAABB.max.y = worldPos.y;
+                if (gradientAABB.max.z < worldPos.z)
+                    gradientAABB.max.z = worldPos.z;
             }
 
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
+            float dist = -gradientAABB.GetExtent().Length();
+            gradientCB.GradientPos = gradientAABB.GetCenter() + (lightFwd * dist);
+            dist = -dist;
+            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
+            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
+
+            gradientOBB.Intersects(simdOrigin, simdDirection, dist);
+
+            gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
+            //gradientCB.minY = gradientAABB.min.y;
+            //gradientCB.maxY = gradientAABB.max.y;
+
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
             m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
         }
         if (modelIdx == 2)
         {
             m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
             m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
         }
         if (modelIdx == 3)
         {
-            gradeintCB.minY = FLT_MAX;
-            gradeintCB.maxY = -FLT_MAX;
+            //gradientCB.minY = FLT_MAX;
+            //gradientCB.maxY = -FLT_MAX;
 
             //꼭지점 추출
-            auto corners = m_pStaticMeshRenderers[2]->GetMesh().GetAABB().ExtractCorners();
+            auto meshAABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
+            auto corners = meshAABB.ExtractCorners();
+
+            AABB gradientAABB{ {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
+            BoundingOrientedBox gradientOBB{
+                Vector3::Transform(meshAABB.GetCenter(),obj->GetWorldMatrix()),
+                {meshAABB.GetExtent().x * obj->GetWorldScale().x,
+                meshAABB.GetExtent().y * obj->GetWorldScale().y,
+                meshAABB.GetExtent().z * obj->GetWorldScale().z},
+                obj->GetWorldRotation()
+            };
 
             for (auto& vert : corners)
             {
                 Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
-                if (worldPos.y < gradeintCB.minY)
-                    gradeintCB.minY = worldPos.y;
-                if (worldPos.y > gradeintCB.maxY)
-                    gradeintCB.maxY = worldPos.y;
+                if (gradientAABB.min.x > worldPos.x)
+                    gradientAABB.min.x = worldPos.x;
+                if (gradientAABB.min.y > worldPos.y)
+                    gradientAABB.min.y = worldPos.y;
+                if (gradientAABB.min.z > worldPos.z)
+                    gradientAABB.min.z = worldPos.z;
+                if (gradientAABB.max.x < worldPos.x)
+                    gradientAABB.max.x = worldPos.x;
+                if (gradientAABB.max.y < worldPos.y)
+                    gradientAABB.max.y = worldPos.y;
+                if (gradientAABB.max.z < worldPos.z)
+                    gradientAABB.max.z = worldPos.z;
             }
 
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradeintCB, 0, 0);
+            float dist = -gradientAABB.GetExtent().Length();
+            gradientCB.GradientPos = gradientAABB.GetCenter() + (lightFwd * dist);
+            dist = -dist;
+            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
+            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
+
+            gradientOBB.Intersects(simdOrigin, simdDirection, dist);
+
+            gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
+            //gradientCB.minY = gradientAABB.min.y;
+            //gradientCB.maxY = gradientAABB.max.y;
+
+            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
             m_pStaticMeshRenderers[2]->Draw(m_pContext.Get());
         }
         modelIdx++;
@@ -1192,8 +1297,6 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->IASetInputLayout(m_pDebugDrawIL.Get());
 
         m_batch->Begin();
-        auto lookPos = m_pCamera->GetTransform()->GetLocalPosition() + m_pCamera->GetTransform()->GetWorldMatrix().Forward() * 2.0f;
-        auto shadowPos = lightFwd * -10 + lookPos;
 
         auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
 
@@ -1215,7 +1318,7 @@ void MyEngine::MyD3DContext::Render()
 
 
         obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
-        DX::Draw(m_batch.get(), obb, Colors::Aqua);
+        DX::Draw(m_batch.get(), debugOBB, Colors::Aqua);
 
         auto& bones = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBones();
 
@@ -1262,6 +1365,16 @@ void MyEngine::MyD3DContext::Render()
             DX::Draw(m_batch.get(), obb, Colors::Aqua);
         }
 
+        BoundingSphere sphere = { debugPos1, 0.125f };
+        DX::Draw(m_batch.get(), sphere, Colors::Red);
+
+        BoundingSphere sphere2 = { debugPos2, 0.125f };
+        DX::Draw(m_batch.get(), sphere2, Colors::Orange);
+
+        BoundingSphere sphere3 = { debugPos3, 0.125f };
+        DX::Draw(m_batch.get(), sphere3, Colors::Magenta);
+
+		DX::DrawRay(m_batch.get(), debugPos1, debugPos2 - debugPos1, false, Colors::Yellow);
 
         m_batch->End();
     }
@@ -1281,7 +1394,7 @@ void MyEngine::MyD3DContext::Render()
 
 void MyEngine::MyD3DContext::Present()
 {
-    m_pSwapChain->Present(0, 0);
+    m_pSwapChain->Present(1, 0);
 }
 
 void MyEngine::MyD3DContext::UninitializeScene()
@@ -1309,12 +1422,15 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pCubeNormalMapRV = nullptr;
     m_pCubeSpecularMapRV = nullptr;
     m_pSkyBoxTextureRV = nullptr;
+    m_pDebugDrawIL = nullptr;
     m_pShadowTex = nullptr;
     m_pShadowSRV = nullptr;
     m_pShadowDSV = nullptr;
     m_pShadowMapVS = nullptr;
     m_pShadowSampler = nullptr;
     m_pShadowMapRasterizerState = nullptr;
+    m_pOutlineCB = nullptr;
+    m_pGradientCB = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()
@@ -1337,6 +1453,8 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pBlendState = nullptr;
     m_pOpaqueState = nullptr;
     m_pTransparentState = nullptr;
+    m_pSamplerPoint = nullptr;
+    m_pSamplerLinear = nullptr;
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
@@ -1386,15 +1504,14 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     // 현재 렌더 타겟이 설정되어 있다면 해제
     m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-    // 기존 렌더 타겟 뷰 해제
+    // 기존 화면 렌더타겟뷰를 모두 해제
     m_pRenderTargetView.Reset();
-
-    // 기존 뎁스 스텐실 뷰 해제
     m_pDepthStencilView.Reset();
+    m_pDepthStencil.Reset();
 
     // 스왑 체인 버퍼 크기 재조정
     HRESULT hr = m_pSwapChain->ResizeBuffers(
-        1,                  // 버퍼 개수
+        0,                  // 버퍼 개수
         width,              // 새로운 너비
         height,             // 새로운 높이
         DXGI_FORMAT_UNKNOWN, // 포맷 유지
@@ -1417,6 +1534,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 
     hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf());
     if (FAILED(hr)) {
+        pBackBuffer.Reset();
         OutputDebugStringA("렌더 타겟 뷰를 생성을 실패했습니다.\n");
         return;
     }

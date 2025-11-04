@@ -565,6 +565,14 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
+    ImGui::Begin(u8"그라디언트 디버그");
+
+	ImGui::SliderFloat(u8"그라디언트 강도", &m_d3dContext->m_gradientIntensity, 0.0f, 1.0f);
+	ImGui::ColorEdit3(u8"그라디언트 색1(위)", &m_d3dContext->m_gradientColorTop.x);
+	ImGui::ColorEdit3(u8"그라디언트 색2(아래)", &m_d3dContext->m_gradientColorBottom.x);
+
+    ImGui::End();
+
 
     ImGui::Begin(u8"디버그 드로잉");
 

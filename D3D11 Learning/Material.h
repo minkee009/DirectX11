@@ -97,6 +97,7 @@ namespace MyEngine
 	public:
 		Material() = default;
 		Material(const std::string& name);
+		~Material();
 
 		void Bind(ID3D11DeviceContext* context);
 

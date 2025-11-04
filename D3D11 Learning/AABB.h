@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX
 #include <directxtk/SimpleMath.h>
 
 using namespace DirectX::SimpleMath;
@@ -51,5 +52,14 @@ namespace MyEngine
 		{
 			return (max - min) * 0.5f;
 		}
+
+        inline const Vector3 ClampPosToAABB(const Vector3& position)
+        {
+			Vector3 clampedPos;
+            clampedPos.x = std::clamp(position.x, min.x, max.x);
+            clampedPos.y = std::clamp(position.y, min.y, max.y);
+            clampedPos.z = std::clamp(position.z, min.z, max.z);
+			return clampedPos;
+        }
 	};
 }

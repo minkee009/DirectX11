@@ -341,6 +341,11 @@ void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
 void MyEngine::AssimpConverter::Release()
 {
     s_importer.reset();
+	if (s_pDevice)
+	{
+		s_pDevice->Release();
+		s_pDevice = nullptr;
+	}
 }
 
 std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigidMeshRendererFromFile(std::string filePath)

@@ -152,13 +152,12 @@ bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, Tex
 
 	ComPtr<ID3D11ShaderResourceView> pSRV;
 	hr = CreateShaderResourceView(device, image.GetImages(), image.GetImageCount(), image.GetMetadata(), pSRV.GetAddressOf());
-
+	device->Release();
 	if (FAILED(hr))
 		return false;
 
 	m_textureFlags |= static_cast<UINT>(type);
 	m_textures.push_back(TextureBinding{ type, name, slot, pSRV });
-
 	return true;
 }
 
@@ -200,6 +199,7 @@ bool MyEngine::Material::InitAndConvertTextureFromMemory(ID3D11DeviceContext* co
 		image.GetMetadata(),
 		pSRV.GetAddressOf());
 
+	device->Release();
 	if (FAILED(hr))
 		return false;
 
@@ -213,6 +213,16 @@ bool MyEngine::Material::InitAndConvertTextureFromMemory(ID3D11DeviceContext* co
 MyEngine::Material::Material(const std::string& name)
 	: m_name(name)
 {
+}
+
+MyEngine::Material::~Material()
+{
+	m_materialCB = nullptr;
+	m_pVertexShader = nullptr;
+	m_pPixelShader = nullptr;
+	m_pVSBlob = nullptr;
+	m_pSampler = nullptr;
+	m_textures.clear();
 }
 
 void MyEngine::Material::Bind(ID3D11DeviceContext* context)
@@ -232,6 +242,7 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 		context->GetDevice(&pDevice);
 
 		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_materialCB.GetAddressOf());
+		pDevice->Release();
 		if (FAILED(hr))
 			return;
 	}
@@ -297,21 +308,37 @@ struct PS_INPUT
 	float4 Pos : SV_POSITION;                     
 };                                                
 			                                                   
-cbuffer ConstantBuffer                            
-{                                                 
-	matrix mWorld;                                
-	matrix mView;                                 
-	matrix mProjection;                           
-};                                                
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
+}                                            
 			                                                   
 PS_INPUT VS(VS_INPUT input)                       
 {                                                 
 	PS_INPUT output = (PS_INPUT)0;                
 			                                                   
 	// 변환                                        
-	float4 worldPos = mul(input.Pos, mWorld);     
-	float4 viewPos = mul(worldPos, mView);                     
-	output.Pos = mul(viewPos, mProjection);                    
+	float4 worldPos = mul(input.Pos, World);     
+	float4 viewPos = mul(worldPos, View);                     
+	output.Pos = mul(viewPos, Projection);                    
 			                                                   
 	return output;                                
 }
@@ -376,7 +403,23 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
-}         
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
+}      
 
 cbuffer ConstantBuffer : register(b4)
 {
@@ -453,6 +496,10 @@ cbuffer ConstantBuffer : register(b0)
     uint shininess;
     float reflectionFactor;
 	matrix LightViewProjection;
+	float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
 }
 
 cbuffer BoneModelBuffer : register(b2)
@@ -667,6 +714,8 @@ void MyEngine::Material::ReleaseDefaultShaders()
 	s_pDefaultVertexShader = nullptr;
 	s_pDefaultPixelShader = nullptr;
 	s_pOutlineVertexShader = nullptr;
+	s_pOutlineVertexShader_useRigidBone = nullptr;
+	s_pOutlineVertexShader_useSkinningBone = nullptr;
 	s_pOutlinePixelShader = nullptr;
 	s_pDefaultVSBlob = nullptr;
 }
@@ -705,7 +754,11 @@ cbuffer ConstantBuffer : register(b0)
     float specularStr;
     uint shininess;
     float reflectionFactor;
-	matrix LightViewProjection;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
 }
 
 struct VS_INPUT
@@ -792,6 +845,22 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
 }
 
 cbuffer BoneBuffer : register(b2)
@@ -893,7 +962,11 @@ cbuffer ConstantBuffer : register(b0)
     float specularStr;
     uint shininess;
     float reflectionFactor;
-	matrix LightViewProjection;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
 }
 
 cbuffer BoneModelBuffer : register(b2)
@@ -1014,7 +1087,11 @@ cbuffer ConstantBuffer : register(b0)
     float specularStr;
     uint shininess;
     float reflectionFactor;
-	matrix LightViewProjection;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -1243,10 +1320,9 @@ cbuffer MaterialBuffer : register(b1)
 
 cbuffer GradientBuffer : register(b5)
 {
-	float4 GradientTop;
-	float4 GradientBottom;
-	float minY;
-	float maxY;
+	float4 gradientTop;
+	float4 gradientBottom;
+	float3 gradientPos;
 	float gradientIntensity;
 }
 
@@ -1430,18 +1506,34 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
 
+	float3 toGradientPos = gradientPos - input.WorldPos;
+	//float3 GradientL = normalize(toGradientPos);
+	float GradientDistance = length(toGradientPos);
+	GradientDistance = max(GradientDistance, 0.0001f);
+	float GradientAttenuation = 1.0f / (GradientDistance);
+	
+	GradientAttenuation *= 3.5f * gradientIntensity; 
+	GradientAttenuation = saturate(GradientAttenuation);
+	
+	finalRGB = finalRGB * GradientAttenuation;
+	
 	// y 범위 값들
-    float yMin = minY; // 0
-    float yMax = maxY; // 10
+    //float yMin = minY; // 0
+    //float yMax = maxY; // 10
 
     // 안전하게 분모가 0이 되는 경우 방지
-    float span = max(0.00001, yMax - yMin);
+    //float span = max(0.00001, yMax - yMin);
 
     // 0..1 로 정규화 (y=0 -> 0, y=10 -> 1)
-    float gradient = saturate( (input.WorldPos.y - yMin) / span );
-	gradient = smoothstep(0.0, 1.0, gradient);
+	 //   float gradient = saturate( (input.WorldPos.y - yMin) / span );
+	//gradient = smoothstep(0.0, 1.0, gradient);
 
-	finalRGB = lerp(vAmbientColor , finalRGB, lerp(1.0, gradient, 1)); // 흰색으로 보간
+	//float4 gradientColor = lerp(gradientBottom, gradientTop, gradient);
+	//
+	//finalRGB = finalRGB * gradientColor.rgb * gradientIntensity;
+
+	//finalRGB = lerp(vAmbientColor , finalRGB, lerp(1.0, gradient, gradientIntensity)); // 흰색으로 보간
+
 
     return float4(finalRGB, baseTex.a);
 }
@@ -1487,6 +1579,7 @@ void MyEngine::Material::ReleaseBlinnPhongShaders()
 	s_pBlinnPhongVertexShader_useRigidBone = nullptr;
 	s_pBlinnPhongVertexShader_useSkinningBone = nullptr;
 	s_pBlinnPhongPixelShader = nullptr;
+	s_pBlinnPhongToonPixelShader = nullptr;
 	s_pBlinnPhongVSBlob = nullptr;
 }
 
