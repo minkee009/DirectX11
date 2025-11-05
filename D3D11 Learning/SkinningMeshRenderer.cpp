@@ -11,7 +11,45 @@ MyEngine::SkinningMeshRenderer::SkinningMeshRenderer()
 	m_pBoneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
 }
 
+MyEngine::SkinningMeshRenderer::~SkinningMeshRenderer()
+{
+	m_boneModelMatrixCB = nullptr;
+	m_boneOffsetMatrixCB = nullptr;
+}
+
 void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
+{
+	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_pBoneModelMatrixData.get(), 0, 0);
+
+	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
+	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
+
+	UINT stride = sizeof(VertexType);
+	UINT offset = 0;
+
+	int meshCount = 0;
+	for (auto& mesh : m_skinningMesh.GetMeshes())
+	{
+		if(bindMesh)
+			mesh.Bind(context);
+
+		auto& materialIndices = m_skinningMesh.GetMaterialIndices();
+		auto& mat = m_materials[materialIndices[meshCount++]];
+		if (bindMaterial)
+		{
+			mat.Bind(context);
+		}
+
+		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
+			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum
+				|| meshCount <= DebugStatusUI::StaticMeshRenderer::meshNum - 1))
+			continue;
+
+		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
+	}
+}
+
+void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext* context)
 {
 	if (!m_boneModelMatrixCB)
 	{
@@ -58,35 +96,6 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 		}
 		context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_pBoneOffsetMatrixData.get(), 0, 0);
 	}
-
-	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_pBoneModelMatrixData.get(), 0, 0);
-
-	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
-	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
-
-	UINT stride = sizeof(VertexType);
-	UINT offset = 0;
-
-	int meshCount = 0;
-	for (auto& mesh : m_skinningMesh.GetMeshes())
-	{
-		if(bindMesh)
-			mesh.Bind(context);
-
-		auto& materialIndices = m_skinningMesh.GetMaterialIndices();
-		auto& mat = m_materials[materialIndices[meshCount++]];
-		if (bindMaterial)
-		{
-			mat.Bind(context);
-		}
-
-		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
-			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum
-				|| meshCount <= DebugStatusUI::StaticMeshRenderer::meshNum - 1))
-			continue;
-
-		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
-	}
 }
 
 void MyEngine::SkinningMeshRenderer::MatrixUpdate()
@@ -110,7 +119,7 @@ void MyEngine::SkinningMeshRenderer::MatrixUpdate()
 			m_pBoneModelMatrixData->matricies[i] = bone.model;
 	}
 
-	m_skinningMesh.CalcAABB();
+	m_skinningMesh.CalcBBox();
 }
 
 void MyEngine::SkinningMeshRenderer::AnimationUpdate()
@@ -158,40 +167,29 @@ void MyEngine::SkinningMeshRenderer::Pause()
 	m_playing = false;
 }
 
-void MyEngine::SkinningMesh::CalcAABB()
+void MyEngine::SkinningMesh::CalcBBox()
 {
-	m_aabb.min.x = FLT_MAX;
-	m_aabb.min.y = FLT_MAX;
-	m_aabb.min.z = FLT_MAX;
-
-	m_aabb.max.x = -FLT_MAX;
-	m_aabb.max.y = -FLT_MAX;
-	m_aabb.max.z = -FLT_MAX;
+	bool firstBone = true;
 
 	for (auto& bone : m_bones)
 	{
-		if (bone.boundBox.min.x == FLT_MAX || bone.parentIndex == -1) continue;
+		if (bone.parentIndex == -1)
+			continue;
 
-		auto& bbox = bone.boundBox;
-		auto corners = bbox.ExtractCorners();
-
-		for (size_t i = 0; i < corners.size(); i++)
+		if (bone.hasVertex)
 		{
-			corners[i] = Vector3::Transform(corners[i], bone.model.Transpose());
+			BoundingBox transformed;
+			bone.bbox.Transform(transformed, bone.model.Transpose());
 
-			if (m_aabb.min.x > corners[i].x)
-				m_aabb.min.x = corners[i].x;
-			if (m_aabb.min.y > corners[i].y)
-				m_aabb.min.y = corners[i].y;
-			if (m_aabb.min.z > corners[i].z)
-				m_aabb.min.z = corners[i].z;
-
-			if (m_aabb.max.x < corners[i].x)
-				m_aabb.max.x = corners[i].x;
-			if (m_aabb.max.y < corners[i].y)
-				m_aabb.max.y = corners[i].y;
-			if (m_aabb.max.z < corners[i].z)
-				m_aabb.max.z = corners[i].z;
+			if (firstBone)
+			{
+				m_bbox = transformed;  // 첫 번째는 직접 할당
+				firstBone = false;
+			}
+			else
+			{
+				BoundingBox::CreateMerged(m_bbox, m_bbox, transformed);
+			}
 		}
 	}
 }

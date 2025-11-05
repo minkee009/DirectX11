@@ -129,8 +129,6 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
             matrix.d1, matrix.d2, matrix.d3, matrix.d4
         );
 
-        bone.boundBox = { {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
-
         bones.emplace_back(bone);
         nodeNameToIndexMap.insert({ nodeName, bone.index });
         currentBoneIndex = bone.index;
@@ -170,12 +168,9 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
 {
     std::vector<VertexType> vertices;
     std::vector<UINT> indices;
-    AABB aabb;
 
-	float minx, miny, minz;
-	float maxx, maxy, maxz;
-	minx = miny = minz = FLT_MAX;
-	maxx = maxy = maxz = -FLT_MAX;
+    XMVECTOR minPt = { pMesh->mVertices[0].x, pMesh->mVertices[0].y, pMesh->mVertices[0].z };
+    XMVECTOR maxPt = { pMesh->mVertices[0].x, pMesh->mVertices[0].y, pMesh->mVertices[0].z };
 
     for (UINT i = 0; i < pMesh->mNumVertices; i++)
     {
@@ -183,12 +178,10 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
 
         vertex.position = { pMesh->mVertices[i].x,pMesh->mVertices[i].y,pMesh->mVertices[i].z };
         
-		if (vertex.position.x < minx) minx = vertex.position.x;
-		if (vertex.position.y < miny) miny = vertex.position.y;
-		if (vertex.position.z < minz) minz = vertex.position.z;
-		if (vertex.position.x > maxx) maxx = vertex.position.x;
-		if (vertex.position.y > maxy) maxy = vertex.position.y;
-		if (vertex.position.z > maxz) maxz = vertex.position.z;
+		XMVECTOR currentPoint = { pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z };
+
+        minPt = XMVectorMin(minPt, currentPoint);
+        maxPt = XMVectorMax(maxPt, currentPoint);
 
         vertex.normal = { pMesh->mNormals[i].x,pMesh->mNormals[i].y,pMesh->mNormals[i].z};
         vertex.tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
@@ -206,10 +199,10 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
             indices.push_back(face.mIndices[j]);
     }
 
-    aabb.min = { minx,miny,minz };
-    aabb.max = { maxx,maxy,maxz };
+    BoundingBox bbox;
+    BoundingBox::CreateFromPoints(bbox, minPt, maxPt);
 
-    return Mesh(vertices, indices, aabb);
+    return Mesh(vertices, indices, bbox);
 }
 
 MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, const aiScene* pScene, const BoneType& boneType)
@@ -328,6 +321,8 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
         }
     }
 
+    mat.CreateConstantBuffer(s_pContext);
+
     return mat;
 }
 
@@ -379,6 +374,12 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     std::unordered_map <std::string, UINT> nodeNameToIndex;
 
     ProcessNode(-1, rigidBones, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
+
+	for (auto& mesh : meshes)
+	{
+        mesh.CreateBuffers(s_pDevice);
+	}
+
     rMesh.SetSubMesh(std::move(meshes));
     rMesh.SetMatIdx(std::move(matIndices));
     rMesh.SetBones(std::move(rigidBones));
@@ -527,9 +528,15 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     std::vector<UINT> indices;
 
     ProcessNode(meshes, indices, pScene->mRootNode, pScene);
+    
+    for (auto& mesh : meshes)
+    {
+        mesh.CreateBuffers(s_pDevice);
+    }
+    
     sMesh.SetSubMesh(std::move(meshes));
     sMesh.SetMatIdx(std::move(indices));
-    sMesh.CalcAABB();
+    sMesh.CalcBBox();
     pStaticMeshRenderer->SetMesh(std::move(sMesh));
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
@@ -665,19 +672,23 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
                 for (int i = 0; i < 4; ++i)
                 {
                     vertex.boneWeights[i] *= factor;
+                    auto& currentBone = skinningBones[vertex.boneIndices[i]];
 
-                    if (skinningBones[vertex.boneIndices[i]].boundBox.min.x > vertex.position.x)
-                        skinningBones[vertex.boneIndices[i]].boundBox.min.x = vertex.position.x;
-                    if (skinningBones[vertex.boneIndices[i]].boundBox.min.y > vertex.position.y)
-                        skinningBones[vertex.boneIndices[i]].boundBox.min.y = vertex.position.y;
-                    if (skinningBones[vertex.boneIndices[i]].boundBox.min.z > vertex.position.z)
-                        skinningBones[vertex.boneIndices[i]].boundBox.min.z = vertex.position.z;
-                    if (skinningBones[vertex.boneIndices[i]].boundBox.max.x < vertex.position.x)
-                        skinningBones[vertex.boneIndices[i]].boundBox.max.x = vertex.position.x;
-                    if (skinningBones[vertex.boneIndices[i]].boundBox.max.y < vertex.position.y)
-                        skinningBones[vertex.boneIndices[i]].boundBox.max.y = vertex.position.y;
-                    if (skinningBones[vertex.boneIndices[i]].boundBox.max.z < vertex.position.z)
-                        skinningBones[vertex.boneIndices[i]].boundBox.max.z = vertex.position.z;
+                    if (!currentBone.hasVertex)
+                    {
+						currentBone.hasVertex = true;
+
+                        XMVECTOR pos = XMLoadFloat3(&vertex.position);
+                        BoundingBox::CreateFromPoints(currentBone.bbox, pos, pos);
+                    }
+                    else
+                    {
+                        // 기존 박스와 병합
+                        BoundingBox temp;
+                        XMVECTOR pos = XMLoadFloat3(&vertex.position);
+                        BoundingBox::CreateFromPoints(temp, pos, pos);
+                        BoundingBox::CreateMerged(currentBone.bbox, currentBone.bbox, temp);
+                    }
                 }
             }
 
@@ -685,48 +696,27 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         }
     }
 
+    for (auto& mesh : meshes)
+    {
+        mesh.CreateBuffers(s_pDevice);
+    }
+
     for (auto& sbone : skinningBones)
     {
-        if (sbone.boundBox.min.x == FLT_MAX)
+        if (!sbone.hasVertex)
             continue;
 
-        auto& bbox = sbone.boundBox;
-        auto corners = bbox.ExtractCorners();
-
-        bbox.min.x = FLT_MAX;
-        bbox.min.y = FLT_MAX;
-        bbox.min.z = FLT_MAX;
-
-        bbox.max.x = -FLT_MAX;
-        bbox.max.y = -FLT_MAX;
-        bbox.max.z = -FLT_MAX;
-       
-        for (size_t i = 0; i < corners.size(); i++)
-        {
-            corners[i] = Vector3::Transform(corners[i], sbone.offset.Transpose());
-
-            if (bbox.min.x > corners[i].x)
-                bbox.min.x = corners[i].x;
-            if (bbox.min.y > corners[i].y)
-                bbox.min.y = corners[i].y;
-            if (bbox.min.z > corners[i].z)
-                bbox.min.z = corners[i].z;
-
-            if (bbox.max.x < corners[i].x)
-                bbox.max.x = corners[i].x;
-            if (bbox.max.y < corners[i].y)
-                bbox.max.y = corners[i].y;
-            if (bbox.max.z < corners[i].z)
-                bbox.max.z = corners[i].z;
-        }
+        auto& bbox = sbone.bbox;
+        bbox.Transform(bbox, sbone.offset.Transpose());
     }
 
     sMesh.SetSubMesh(std::move(meshes));
     sMesh.SetMatIdx(std::move(matIndices));
     sMesh.SetBones(std::move(skinningBones));
-    sMesh.CalcAABB();
+    sMesh.CalcBBox();
     pSkinningMeshRenderer->SetMesh(std::move(sMesh));
     pSkinningMeshRenderer->MatrixUpdate();
+    pSkinningMeshRenderer->CreateBoneMatrixBuffers(s_pContext);
 
     if (pScene->HasAnimations())
     {

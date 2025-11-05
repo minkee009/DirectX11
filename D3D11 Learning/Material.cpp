@@ -118,6 +118,33 @@ bool MyEngine::Material::InitTexture(const std::string& name, TextureType type, 
 	return true;
 }
 
+void MyEngine::Material::CreateConstantBuffer(ID3D11DeviceContext* context)
+{
+	if (m_materialCB)
+		return;
+
+	//상수 버퍼 생성
+	D3D11_BUFFER_DESC cbDesc;
+	ZeroMemory(&cbDesc, sizeof(cbDesc));
+	cbDesc.Usage = D3D11_USAGE_DEFAULT;
+	cbDesc.ByteWidth = sizeof(MaterialCB);
+	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbDesc.CPUAccessFlags = 0;
+
+	ID3D11Device* pDevice;
+	context->GetDevice(&pDevice);
+
+	HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_materialCB.GetAddressOf());
+	pDevice->Release();
+	if (FAILED(hr))
+		return;
+
+	MaterialCB cb;
+	cb.textureFlags = m_textureFlags;
+	cb.baseColor = m_baseColor;
+	context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
+}
+
 bool MyEngine::Material::InitAndConvertTexture(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const std::wstring& path)
 {
 	//dds인지 아닌지 확인
@@ -227,30 +254,7 @@ MyEngine::Material::~Material()
 
 void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 {
-	//상수버퍼 업데이트
-	if (!m_materialCB)
-	{
-		//상수 버퍼 생성
-		D3D11_BUFFER_DESC cbDesc;
-		ZeroMemory(&cbDesc, sizeof(cbDesc));
-		cbDesc.Usage = D3D11_USAGE_DEFAULT;
-		cbDesc.ByteWidth = sizeof(MaterialCB);
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = 0;
-
-		ID3D11Device* pDevice;
-		context->GetDevice(&pDevice);
-
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_materialCB.GetAddressOf());
-		pDevice->Release();
-		if (FAILED(hr))
-			return;
-	}
-
-	MaterialCB cb;
-	cb.textureFlags = m_textureFlags;
-	cb.baseColor = m_baseColor;
-	context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
+	//상수버퍼 설정
 	context->PSSetConstantBuffers(1, 1, m_materialCB.GetAddressOf());
 
 	if (m_pVertexShader)

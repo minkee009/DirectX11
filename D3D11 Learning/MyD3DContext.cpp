@@ -918,6 +918,9 @@ void MyEngine::MyD3DContext::Render()
     cb.mWorld = XMMatrixIdentity();
 
     //  <=============== 첫번째 패스(그림자 맵)
+    ID3D11ShaderResourceView* firstPassnullSRVs[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+    m_pContext->PSSetShaderResources(0, 7, firstPassnullSRVs);
+
     // 컬러 렌더타겟은 사용 안 함
     m_pContext->PSSetShader(nullptr, nullptr, 0);
     m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
@@ -991,6 +994,10 @@ void MyEngine::MyD3DContext::Render()
 
     //  <=============== 두번째 패스(장면)
     Clear();
+
+    ID3D11ShaderResourceView* nullSRVs[2] = { nullptr, nullptr };
+    m_pContext->PSSetShaderResources(6, 1, nullSRVs);  // 그림자맵 언바인딩
+
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->RSSetViewports(1, &m_vp);
@@ -1032,6 +1039,8 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 초기화
 
     int modelIdx = 0;
 
@@ -1112,45 +1121,22 @@ void MyEngine::MyD3DContext::Render()
 
         if (modelIdx == 0)
         {
-            //gradientCB.minY = FLT_MAX;
-            //gradientCB.maxY = -FLT_MAX;
-
             //꼭지점 추출
-            auto meshAABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB();
-            auto corners = meshAABB.ExtractCorners();
+            auto gradientBBox = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBBox();
 
-            BoundingOrientedBox gradientOBB{ 
-                Vector3::Transform(meshAABB.GetCenter(),obj->GetWorldMatrix()), 
-                {meshAABB.GetExtent().x * obj->GetWorldScale().x,
-                meshAABB.GetExtent().y * obj->GetWorldScale().y,
-                meshAABB.GetExtent().z * obj->GetWorldScale().z}, 
-                obj->GetWorldRotation()
-            };
+            BoundingOrientedBox gradientOBB;
+            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
+
+			gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
+            gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
+
+            Vector3 extents = gradientBBox.Extents;
 
             debugOBB = gradientOBB;
 
-            AABB gradientAABB{ {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
-
-            for (auto& vert : corners)
-            {
-                Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
-                if (gradientAABB.min.x > worldPos.x)
-                    gradientAABB.min.x = worldPos.x;
-                if (gradientAABB.min.y > worldPos.y)
-                    gradientAABB.min.y = worldPos.y;
-                if (gradientAABB.min.z > worldPos.z)
-                    gradientAABB.min.z = worldPos.z;
-                if (gradientAABB.max.x < worldPos.x)
-                    gradientAABB.max.x = worldPos.x;
-                if (gradientAABB.max.y < worldPos.y)
-                    gradientAABB.max.y = worldPos.y;
-                if (gradientAABB.max.z < worldPos.z)
-                    gradientAABB.max.z = worldPos.z;
-            }
-
-            float dist = -gradientAABB.GetExtent().Length();
-			debugPos1 = gradientAABB.GetCenter();
-            gradientCB.GradientPos = gradientAABB.GetCenter() + (lightFwd * dist);
+            float dist = -extents.Length();
+			debugPos1 = gradientBBox.Center;
+            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
 			debugPos2 = gradientCB.GradientPos;
 
             dist = -dist;
@@ -1175,42 +1161,19 @@ void MyEngine::MyD3DContext::Render()
         }
         else if (modelIdx == 1)
         {
-            //gradientCB.minY = FLT_MAX;
-            //gradientCB.maxY = -FLT_MAX;
-
             //꼭지점 추출
-            auto meshAABB = m_pStaticMeshRenderers[0]->GetMesh().GetAABB();
-            auto corners = meshAABB.ExtractCorners();
+            auto gradientBBox = m_pStaticMeshRenderers[0]->GetMesh().GetBBox();
 
-            AABB gradientAABB{ {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
+            BoundingOrientedBox gradientOBB;
+            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
 
-            BoundingOrientedBox gradientOBB{
-                Vector3::Transform(meshAABB.GetCenter(),obj->GetWorldMatrix()),
-                {meshAABB.GetExtent().x * obj->GetWorldScale().x,
-                meshAABB.GetExtent().y * obj->GetWorldScale().y,
-                meshAABB.GetExtent().z * obj->GetWorldScale().z},
-                obj->GetWorldRotation()
-            };
+            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
+            gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
 
-            for (auto& vert : corners)
-            {
-                Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
-                if (gradientAABB.min.x > worldPos.x)
-                    gradientAABB.min.x = worldPos.x;
-                if (gradientAABB.min.y > worldPos.y)
-                    gradientAABB.min.y = worldPos.y;
-                if (gradientAABB.min.z > worldPos.z)
-                    gradientAABB.min.z = worldPos.z;
-                if (gradientAABB.max.x < worldPos.x)
-                    gradientAABB.max.x = worldPos.x;
-                if (gradientAABB.max.y < worldPos.y)
-                    gradientAABB.max.y = worldPos.y;
-                if (gradientAABB.max.z < worldPos.z)
-                    gradientAABB.max.z = worldPos.z;
-            }
+            Vector3 extents = gradientBBox.Extents;
 
-            float dist = -gradientAABB.GetExtent().Length();
-            gradientCB.GradientPos = gradientAABB.GetCenter() + (lightFwd * dist);
+            float dist = -extents.Length();
+            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
             dist = -dist;
             XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
             XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
@@ -1236,37 +1199,18 @@ void MyEngine::MyD3DContext::Render()
             //gradientCB.maxY = -FLT_MAX;
 
             //꼭지점 추출
-            auto meshAABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
-            auto corners = meshAABB.ExtractCorners();
+            auto gradientBBox = m_pStaticMeshRenderers[2]->GetMesh().GetBBox();
 
-            AABB gradientAABB{ {FLT_MAX,FLT_MAX,FLT_MAX},{-FLT_MAX,-FLT_MAX,-FLT_MAX} };
-            BoundingOrientedBox gradientOBB{
-                Vector3::Transform(meshAABB.GetCenter(),obj->GetWorldMatrix()),
-                {meshAABB.GetExtent().x * obj->GetWorldScale().x,
-                meshAABB.GetExtent().y * obj->GetWorldScale().y,
-                meshAABB.GetExtent().z * obj->GetWorldScale().z},
-                obj->GetWorldRotation()
-            };
+            BoundingOrientedBox gradientOBB;
+            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
 
-            for (auto& vert : corners)
-            {
-                Vector3 worldPos = Vector3::Transform(vert, obj->GetWorldMatrix());
-                if (gradientAABB.min.x > worldPos.x)
-                    gradientAABB.min.x = worldPos.x;
-                if (gradientAABB.min.y > worldPos.y)
-                    gradientAABB.min.y = worldPos.y;
-                if (gradientAABB.min.z > worldPos.z)
-                    gradientAABB.min.z = worldPos.z;
-                if (gradientAABB.max.x < worldPos.x)
-                    gradientAABB.max.x = worldPos.x;
-                if (gradientAABB.max.y < worldPos.y)
-                    gradientAABB.max.y = worldPos.y;
-                if (gradientAABB.max.z < worldPos.z)
-                    gradientAABB.max.z = worldPos.z;
-            }
+            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
+            gradientOBB.Transform(gradientOBB,obj->GetWorldMatrix());
 
-            float dist = -gradientAABB.GetExtent().Length();
-            gradientCB.GradientPos = gradientAABB.GetCenter() + (lightFwd * dist);
+			Vector3 extents = gradientBBox.Extents;
+
+            float dist = -extents.Length();
+            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
             dist = -dist;
             XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
             XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
@@ -1300,26 +1244,24 @@ void MyEngine::MyD3DContext::Render()
 
         m_batch->Begin();
 
-        auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetAABB();
+        auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetBBox();
 
-        auto pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj4->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj4->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj4->GetLocalScale().z };
+        auto pSMR_scaledExtend = Vector3{ pSMR_AABB.Extents.x * obj4->GetLocalScale().x,pSMR_AABB.Extents.y * obj4->GetLocalScale().y,pSMR_AABB.Extents.z * obj4->GetLocalScale().z };
 
-        BoundingOrientedBox obb(Vector3::Transform(pSMR_AABB.GetCenter(), obj4->GetWorldMatrix()), pSMR_scaledExtend, obj4->GetLocalRotation());
+        BoundingOrientedBox obb(Vector3::Transform(pSMR_AABB.Center, obj4->GetWorldMatrix()), pSMR_scaledExtend, obj4->GetLocalRotation());
         DX::Draw(m_batch.get(), obb, Colors::Aqua);
 
-        pSMR_AABB = m_pStaticMeshRenderers[0]->GetMesh().GetAABB();
+        pSMR_AABB = m_pStaticMeshRenderers[0]->GetMesh().GetBBox();
 
-        pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj2->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj2->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj2->GetLocalScale().z };
+        pSMR_scaledExtend = Vector3{ pSMR_AABB.Extents.x * obj2->GetLocalScale().x,pSMR_AABB.Extents.y * obj2->GetLocalScale().y,pSMR_AABB.Extents.z * obj2->GetLocalScale().z };
 
-        obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj2->GetWorldMatrix()), pSMR_scaledExtend, obj2->GetLocalRotation() };
+        obb = { Vector3::Transform(pSMR_AABB.Center, obj2->GetWorldMatrix()), pSMR_scaledExtend, obj2->GetLocalRotation() };
         DX::Draw(m_batch.get(), obb, Colors::Aqua);
 
-        pSMR_AABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetAABB();
+        pSMR_AABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBBox();
+        pSMR_scaledExtend = Vector3{ pSMR_AABB.Extents.x * obj1->GetLocalScale().x,pSMR_AABB.Extents.y * obj1->GetLocalScale().y,pSMR_AABB.Extents.z * obj1->GetLocalScale().z };
 
-        pSMR_scaledExtend = Vector3{ pSMR_AABB.GetExtent().x * obj1->GetLocalScale().x,pSMR_AABB.GetExtent().y * obj1->GetLocalScale().y,pSMR_AABB.GetExtent().z * obj1->GetLocalScale().z };
-
-
-        obb = { Vector3::Transform(pSMR_AABB.GetCenter(), obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
+        obb = { Vector3::Transform(pSMR_AABB.Center, obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
         DX::Draw(m_batch.get(), debugOBB, Colors::Aqua);
 
         auto& bones = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBones();
@@ -1349,16 +1291,12 @@ void MyEngine::MyD3DContext::Render()
             if (sbone.parentIndex == -1)
                 continue;
 
-            auto bone_aabb = sbone.boundBox;
-            auto bone_center = sbone.boundBox.GetCenter();
-            auto bone_extend = sbone.boundBox.GetExtent();
+            auto bone_center = sbone.bbox.Center;
+            auto bone_extend = sbone.bbox.Extents;
 
-            //bone_center = Vector3::Transform(bone_center, sbone.offset.Transpose());
             bone_center = Vector3::Transform(bone_center, sbone.model.Transpose());
             bone_center = Vector3::Transform(bone_center, obj1->GetWorldMatrix());
 
-            //auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.offset.Transpose());
-            //bone_rot = bone_rot * Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
             auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
             bone_rot = bone_rot * obj1->GetLocalRotation();
 
@@ -1441,15 +1379,11 @@ MyEngine::MyD3DContext::~MyD3DContext()
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 #endif //_DEBUG
-    m_pContext = nullptr;
-    m_pd3dDevice1 = nullptr;
-    m_pd3dDevice = nullptr;
-    m_pSwapChain1 = nullptr;
-    m_pSwapChain = nullptr;
+    if (m_pContext) m_pContext->ClearState();
     m_pRenderTargetView = nullptr;
-    m_pDepthStencil = nullptr;
     m_pDepthStencilView = nullptr;
-    m_hWnd = nullptr;
+    m_pDepthStencil = nullptr;
+
     m_pDefRasterizerState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
     m_pBlendState = nullptr;
@@ -1457,6 +1391,15 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pTransparentState = nullptr;
     m_pSamplerPoint = nullptr;
     m_pSamplerLinear = nullptr;
+
+    m_pSwapChain1 = nullptr;
+    m_pSwapChain = nullptr;
+
+    m_pd3dDevice1 = nullptr;
+    m_pd3dDevice = nullptr;
+    m_pContext = nullptr;
+
+    m_hWnd = nullptr;
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)

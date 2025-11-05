@@ -1,6 +1,5 @@
 #pragma once
 #include "Mesh.h"
-#include "AABB.h"
 
 namespace MyEngine
 {
@@ -10,14 +9,14 @@ namespace MyEngine
 		std::vector<Mesh> m_subMesh;
 		std::vector<UINT> m_matIdx;
 	protected:
-		AABB m_aabb;
+		BoundingBox m_bbox;
 	public:
 		void SetSubMesh(std::vector<Mesh>&& subMesh) { m_subMesh = std::move(subMesh); }
 		void SetMatIdx(std::vector<UINT>&& matIdx) { m_matIdx = std::move(matIdx); }
 
-		virtual void CalcAABB();
+		virtual void CalcBBox();
 
-		inline const AABB& GetAABB() const { return m_aabb; }
+		inline const BoundingBox& GetBBox() const { return m_bbox; }
 
 		inline std::vector<Mesh>& GetMeshes() { return m_subMesh; }
 		inline std::vector<UINT>& GetMaterialIndices() { return m_matIdx; }

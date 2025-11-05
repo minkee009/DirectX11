@@ -110,6 +110,8 @@ namespace MyEngine
 		bool InitAndConvertTextureFromMemory(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const uint8_t* pData,size_t dataSize, const std::wstring& formatExt);
 		bool InitTexture(const std::string& name, TextureType type, UINT slot, ID3D11ShaderResourceView* textureView);
 
+		void CreateConstantBuffer(ID3D11DeviceContext* context);
+
 		inline ID3DBlob* GetVSBlob() const { return m_pVSBlob.Get(); }
 		inline ID3D11VertexShader* GetVertexShader() const { return m_pVertexShader.Get(); }
 		inline ID3D11PixelShader* GetPixelShader() const { return m_pPixelShader.Get(); }

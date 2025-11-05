@@ -1,20 +1,10 @@
 #include "Mesh.h"
 #include <stdexcept>
 
-MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, const AABB& aabb)
-    : m_vertices(vertices)
-    , m_indices(indices)
-    , m_aabb(aabb)
-{
-}
-
-void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
+void MyEngine::Mesh::CreateBuffers(ID3D11Device* pDevice)
 {
     if (!m_pVertexBuffer)
     {
-        ID3D11Device* pDevice;
-        ctx->GetDevice(&pDevice);
-
         HRESULT hr;
 
         D3D11_BUFFER_DESC vbd;
@@ -28,7 +18,7 @@ void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
         initData.pSysMem = &m_vertices[0];
 
         hr = pDevice->CreateBuffer(&vbd, &initData, m_pVertexBuffer.GetAddressOf());
-        pDevice->Release();
+
         if (FAILED(hr)) {
             m_pVertexBuffer->Release();
             throw std::runtime_error("Failed to create vertex buffer.");
@@ -37,9 +27,6 @@ void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
 
     if (!m_pIndexBuffer)
     {
-        ID3D11Device* pDevice;
-        ctx->GetDevice(&pDevice);
-
         HRESULT hr;
 
         D3D11_BUFFER_DESC ibd;
@@ -53,14 +40,30 @@ void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
         initData.pSysMem = &m_indices[0];
 
         hr = pDevice->CreateBuffer(&ibd, &initData, m_pIndexBuffer.GetAddressOf());
-        pDevice->Release();
+        
         if (FAILED(hr)) {
             m_pVertexBuffer->Release();
             m_pIndexBuffer->Release();
             throw std::runtime_error("Failed to create index buffer.");
         }
     }
+}
 
+MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, const BoundingBox& bbox)
+    : m_vertices(vertices)
+    , m_indices(indices)
+    , m_bbox(bbox)
+{
+}
+
+MyEngine::Mesh::~Mesh()
+{
+	m_pVertexBuffer = nullptr;
+	m_pIndexBuffer = nullptr;
+}
+
+void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
+{
     UINT stride = sizeof(VertexType);
     UINT offset = 0;
 
