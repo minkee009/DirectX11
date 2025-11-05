@@ -19,7 +19,10 @@ MyEngine::SkinningMeshRenderer::~SkinningMeshRenderer()
 
 void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
 {
-	context->UpdateSubresource(m_boneModelMatrixCB.Get(), 0, nullptr, m_pBoneModelMatrixData.get(), 0, 0);
+	D3D11_MAPPED_SUBRESOURCE mapped;
+	context->Map(m_boneModelMatrixCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+	memcpy(mapped.pData, m_pBoneModelMatrixData.get(), sizeof(SkinningBoneMatCB));
+	context->Unmap(m_boneModelMatrixCB.Get(), 0);
 
 	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
 	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
@@ -56,10 +59,10 @@ void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext
 		//상수버퍼 만들어주기
 		D3D11_BUFFER_DESC cbDesc;
 		ZeroMemory(&cbDesc, sizeof(cbDesc));
-		cbDesc.Usage = D3D11_USAGE_DEFAULT;
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
 		cbDesc.ByteWidth = sizeof(SkinningBoneMatCB);
 		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = 0;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
 		ID3D11Device* pDevice;
 		context->GetDevice(&pDevice);
@@ -72,10 +75,22 @@ void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext
 
 	if (!m_boneOffsetMatrixCB)
 	{
+		//본 offset 행렬은 최초 1회 초기화
+		auto& bones = m_skinningMesh.GetBones();
+		for (size_t i = 0; i < bones.size(); i++)
+		{
+			m_pBoneOffsetMatrixData->matricies[i] = bones[i].offset;
+		}
+
+		D3D11_SUBRESOURCE_DATA initData;
+		initData.pSysMem = m_pBoneOffsetMatrixData.get();
+		initData.SysMemPitch = 0;
+		initData.SysMemSlicePitch = 0;
+
 		//상수버퍼 만들어주기
 		D3D11_BUFFER_DESC cbDesc;
 		ZeroMemory(&cbDesc, sizeof(cbDesc));
-		cbDesc.Usage = D3D11_USAGE_DEFAULT;
+		cbDesc.Usage = D3D11_USAGE_IMMUTABLE;
 		cbDesc.ByteWidth = sizeof(SkinningBoneMatCB);
 		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbDesc.CPUAccessFlags = 0;
@@ -83,18 +98,10 @@ void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext
 		ID3D11Device* pDevice;
 		context->GetDevice(&pDevice);
 
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneOffsetMatrixCB.GetAddressOf());
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, &initData, m_boneOffsetMatrixCB.GetAddressOf());
 		pDevice->Release();
 		if (FAILED(hr))
 			return;
-
-		//본 offset 행렬은 최초 1회 초기화
-		auto& bones = m_skinningMesh.GetBones();
-		for (size_t i = 0; i < bones.size(); i++)
-		{
-			m_pBoneOffsetMatrixData->matricies[i] = bones[i].offset;
-		}
-		context->UpdateSubresource(m_boneOffsetMatrixCB.Get(), 0, nullptr, m_pBoneOffsetMatrixData.get(), 0, 0);
 	}
 }
 
