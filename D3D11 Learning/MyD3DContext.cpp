@@ -1098,9 +1098,9 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-
         Material::BindOutlineShaders(m_pContext.Get());
 
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
         meshRenderer->SetEnabledBindMaterials(false);
         meshRenderer->Draw(m_pContext.Get());
@@ -1179,6 +1179,7 @@ void MyEngine::MyD3DContext::Render()
         
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
         m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
         meshRenderer->SetEnabledBindMaterials(true);
         meshRenderer->Draw(m_pContext.Get());
