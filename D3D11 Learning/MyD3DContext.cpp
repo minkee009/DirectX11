@@ -5,6 +5,12 @@
 #include <d3dcompiler.h>
 #include <wincodec.h>
 
+#ifdef _DEBUG
+#include <dxgidebug.h>
+#endif
+
+#pragma comment(lib, "dxguid.lib")
+
 #include "StaticMeshRenderer.h"
 #include "RigidMeshRenderer.h"
 #include "SkinningMeshRenderer.h"
@@ -1321,11 +1327,16 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pShadowMapRasterizerState = nullptr;
     m_pOutlineCB = nullptr;
     m_pGradientCB = nullptr;
+    m_states = nullptr;
+    m_effect = nullptr;
+    m_batch = nullptr;
+    m_pDebugDrawIL = nullptr;
 }
 
 MyEngine::MyD3DContext::~MyD3DContext()
 {
     Material::ReleaseDefaultShaders();
+    Material::ReleaseBlinnPhongShaders();
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 
@@ -1359,15 +1370,26 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pSwapChain1 = nullptr;
     m_pSwapChain = nullptr;
 
+#ifdef _DEBUG
+    {
+        HMODULE dxgidebugdll = GetModuleHandleW(L"dxgidebug.dll");
+        decltype(&DXGIGetDebugInterface) GetDebugInterface = reinterpret_cast<decltype(&DXGIGetDebugInterface)>(GetProcAddress(dxgidebugdll, "DXGIGetDebugInterface"));
+
+        IDXGIDebug* debug;
+
+        GetDebugInterface(IID_PPV_ARGS(&debug));
+
+        OutputDebugStringW(L"Starting Live Direct3D Object Dump:\r\n");
+        debug->ReportLiveObjects(DXGI_DEBUG_D3D11, DXGI_DEBUG_RLO_DETAIL);
+        OutputDebugStringW(L"Completed Live Direct3D Object Dump.\r\n");
+
+        debug->Release();
+    }
+#endif
+
     m_pd3dDevice1 = nullptr;
     m_pd3dDevice = nullptr;
-//#ifdef _DEBUG
-//    {
-//        Microsoft::WRL::ComPtr<ID3D11Debug> debug;
-//        m_pd3dDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(debug.GetAddressOf()));
-//        debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-//    }
-//#endif
+
                 
     m_hWnd = nullptr;
 
