@@ -17,7 +17,7 @@ MyEngine::SkinningMeshRenderer::~SkinningMeshRenderer()
 	m_boneOffsetMatrixCB = nullptr;
 }
 
-void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
+void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
 	D3D11_MAPPED_SUBRESOURCE mapped;
 	context->Map(m_boneModelMatrixCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -33,19 +33,26 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context, bool bin
 	int meshCount = 0;
 	for (auto& mesh : m_skinningMesh.GetMeshes())
 	{
-		if(bindMesh)
+		if(GetEnabledBindMeshes())
 			mesh.Bind(context);
 
 		auto& materialIndices = m_skinningMesh.GetMaterialIndices();
 		auto& mat = m_materials[materialIndices[meshCount++]];
-		if (bindMaterial)
+		if (GetEnabledBindMaterials())
 		{
 			mat.Bind(context);
 		}
+		auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
+		if (passForceVSIter != GetPassForceChangeVS().end())
+			context->VSSetShader(passForceVSIter->second, nullptr, 0);
 
-		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
-			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum
-				|| meshCount <= DebugStatusUI::StaticMeshRenderer::meshNum - 1))
+		if (DebugStatusUI::MeshRenderer::limitDrawOption
+			&& (meshCount > DebugStatusUI::MeshRenderer::meshNum
+				|| meshCount <= DebugStatusUI::MeshRenderer::meshNum - 1))
+			continue;
+		auto passIter = GetPassExcludedMeshes().find(GetRenderPassNum());
+		if (passIter != GetPassExcludedMeshes().end()
+			&& passIter->second.find(meshCount) != passIter->second.end())
 			continue;
 
 		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);

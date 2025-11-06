@@ -69,6 +69,9 @@
     <ClCompile Include="BVH.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -126,6 +129,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="BVH.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderable.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

@@ -142,6 +142,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
@@ -160,7 +161,9 @@
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="DebugTextRenderer.h" />
     <ClInclude Include="AssimpConverter.h" />
+    <ClInclude Include="IRenderable.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MyD3DContext.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />

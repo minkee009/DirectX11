@@ -10,7 +10,7 @@ MyEngine::RigidMeshRenderer::RigidMeshRenderer()
 	m_pBoneMatrixData = std::make_unique<RigidBoneMatCB>();
 }
 
-void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial)
+void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
 	if (!m_boneMatrixCB)
 	{
@@ -62,7 +62,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 	for (auto& mesh : m_rigidMesh.GetMeshes())
 	{
 		RigidBoneMatIdxCB cb2;
-		if(bindMesh)
+		if(GetEnabledBindMeshes())
 			mesh.Bind(context);
 		cb2.index = boneIndices[meshCount];
 
@@ -71,14 +71,22 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMe
 
 		auto& materialIndices = m_rigidMesh.GetMaterialIndices();
 		auto& mat = m_materials[materialIndices[meshCount++]];
-		if (bindMaterial)
+		if (GetEnabledBindMaterials())
 		{
 			mat.Bind(context);
 		}
+		auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
+		if (passForceVSIter != GetPassForceChangeVS().end())
+			context->VSSetShader(passForceVSIter->second, nullptr, 0);
 
-		if (DebugStatusUI::StaticMeshRenderer::limitDrawOption
-			&& (meshCount > DebugStatusUI::StaticMeshRenderer::meshNum
-				|| meshCount <= DebugStatusUI::StaticMeshRenderer::meshNum - 1))
+		if (DebugStatusUI::MeshRenderer::limitDrawOption
+			&& (meshCount > DebugStatusUI::MeshRenderer::meshNum
+				|| meshCount <= DebugStatusUI::MeshRenderer::meshNum - 1))
+			continue;
+
+		auto passIter = GetPassExcludedMeshes().find(GetRenderPassNum());
+		if (passIter != GetPassExcludedMeshes().end()
+			&& passIter->second.find(meshCount) != passIter->second.end())
 			continue;
 
 		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);

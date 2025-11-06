@@ -714,7 +714,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     sMesh.SetMatIdx(std::move(matIndices));
     sMesh.SetBones(std::move(skinningBones));
     sMesh.CalcBBox();
-    pSkinningMeshRenderer->SetMesh(std::move(sMesh));
+    pSkinningMeshRenderer->SetSkinningMesh(std::move(sMesh));
     pSkinningMeshRenderer->MatrixUpdate();
     pSkinningMeshRenderer->CreateBoneMatrixBuffers(s_pContext);
 

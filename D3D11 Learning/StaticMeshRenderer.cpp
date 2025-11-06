@@ -1,13 +1,7 @@
 #include "StaticMeshRenderer.h"
 
-int DebugStatusUI::StaticMeshRenderer::meshNum = 0;
-bool DebugStatusUI::StaticMeshRenderer::limitDrawOption = false;
-
-void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindMesh, bool bindMaterial, std::initializer_list<UINT> dontDrawMeshNums)
+void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
-    m_dontDrawMeshNums.clear();
-    m_dontDrawMeshNums.insert(dontDrawMeshNums.begin(), dontDrawMeshNums.end());
-
     UINT stride = sizeof(VertexType);
     UINT offset = 0;
 
@@ -16,21 +10,27 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context, bool bindM
 
     for (auto& mesh : m_staticMesh.GetMeshes())
     {
-        if(bindMesh)
+        if(GetEnabledBindMeshes())
             mesh.Bind(context);
         auto& materialIndices = m_staticMesh.GetMaterialIndices();
         auto& mat = m_materials[materialIndices[matCount++]];
-        if (bindMaterial)
+        if (GetEnabledBindMaterials())
         {
             mat.Bind(context);
         }
+        auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
+        if (passForceVSIter != GetPassForceChangeVS().end())
+            context->VSSetShader(passForceVSIter->second, nullptr, 0);
+
         drawCount++;
      
-        if (DebugStatusUI::StaticMeshRenderer::limitDrawOption 
-            && (drawCount > DebugStatusUI::StaticMeshRenderer::meshNum
-            || drawCount <= DebugStatusUI::StaticMeshRenderer::meshNum - 1))
+        if (DebugStatusUI::MeshRenderer::limitDrawOption
+            && (drawCount > DebugStatusUI::MeshRenderer::meshNum
+            || drawCount <= DebugStatusUI::MeshRenderer::meshNum - 1))
             continue;
-        if (m_dontDrawMeshNums.find(drawCount) != m_dontDrawMeshNums.end())
+        auto passExcludeIter = GetPassExcludedMeshes().find(GetRenderPassNum());
+        if (passExcludeIter != GetPassExcludedMeshes().end()
+            && passExcludeIter->second.find(drawCount) != passExcludeIter->second.end())
             continue;
 
         context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);

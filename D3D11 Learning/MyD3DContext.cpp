@@ -5,6 +5,10 @@
 #include <d3dcompiler.h>
 #include <wincodec.h>
 
+#include "StaticMeshRenderer.h"
+#include "RigidMeshRenderer.h"
+#include "SkinningMeshRenderer.h"
+
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -408,13 +412,32 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj4->SetLocalScale(0.05f, 0.05f, 0.05f);
 
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
-    m_pSkinningMeshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
+    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
-    m_pStaticMeshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
-    //m_pRigidMeshRenderers.push_back(AssimpConverter::LoadRigidMeshRendererFromFile("Resources/Models/BoxHuman.fbx"));
+    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
+
+    // renderpass 
+    // 0 : shadow map
+    // 1 : outline
+    // 2 : scene draw
+
+    // skinningTest.fbx setting
+    m_meshRenderers[0]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader_SkinningBone());
+    m_meshRenderers[0]->SetPassForceChangeVS(1, Material::GetOutlineVertexShader_SkinningBone());
+
+    // Miyu_Akey_Rigging.obj setting
+    m_meshRenderers[1]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
+    m_meshRenderers[1]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
+    m_meshRenderers[1]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+
+    // Ground.fbx setting
+    m_meshRenderers[2]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+
+    // zeldaPosed001.fbx setting
+    m_meshRenderers[3]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
 
     // DebugDraw
     m_states = std::make_unique<CommonStates>(m_pd3dDevice.Get());
@@ -900,6 +923,20 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     return true;
 }
 
+void MyEngine::MyD3DContext::DrawSkyBox()
+{
+
+}
+
+void MyEngine::MyD3DContext::DrawCube()
+{
+}
+
+void MyEngine::MyD3DContext::DrawShadowMap()
+{
+
+}
+
 void MyEngine::MyD3DContext::Clear()
 {
     float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
@@ -915,10 +952,12 @@ void MyEngine::MyD3DContext::Render()
 
     m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
+    //  <=============== 첫번째 패스(그림자 맵)
+    m_currentRenderPassNum = 0;
+
     MyConstantBuffer cb;
     cb.mWorld = XMMatrixIdentity();
 
-    //  <=============== 첫번째 패스(그림자 맵)
     ID3D11ShaderResourceView* firstPassnullSRVs[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
     m_pContext->PSSetShaderResources(0, 7, firstPassnullSRVs);
 
@@ -936,7 +975,6 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->RSSetViewports(1, &m_shadowViewport);
     cb.vLightColor = m_lightColor;
     auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
-    //m_pDirectionalLightT->SetLocalPosition(m_pCamera->GetTransform()->GetWorldPosition() + lightFwd * -SHADOW_MAP_DEPTH);
     m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
     auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
     cb.vLightDir = xmLightDir;
@@ -965,35 +1003,22 @@ void MyEngine::MyD3DContext::Render()
 
     m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-    auto& obj1 = m_sceneObjects[0];
-    cb.mWorld = XMMatrixTranspose(obj1->GetWorldMatrix());
-    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+    {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
 
-    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get()); //나중에 수정하기 -> VertexType IL로 꼭 변경
 
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(false);
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->Draw(m_pContext.Get());
+    }
 
-    m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader_SkinningBone(), nullptr, 0);
-    m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false);
-
-    m_pContext->VSSetShader(Material::GetBlinnPhongVertexShader(), nullptr, 0);
-
-    auto& obj2 = m_sceneObjects[1];
-    cb.mWorld = XMMatrixTranspose(obj2->GetWorldMatrix());
-    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-    m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false, { 1,5 });
-
-    auto& obj3 = m_sceneObjects[2];
-    cb.mWorld = XMMatrixTranspose(obj3->GetWorldMatrix());
-    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-    m_pStaticMeshRenderers[1]->Draw(m_pContext.Get(), true, false);
-
-    auto& obj4 = m_sceneObjects[3];
-    cb.mWorld = XMMatrixTranspose(obj4->GetWorldMatrix());
-    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-    m_pStaticMeshRenderers[2]->Draw(m_pContext.Get(), true, false);
-
-    //  <=============== 두번째 패스(장면)
     Clear();
 
     ID3D11ShaderResourceView* nullSRVs[2] = { nullptr, nullptr };
@@ -1050,10 +1075,13 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &olCB, 0, 0);
     m_pContext->VSSetConstantBuffers(4, 1, m_pOutlineCB.GetAddressOf());
 
-    // <<======= 아웃라인 드로우
-    for (auto& obj : m_sceneObjects)
+    // <<======= 두번째 패스(아웃라인)
+    m_currentRenderPassNum = 1;
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
     {
-        m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
 
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
@@ -1067,25 +1095,11 @@ void MyEngine::MyD3DContext::Render()
 
         Material::BindOutlineShaders(m_pContext.Get());
 
-        if (modelIdx == 0)
-        {
-            m_pContext->VSSetShader(Material::GetOutlineVertexShader_SkinningBone(), nullptr, 0);
-            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get(), true, false);
-        }
-        if (modelIdx == 1)
-        {
-            m_pStaticMeshRenderers[0]->Draw(m_pContext.Get(), true, false, { 1,5 });
-        }
-          
-        if (modelIdx == 3)
-        {
-            m_pStaticMeshRenderers[2]->Draw(m_pContext.Get(), true, false);
-        }
-        modelIdx++;
-
-        m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(false);
+        meshRenderer->Draw(m_pContext.Get());
     }
-    modelIdx = 0;
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     
     GradientCB gradientCB = {};
     gradientCB.ColorTop = m_gradientColorTop;
@@ -1096,15 +1110,18 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
     m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
 
+    // <<======= 세번째 렌더패스 (씬 드로우)
+    m_currentRenderPassNum = 2;
+
     Vector3 debugPos1;
-	Vector3 debugPos2;
-	Vector3 debugPos3;
+    Vector3 debugPos2;
+    Vector3 debugPos3;
 
-	BoundingOrientedBox debugOBB;
-
-    // <<======= 씬 드로우
-    for (auto& obj : m_sceneObjects)
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
     {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
@@ -1114,31 +1131,29 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-
-        //min max 구하기
-
-        //m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &olCB, 0, 0);
-        //m_pContext->VSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
-
-        if (modelIdx == 0)
+        if (i != 2)
         {
-            //꼭지점 추출
-            auto gradientBBox = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBBox();
-
+            auto gradientBBox = meshRenderer->GetBBox();
             BoundingOrientedBox gradientOBB;
             BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
 
-			gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
+            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
             gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
 
             Vector3 extents = gradientBBox.Extents;
 
-            debugOBB = gradientOBB;
-
             float dist = -extents.Length();
-			debugPos1 = gradientBBox.Center;
+
+            if (i == 0)
+            {
+                debugPos1 = gradientBBox.Center;
+            }
+
             gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
-			debugPos2 = gradientCB.GradientPos;
+            if (i == 0)
+            {
+                debugPos2 = gradientCB.GradientPos;
+            }
 
             dist = -dist;
 
@@ -1150,83 +1165,22 @@ void MyEngine::MyD3DContext::Render()
                 gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
             }
 
-
-			debugPos3 = gradientCB.GradientPos;
-            //gradientCB.minY = gradientAABB.min.y;
-			//gradientCB.maxY = gradientAABB.max.y;
-
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-            m_pSkinningMeshRenderers[0]->Draw(m_pContext.Get());
-            m_pSkinningMeshRenderers[0]->AnimationUpdate();
-            m_pSkinningMeshRenderers[0]->MatrixUpdate();
+            if (i == 0)
+            {
+                debugPos3 = gradientCB.GradientPos;
+            }
         }
-        else if (modelIdx == 1)
-        {
-            //꼭지점 추출
-            auto gradientBBox = m_pStaticMeshRenderers[0]->GetMesh().GetBBox();
-
-            BoundingOrientedBox gradientOBB;
-            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
-
-            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
-            gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
-
-            Vector3 extents = gradientBBox.Extents;
-
-            float dist = -extents.Length();
-            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
-            dist = -dist;
-            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
-            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
-
-            gradientOBB.Intersects(simdOrigin, simdDirection, dist);
-
-            gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
-            //gradientCB.minY = gradientAABB.min.y;
-            //gradientCB.maxY = gradientAABB.max.y;
-
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-            m_pStaticMeshRenderers[0]->Draw(m_pContext.Get());
-        }
-        else if (modelIdx == 2)
-        {
-            m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-            m_pStaticMeshRenderers[1]->Draw(m_pContext.Get());
-        }
-        else if (modelIdx == 3)
-        {
-            //gradientCB.minY = FLT_MAX;
-            //gradientCB.maxY = -FLT_MAX;
-
-            //꼭지점 추출
-            auto gradientBBox = m_pStaticMeshRenderers[2]->GetMesh().GetBBox();
-
-            BoundingOrientedBox gradientOBB;
-            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
-
-            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
-            gradientOBB.Transform(gradientOBB,obj->GetWorldMatrix());
-
-			Vector3 extents = gradientBBox.Extents;
-
-            float dist = -extents.Length();
-            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
-            dist = -dist;
-            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
-            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
-
-            gradientOBB.Intersects(simdOrigin, simdDirection, dist);
-
-            gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
-            //gradientCB.minY = gradientAABB.min.y;
-            //gradientCB.maxY = gradientAABB.max.y;
-
-            m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-            m_pStaticMeshRenderers[2]->Draw(m_pContext.Get());
-        }
-        modelIdx++;
+        
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+        m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(true);
+        meshRenderer->Draw(m_pContext.Get());
     }
+
+    auto skinnedMesh = static_cast<SkinningMeshRenderer*>(m_meshRenderers[0].get());
+    skinnedMesh->AnimationUpdate();
+    skinnedMesh->MatrixUpdate();
 
     //debug draw
     if (m_enableDebugDraw)
@@ -1245,40 +1199,32 @@ void MyEngine::MyD3DContext::Render()
 
         m_batch->Begin();
 
-        auto pSMR_AABB = m_pStaticMeshRenderers[2]->GetMesh().GetBBox();
+        for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+        {
+            if (i == 2) continue;
+            auto renderer_AABB = m_meshRenderers[i]->GetBBox();
+            auto& obj = m_sceneObjects[i];
+            BoundingOrientedBox obb;
+            obb.CreateFromBoundingBox(obb, renderer_AABB);
+            obb.Transform(obb, obj->GetWorldMatrix());
+            DX::Draw(m_batch.get(), obb, Colors::Aqua);
+        }
 
-        auto pSMR_scaledExtend = Vector3{ pSMR_AABB.Extents.x * obj4->GetLocalScale().x,pSMR_AABB.Extents.y * obj4->GetLocalScale().y,pSMR_AABB.Extents.z * obj4->GetLocalScale().z };
+        auto& bones = skinnedMesh->GetSkinningMesh().GetBones();
 
-        BoundingOrientedBox obb(Vector3::Transform(pSMR_AABB.Center, obj4->GetWorldMatrix()), pSMR_scaledExtend, obj4->GetLocalRotation());
-        DX::Draw(m_batch.get(), obb, Colors::Aqua);
-
-        pSMR_AABB = m_pStaticMeshRenderers[0]->GetMesh().GetBBox();
-
-        pSMR_scaledExtend = Vector3{ pSMR_AABB.Extents.x * obj2->GetLocalScale().x,pSMR_AABB.Extents.y * obj2->GetLocalScale().y,pSMR_AABB.Extents.z * obj2->GetLocalScale().z };
-
-        obb = { Vector3::Transform(pSMR_AABB.Center, obj2->GetWorldMatrix()), pSMR_scaledExtend, obj2->GetLocalRotation() };
-        DX::Draw(m_batch.get(), obb, Colors::Aqua);
-
-        pSMR_AABB = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBBox();
-        pSMR_scaledExtend = Vector3{ pSMR_AABB.Extents.x * obj1->GetLocalScale().x,pSMR_AABB.Extents.y * obj1->GetLocalScale().y,pSMR_AABB.Extents.z * obj1->GetLocalScale().z };
-
-        obb = { Vector3::Transform(pSMR_AABB.Center, obj1->GetWorldMatrix()), pSMR_scaledExtend, obj1->GetLocalRotation() };
-        DX::Draw(m_batch.get(), debugOBB, Colors::Aqua);
-
-        auto& bones = m_pSkinningMeshRenderers[0]->GetSkinningMesh().GetBones();
-
+        // 본 드로우
         for (auto& sbone : bones)
         {
             if (sbone.parentIndex == -1)
                 continue;
 
-            auto finMat = sbone.model.Transpose() * obj1->GetWorldMatrix();
+            auto finMat = sbone.model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
             auto startPos = Vector3::Transform(Vector3::Zero, finMat);
 
-            auto finMat2 = obj1->GetWorldMatrix();
+            auto finMat2 = m_sceneObjects[0]->GetWorldMatrix();
             auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
 
-            finMat2 = bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].model.Transpose() * obj1->GetWorldMatrix();
+            finMat2 = bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
             endPos = Vector3::Transform(Vector3::Zero, finMat2);
 
             BoundingSphere sphr{ startPos,0.025f };
@@ -1286,7 +1232,7 @@ void MyEngine::MyD3DContext::Render()
             DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
         }
 
-
+        // 본 경계박스 드로우
         for (auto& sbone : bones)
         {
             if (sbone.parentIndex == -1)
@@ -1296,13 +1242,13 @@ void MyEngine::MyD3DContext::Render()
             auto bone_extend = sbone.bbox.Extents;
 
             bone_center = Vector3::Transform(bone_center, sbone.model.Transpose());
-            bone_center = Vector3::Transform(bone_center, obj1->GetWorldMatrix());
+            bone_center = Vector3::Transform(bone_center, m_sceneObjects[0]->GetWorldMatrix());
 
             auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
-            bone_rot = bone_rot * obj1->GetLocalRotation();
+            bone_rot = bone_rot * m_sceneObjects[0]->GetLocalRotation();
 
-            bone_extend = Vector3{ bone_extend.x * obj1->GetLocalScale().x, bone_extend.y * obj1->GetLocalScale().y, bone_extend.z * obj1->GetLocalScale().z };
-            obb = { bone_center, bone_extend, bone_rot };
+            bone_extend = Vector3{ bone_extend.x * m_sceneObjects[0]->GetLocalScale().x, bone_extend.y * m_sceneObjects[0]->GetLocalScale().y, bone_extend.z * m_sceneObjects[0]->GetLocalScale().z };
+            BoundingOrientedBox obb = { bone_center, bone_extend, bone_rot };
             DX::Draw(m_batch.get(), obb, Colors::Aqua);
         }
 
@@ -1316,6 +1262,11 @@ void MyEngine::MyD3DContext::Render()
         DX::Draw(m_batch.get(), sphere3, Colors::Magenta);
 
 		DX::DrawRay(m_batch.get(), debugPos1, debugPos2 - debugPos1, false, Colors::Yellow);
+
+        auto frustum = m_pCamera->GetProjFrustum();
+        frustum.Transform(frustum, m_pCamera->GetTransform()->GetWorldMatrix());
+
+        DX::Draw(m_batch.get(), frustum, Colors::GhostWhite);
 
         m_batch->End();
     }
@@ -1340,9 +1291,7 @@ void MyEngine::MyD3DContext::Present()
 
 void MyEngine::MyD3DContext::UninitializeScene()
 {
-    m_pStaticMeshRenderers.clear();
-    m_pRigidMeshRenderers.clear();
-    m_pSkinningMeshRenderers.clear();
+    m_meshRenderers.clear();
     AssimpConverter::Release();
 
     m_sceneObjects.clear();
@@ -1379,8 +1328,20 @@ MyEngine::MyD3DContext::~MyD3DContext()
     Material::ReleaseDefaultShaders();
 #ifdef _DEBUG
     m_imgui.Uninitialize();
+
+
+#if defined(_DEBUG)
+    {
+        Microsoft::WRL::ComPtr<ID3D11Debug> debug;
+        m_pd3dDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(debug.GetAddressOf()));
+        debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+    }
+#endif
+
 #endif //_DEBUG
-    if (m_pContext) m_pContext->ClearState();
+    m_pContext->ClearState();
+    m_pContext->Flush();
+
     m_pRenderTargetView = nullptr;
     m_pDepthStencilView = nullptr;
     m_pDepthStencil = nullptr;
@@ -1393,14 +1354,23 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pSamplerPoint = nullptr;
     m_pSamplerLinear = nullptr;
 
+    m_pContext = nullptr;
+    
     m_pSwapChain1 = nullptr;
     m_pSwapChain = nullptr;
 
     m_pd3dDevice1 = nullptr;
     m_pd3dDevice = nullptr;
-    m_pContext = nullptr;
-
+//#ifdef _DEBUG
+//    {
+//        Microsoft::WRL::ComPtr<ID3D11Debug> debug;
+//        m_pd3dDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(debug.GetAddressOf()));
+//        debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//    }
+//#endif
+                
     m_hWnd = nullptr;
+
 }
 
 HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)

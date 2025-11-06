@@ -11,6 +11,16 @@ namespace CameraMathf
     }
 }
 
+void MyEngine::Camera::UpdateProjMatrix()
+{
+    m_cachedProjMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XMConvertToRadians(m_fov), m_aspect, m_near, m_far);
+}
+
+void MyEngine::Camera::UpdateProjFrustum()
+{
+    BoundingFrustum::CreateFromMatrix(m_cachedProjFrustum,m_cachedProjMatrix);
+}
+
 MyEngine::Camera::Camera()
 {
     m_pTransform = std::make_unique<Transform>();
@@ -52,11 +62,24 @@ const Matrix& MyEngine::Camera::GetProjMatrix()
 {
     if (m_isProjMatrixDirty)
     {
-        m_cachedProjMatrix = Matrix::CreatePerspectiveFieldOfView(DirectX::XMConvertToRadians(m_fov), m_aspect, m_near, m_far);
+        UpdateProjMatrix();
+        UpdateProjFrustum();
         m_isProjMatrixDirty = false;
     }
 
     return m_cachedProjMatrix;
+}
+
+const BoundingFrustum& MyEngine::Camera::GetProjFrustum()
+{
+    if (m_isProjMatrixDirty)
+    {
+        UpdateProjMatrix();
+        UpdateProjFrustum();
+        m_isProjMatrixDirty = false;
+    }
+
+    return m_cachedProjFrustum;
 }
 
 void MyEngine::Camera::MarkViewMatrixDirty()

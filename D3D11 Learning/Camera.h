@@ -6,6 +6,7 @@
 #include "Transform.h"
 
 using namespace DirectX::SimpleMath;
+using namespace DirectX;
 
 namespace MyEngine
 {
@@ -24,11 +25,16 @@ namespace MyEngine
 		mutable Matrix m_cachedViewMatrix; // view Matrix
 		mutable Matrix m_cachedProjMatrix; // projection Matrix
 
+		mutable BoundingFrustum m_cachedProjFrustum;
+
 		DirectX::Mouse::ButtonStateTracker m_mouseTracker;
 		DirectX::Keyboard::KeyboardStateTracker m_keyboardTracker;
 		int m_lastMouseX = 0;
 		int m_lastMouseY = 0;
 		bool m_firstMouseUpdate = true;
+
+		void UpdateProjMatrix();
+		void UpdateProjFrustum();
 
 	public:
 		Camera();
@@ -37,6 +43,7 @@ namespace MyEngine
 		const Matrix GetCameraMatrix();  // view * projection Matrix
 		const Matrix& GetViewMatrix();
 		const Matrix& GetProjMatrix();
+		const BoundingFrustum& GetProjFrustum();
 
 		inline const float& GetFOV() const { return m_fov; }
 		inline const float& GetNearPlane() const { return m_near; }

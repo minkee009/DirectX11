@@ -473,8 +473,8 @@ void MyEngine::MyImGui::Update()
     ImGui::SetNextWindowSize(ImVec2(220, 86), ImGuiCond_Once);
 
     ImGui::Begin(u8"렌더러 상태");
-    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::StaticMeshRenderer::limitDrawOption);
-    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::StaticMeshRenderer::meshNum);
+    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::MeshRenderer::limitDrawOption);
+    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::MeshRenderer::meshNum);
     if (ImGui::IsItemActive())
     {
         UpdateInfiniteDrag();
@@ -486,7 +486,7 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Begin(u8"애니메이션 상태");
 
-    auto& animationMeshRenderer = m_d3dContext->m_pSkinningMeshRenderers[0];
+    auto animationMeshRenderer = static_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[0].get());
 
     float animTime = static_cast<float>(animationMeshRenderer->GetTime());
     float duration = static_cast<float>(animationMeshRenderer->GetDuration());

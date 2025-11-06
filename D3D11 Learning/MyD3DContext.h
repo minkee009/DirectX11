@@ -8,9 +8,7 @@
 
 #include "Camera.h"
 #include "AssimpConverter.h"
-#include "StaticMeshRenderer.h"
-#include "RigidMeshRenderer.h"
-#include "SkinningMeshRenderer.h"
+#include "MeshRenderer.h"
 
 #include <directxtk/CommonStates.h>
 #include <directxtk/Effects.h>
@@ -111,10 +109,6 @@ namespace MyEngine {
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
 		//Scene 관련 변수
-		std::vector<std::unique_ptr<StaticMeshRenderer>> m_pStaticMeshRenderers;
-		std::vector<std::unique_ptr<RigidMeshRenderer>> m_pRigidMeshRenderers;
-		std::vector<std::unique_ptr<SkinningMeshRenderer>> m_pSkinningMeshRenderers;
-
 		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;
@@ -139,7 +133,10 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
-		std::vector<std::unique_ptr<Transform> > m_sceneObjects;
+		std::vector<std::unique_ptr<Transform>> m_sceneObjects;
+		std::vector<std::unique_ptr<MeshRenderer>> m_meshRenderers;
+
+		UINT m_currentRenderPassNum = 0;
 
 		std::unique_ptr<Transform> m_pDirectionalLightT;
 		XMFLOAT4 m_lightColor = { 1,0.988f,0.952f,1 };
@@ -207,6 +204,10 @@ namespace MyEngine {
 		bool InitCube();
 		bool InitSkyBox();
 		bool InitShadowMapTex();
+
+		void DrawSkyBox();
+		void DrawCube();
+		void DrawShadowMap();
 
 		void Clear();
 		void Present();

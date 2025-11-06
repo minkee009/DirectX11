@@ -1,10 +1,12 @@
 #pragma once
 #include <vector>
 #include <map>
+#include "IRenderable.h"
 #include "StaticMesh.h"
 #include "Material.h"
 #include "directxtk/SimpleMath.h"
 #include "Animation.hpp"
+#include "MeshRenderer.h"
 
 namespace MyEngine
 {
@@ -40,19 +42,19 @@ namespace MyEngine
 		inline std::vector<UINT>& GetBoneIndices() { return m_boneIndices; }
 	};
 
-	class RigidMeshRenderer
+	class RigidMeshRenderer : public MeshRenderer
 	{
 	private:
 		RigidMesh m_rigidMesh;
-		std::vector<Material> m_materials;
 		ComPtr<ID3D11Buffer> m_boneMatrixCB;
 		ComPtr<ID3D11Buffer> m_boneMatrixIdxCB;
 		std::unique_ptr<RigidBoneMatCB> m_pBoneMatrixData;
 	public:
 		RigidMeshRenderer();
 		inline void SetMesh(RigidMesh&& mesh) { m_rigidMesh = std::move(mesh); }
-		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
-		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true);
+
+		void Draw(ID3D11DeviceContext* context) override;
+		const BoundingBox& GetBBox() override { return m_rigidMesh.GetBBox(); }
 		void MatrixUpdate();
 
 		// ====== 局聪皋捞记 贸府 ====== //

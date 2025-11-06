@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "directxtk/SimpleMath.h"
 #include "Animation.hpp"
+#include "MeshRenderer.h"
 
 namespace MyEngine
 {
@@ -36,12 +37,10 @@ namespace MyEngine
 		void CalcBBox() override;
 	};
 
-	class SkinningMeshRenderer
+	class SkinningMeshRenderer : public MeshRenderer
 	{
 	private:
-		
 		SkinningMesh m_skinningMesh;
-		std::vector<Material> m_materials;
 		ComPtr<ID3D11Buffer> m_boneModelMatrixCB;
 		ComPtr<ID3D11Buffer> m_boneOffsetMatrixCB;
 		std::unique_ptr<SkinningBoneMatCB> m_pBoneModelMatrixData;
@@ -49,13 +48,15 @@ namespace MyEngine
 	public:
 		SkinningMeshRenderer();
 		~SkinningMeshRenderer();
-		inline void SetMesh(SkinningMesh&& mesh) { m_skinningMesh = std::move(mesh); }
-		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
-		void Draw(ID3D11DeviceContext* context, bool bindMesh = true, bool bindMaterial = true);
+		inline void SetSkinningMesh(SkinningMesh&& mesh) { m_skinningMesh = std::move(mesh); }
+		inline SkinningMesh& GetSkinningMesh() { return m_skinningMesh; }
+
 		void CreateBoneMatrixBuffers(ID3D11DeviceContext* context);
 
-		inline SkinningMesh& GetSkinningMesh() { return m_skinningMesh; }
 		void MatrixUpdate();
+
+		void Draw(ID3D11DeviceContext* context);
+		const BoundingBox& GetBBox() override { return m_skinningMesh.GetBBox(); }
 
 		// ====== 局聪皋捞记 贸府 ====== //
 	private:
