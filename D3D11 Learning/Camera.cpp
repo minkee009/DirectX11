@@ -18,7 +18,7 @@ void MyEngine::Camera::UpdateProjMatrix()
 
 void MyEngine::Camera::UpdateProjFrustum()
 {
-    BoundingFrustum::CreateFromMatrix(m_cachedProjFrustum,m_cachedProjMatrix);
+    BoundingFrustum::CreateFromMatrix(m_cachedProjFrustum,m_cachedProjMatrix,true);
 }
 
 MyEngine::Camera::Camera()

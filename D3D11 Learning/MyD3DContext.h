@@ -9,6 +9,7 @@
 #include "Camera.h"
 #include "AssimpConverter.h"
 #include "MeshRenderer.h"
+#include "BVH.h"
 
 #include <directxtk/CommonStates.h>
 #include <directxtk/Effects.h>
@@ -135,6 +136,14 @@ namespace MyEngine {
 		std::unique_ptr<Camera> m_pCamera;
 		std::vector<std::unique_ptr<Transform>> m_sceneObjects;
 		std::vector<std::unique_ptr<MeshRenderer>> m_meshRenderers;
+
+		bool m_sceneHasChanged = false;
+		bool m_usingBVH = true;
+
+		std::unique_ptr<BVH> m_pBVHTree;
+		std::vector<BoundingBox> m_bboxRegistry;
+
+		int m_mappedIdx = 0;
 
 		UINT m_currentRenderPassNum = 0;
 

@@ -482,102 +482,113 @@ void MyEngine::MyImGui::Update()
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(220, 200), ImGuiCond_Once);
 
-    ImGui::Begin(u8"애니메이션 상태");
+    //ImGui::Begin(u8"애니메이션 상태");
 
-    auto animationMeshRenderer = static_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[0].get());
+    //auto animationMeshRenderer = static_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[0].get());
 
-    float animTime = static_cast<float>(animationMeshRenderer->GetTime());
-    float duration = static_cast<float>(animationMeshRenderer->GetDuration());
+    //float animTime = static_cast<float>(animationMeshRenderer->GetTime());
+    //float duration = static_cast<float>(animationMeshRenderer->GetDuration());
 
-    ImGui::Text(u8"애니메이션 시간");
+    //ImGui::Text(u8"애니메이션 시간");
 
-    if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
-    {
-        animationMeshRenderer->SetTime(animTime);
-        animationMeshRenderer->Pause();
-    }
-    else
-    {
-        animationMeshRenderer->Play();
-    }
+    //if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
+    //{
+    //    animationMeshRenderer->SetTime(animTime);
+    //    animationMeshRenderer->Pause();
+    //}
+    //else
+    //{
+    //    animationMeshRenderer->Play();
+    //}
 
-    float animSpeed = static_cast<float>(animationMeshRenderer->GetSpeed());
-    ImGui::Text(u8"애니메이션 속도");
-    ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
-    animationMeshRenderer->SetSpeed(animSpeed);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##12")) {
-        animationMeshRenderer->SetSpeed(1.0f);
-    }
+    //float animSpeed = static_cast<float>(animationMeshRenderer->GetSpeed());
+    //ImGui::Text(u8"애니메이션 속도");
+    //ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
+    //animationMeshRenderer->SetSpeed(animSpeed);
+    //ImGui::SameLine();
+    //if (ImGui::Button(u8"초기값##12")) {
+    //    animationMeshRenderer->SetSpeed(1.0f);
+    //}
 
-    ImGui::End();
+    //ImGui::End();
 
-    // ImGui 윈도우 어딘가에 추가
-    ImGui::Begin(u8"그림자 맵 디버그");
+ //   ImGui::Begin(u8"그림자 맵 디버그");
 
-    // 그림자 맵 SRV를 ImGui로 표시
-    if (m_d3dContext->m_pShadowSRV)
-    {
-        // 크기 지정 (픽셀 단위)
-        ImVec2 imageSize(256, 256);  // 원하는 크기로 조정
+ //   // 그림자 맵 SRV를 ImGui로 표시
+ //   if (m_d3dContext->m_pShadowSRV)
+ //   {
+ //       // 크기 지정 (픽셀 단위)
+ //       ImVec2 imageSize(256, 256);  // 원하는 크기로 조정
 
-        // ImGui::Image는 void* 타입을 받지만, SRV 포인터를 그대로 캐스팅
-        ImGui::Image(
-            (ImTextureID)m_d3dContext->m_pShadowSRV.Get(),  // SRV 포인터
-            ImVec2(256, 256)  // 이미지 크기
-        );
+ //       // ImGui::Image는 void* 타입을 받지만, SRV 포인터를 그대로 캐스팅
+ //       ImGui::Image(
+ //           (ImTextureID)m_d3dContext->m_pShadowSRV.Get(),  // SRV 포인터
+ //           ImVec2(256, 256)  // 이미지 크기
+ //       );
 
-        // 호버 시 확대 표시 (선택사항)
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::BeginTooltip();
-            ImGui::Image(
-                (ImTextureID)m_d3dContext->m_pShadowSRV.Get(),  // SRV 포인터
-                ImVec2(512, 512)  // 이미지 크기
-            );
-            ImGui::EndTooltip();
-        }
+ //       // 호버 시 확대 표시 (선택사항)
+ //       if (ImGui::IsItemHovered())
+ //       {
+ //           ImGui::BeginTooltip();
+ //           ImGui::Image(
+ //               (ImTextureID)m_d3dContext->m_pShadowSRV.Get(),  // SRV 포인터
+ //               ImVec2(512, 512)  // 이미지 크기
+ //           );
+ //           ImGui::EndTooltip();
+ //       }
 
-        ImGui::DragFloat(u8"프로젝션 Near", &m_d3dContext->m_lightProjectNear, 0.01f, 0.01f, 50.0f);
-        ImGui::DragFloat(u8"프로젝션 Far", &m_d3dContext->m_lightProjectFar, 1.0f, 50.0f, 1500.0f);
-    }
-    else
-    {
-        ImGui::Text(u8"Shadow Map이 초기화되지 않음");
-    }
+ //       ImGui::DragFloat(u8"프로젝션 Near", &m_d3dContext->m_lightProjectNear, 0.01f, 0.01f, 50.0f);
+ //       ImGui::DragFloat(u8"프로젝션 Far", &m_d3dContext->m_lightProjectFar, 1.0f, 50.0f, 1500.0f);
+ //   }
+ //   else
+ //   {
+ //       ImGui::Text(u8"Shadow Map이 초기화되지 않음");
+ //   }
 
-    ImGui::End();
+ //   ImGui::End();
 
-    ImGui::Begin(u8"아웃라인 디버그");
+ //   ImGui::Begin(u8"아웃라인 디버그");
 
-    ImGui::Text(u8"아웃라인 두께");
-	ImGui::DragFloat(u8"##아웃라인 두께", &m_d3dContext->m_outlineThickness, 0.001f);
-    if (ImGui::IsItemActive())
-    {
-        UpdateInfiniteDrag();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값")) {
-        m_d3dContext->m_outlineThickness = 0.02f;
-    }
+ //   ImGui::Text(u8"아웃라인 두께");
+	//ImGui::DragFloat(u8"##아웃라인 두께", &m_d3dContext->m_outlineThickness, 0.001f);
+ //   if (ImGui::IsItemActive())
+ //   {
+ //       UpdateInfiniteDrag();
+ //   }
+ //   ImGui::SameLine();
+ //   if (ImGui::Button(u8"초기값")) {
+ //       m_d3dContext->m_outlineThickness = 0.02f;
+ //   }
 
-    ImGui::End();
+ //   ImGui::End();
 
-    ImGui::Begin(u8"그라디언트 디버그");
+ //   ImGui::Begin(u8"그라디언트 디버그");
 
-	ImGui::SliderFloat(u8"그라디언트 강도", &m_d3dContext->m_gradientIntensity, 0.0f, 1.0f);
-	ImGui::ColorEdit3(u8"그라디언트 색1(위)", &m_d3dContext->m_gradientColorTop.x);
-	ImGui::ColorEdit3(u8"그라디언트 색2(아래)", &m_d3dContext->m_gradientColorBottom.x);
+	//ImGui::SliderFloat(u8"그라디언트 강도", &m_d3dContext->m_gradientIntensity, 0.0f, 1.0f);
+	//ImGui::ColorEdit3(u8"그라디언트 색1(위)", &m_d3dContext->m_gradientColorTop.x);
+	//ImGui::ColorEdit3(u8"그라디언트 색2(아래)", &m_d3dContext->m_gradientColorBottom.x);
 
-    ImGui::End();
+ //   ImGui::End();
 
 
     ImGui::Begin(u8"디버그 드로잉");
 
     ImGui::Checkbox(u8"활성화", &m_d3dContext->m_enableDebugDraw);
     ImGui::Checkbox(u8"zbuffer 사용", &m_d3dContext->m_enableDebugDrawZbuffer);
+    ImGui::Checkbox(u8"카메라 프러스텀 컬링 사용", &m_d3dContext->m_usingBVH);
+
+    static float updateTime = 0.0f;
+    static float fps = 0.0f;
+    updateTime += Time::instance->GetDeltaTime();
+    if (updateTime > 0.2f) {
+        fps = (1.0f / Time::instance->GetDeltaTime());
+        updateTime = 0.0f;
+    }
+
+    ImGui::Text(u8"드로우 오브젝트 수 : %d", m_d3dContext->m_mappedIdx);
+    ImGui::Text(u8"FPS : %f", fps);
 
     ImGui::End();
 }
