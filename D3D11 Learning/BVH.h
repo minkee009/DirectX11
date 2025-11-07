@@ -32,7 +32,7 @@ namespace MyEngine
 		/// </summary>
 		/// <param name="nodeIdx"> - 순회를 시작할 노드의 위치입니다. 특별한 경우가 아니면 최상단 노드를 넣는 것을 추천합니다.</param>
 		/// <param name="registry"> - 트리가 참조중인 BoundingBox배열입니다. 빌드함수를 호출할 때 사용했던 배열을 넣어야합니다.</param>
-		/// <param name="query"> - 기준 BoundingBox입니다, 이 기준으로 레지스트리 내부에 겹치는 BoundingBox를 골라냅니다. </param>
+		/// <param name="query"> - 기준 경계 볼륨입니다, 이 기준으로 레지스트리 내부에 겹치는 BoundingBox를 골라냅니다. </param>
 		/// <param name="out"> - 겹쳐진 BoundingBox의 레지스트리 인덱스 모음입니다. </param>
 		void Search(size_t nodeIdx, const std::vector<BoundingBox>& registry, const BoundingBox& query, std::vector<size_t>& out);
 
