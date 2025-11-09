@@ -187,7 +187,6 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pShadowSRV;
 		ComPtr<ID3D11DepthStencilView> m_pShadowDSV;
 		D3D11_VIEWPORT m_shadowViewport;
-		ComPtr<ID3D11VertexShader> m_pShadowMapVS;
 		ComPtr<ID3D11SamplerState> m_pShadowSampler;
 
 		const float SHADOW_MAP_DEPTH = 25.0f;
