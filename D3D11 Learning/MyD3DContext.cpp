@@ -459,8 +459,11 @@ bool MyEngine::MyD3DContext::InitializeScene()
     // 2 : scene draw
 
     m_meshRenderers[0]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+    m_meshRenderers[0]->SetPassForceChangePS(0, nullptr);
     m_meshRenderers[1]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+    m_meshRenderers[1]->SetPassForceChangePS(0, nullptr);
     m_meshRenderers[2]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+    m_meshRenderers[2]->SetPassForceChangePS(0, Material::GetBlinnPhongShadowMapPixelShader());
 
     //// skinningTest.fbx setting
     //m_meshRenderers[0]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader_SkinningBone());
@@ -1051,7 +1054,7 @@ void MyEngine::MyD3DContext::Render()
 
     m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-    // 그림자맵 패스 끄기 (BVH 순수 성능 테스트)
+    //그림자맵 패스 끄기 (BVH 순수 성능 테스트)
     //{
     //    auto& meshRenderer = m_meshRenderers[0];
     //    auto& obj = m_sceneObjects[0];
@@ -1078,7 +1081,7 @@ void MyEngine::MyD3DContext::Render()
     //    m_pContext->IASetInputLayout(m_pCubeInputLayout.Get()); //나중에 수정하기 -> VertexType IL로 꼭 변경
 
     //    meshRenderer->SetEnabledBindMeshes(true);
-    //    meshRenderer->SetEnabledBindMaterials(false);
+    //    meshRenderer->SetEnabledBindMaterials(true);
     //    meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
     //    meshRenderer->Draw(m_pContext.Get());
     //}

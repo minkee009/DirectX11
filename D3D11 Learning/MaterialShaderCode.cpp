@@ -898,5 +898,67 @@ float4 PS(PS_INPUT input) : SV_TARGET
     return float4(finalRGB, baseTex.a);
 }
 )";
+    const char* g_pscode_blinnphong_shadowmap = R"(
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
+}
 
+cbuffer MaterialBuffer : register(b1)
+{
+	uint textureFlags; 
+	float4 baseColor;
+}
+
+Texture2D txDiffuse : register(t0);
+TextureCube skyBoxTX : register(t1);
+Texture2D normalMap : register(t2);
+Texture2D specularMap : register(t3);
+Texture2D emmisiveMap : register(t4);
+Texture2D lutMap : register(t5);
+SamplerState samLinear : register(s0);
+Texture2D shadowMap : register(t6); 
+SamplerComparisonState samShadow : register(s1);
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+	float4 LightPos : TEXCOORD4; 
+	uint  IsFrontFace : SV_IsFrontFace; 
+};
+
+float4 PS(PS_INPUT input) : SV_TARGET
+{
+    float4 color = txDiffuse.Sample(samLinear, input.Tex);
+
+    if (color.a < 0.5f)
+    {
+        discard; // ¶Ç´Â clip(-1);
+    }
+
+    return float4(0.0f, 0.0f, 0.0f, 0.0f);
+}
+)";
 }

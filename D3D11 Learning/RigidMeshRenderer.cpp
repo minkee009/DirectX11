@@ -78,6 +78,9 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
 		if (passForceVSIter != GetPassForceChangeVS().end())
 			context->VSSetShader(passForceVSIter->second, nullptr, 0);
+		auto passForcePSIter = GetPassForceChangePS().find(GetRenderPassNum());
+		if (passForcePSIter != GetPassForceChangePS().end())
+			context->PSSetShader(passForcePSIter->second, nullptr, 0);
 
 		if (DebugStatusUI::MeshRenderer::limitDrawOption
 			&& (meshCount > DebugStatusUI::MeshRenderer::meshNum

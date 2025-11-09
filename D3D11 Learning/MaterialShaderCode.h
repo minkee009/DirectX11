@@ -18,4 +18,5 @@ namespace MyEngine
 
     extern const char* g_pscode_blinnphong;
     extern const char* g_pscode_blinnphong_toon;
+    extern const char* g_pscode_blinnphong_shadowmap;
 }

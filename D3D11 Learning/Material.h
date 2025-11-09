@@ -145,6 +145,7 @@ namespace MyEngine
 		inline static ID3D11VertexShader* GetBlinnPhongVertexShader_SkinningBone() { return s_pBlinnPhongVertexShader_useSkinningBone.Get(); }
 		inline static ID3D11PixelShader* GetBlinnPhongPixelShader() { return s_pBlinnPhongPixelShader.Get(); }
 		inline static ID3D11PixelShader* GetBlinnPhongToonPixelShader() { return s_pBlinnPhongToonPixelShader.Get(); }
+		inline static ID3D11PixelShader* GetBlinnPhongShadowMapPixelShader() { return s_pBlinnPhongShadowMapPixelShader.Get(); }
 		inline static ID3DBlob* GetBlinnPhongVSBlob() { return s_pBlinnPhongVSBlob.Get(); }
 	};
 }

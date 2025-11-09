@@ -26,12 +26,13 @@ namespace MyEngine
 		bool m_enabledBindMaterials;
 		std::unordered_map<UINT, std::unordered_set<UINT>> m_passExcludedMeshes; // < render pass, { dont draw mesh idx } >
 		std::unordered_map<UINT, ID3D11VertexShader*> m_passForceChangeVS;
-		//std::unordered_map<UINT, ID3D11PixelShader*> m_passForceChangePS;
+		std::unordered_map<UINT, ID3D11PixelShader*> m_passForceChangePS;
 
 	protected:
 		std::vector<Material> m_materials;
 		inline const std::unordered_map<UINT, std::unordered_set<UINT>>& GetPassExcludedMeshes() const { return m_passExcludedMeshes; };
 		inline const std::unordered_map<UINT, ID3D11VertexShader*>& GetPassForceChangeVS() const { return m_passForceChangeVS; };
+		inline const std::unordered_map<UINT, ID3D11PixelShader*>& GetPassForceChangePS() const { return m_passForceChangePS; };
 		inline const UINT& GetRenderPassNum() const { return m_renderPassNum; }
 	public:
 		virtual void Draw(ID3D11DeviceContext* context) = 0;
@@ -39,12 +40,14 @@ namespace MyEngine
 
 		void SetPassExcludedMeshes(UINT renderPassNum, std::initializer_list<UINT> meshes);
 		void SetPassForceChangeVS(UINT renderPassNum, ID3D11VertexShader* VS);
+		void SetPassForceChangePS(UINT renderPassNum, ID3D11PixelShader* PS);
 
 		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
 		inline void SetRenderPassNum(UINT renderPassNum) { m_renderPassNum = renderPassNum; }
 
 		inline void ClearPassExcludedMeshes() { m_passExcludedMeshes.clear(); }
 		inline void ClearPassForceChangeVS() { m_passForceChangeVS.clear(); }
+		inline void ClearPassForceChangePS() { m_passForceChangePS.clear(); }
 
 		inline void SetEnabledBindMeshes(bool enabled) { m_enabledBindMeshes = enabled; }
 		inline void SetEnabledBindMaterials(bool enabled) { m_enabledBindMaterials = enabled; }

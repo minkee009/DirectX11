@@ -428,6 +428,7 @@ void MyEngine::Material::InitBlinnPhongShaders(ID3D11Device* device)
 	//ºí¸° Æþ ÇÈ¼¿ ¼ÎÀÌ´õ
     CompileLiteralCodeToPixelShader(device, s_pBlinnPhongPixelShader.GetAddressOf(), g_pscode_blinnphong);
     CompileLiteralCodeToPixelShader(device, s_pBlinnPhongToonPixelShader.GetAddressOf(), g_pscode_blinnphong_toon);
+    CompileLiteralCodeToPixelShader(device, s_pBlinnPhongShadowMapPixelShader.GetAddressOf(), g_pscode_blinnphong_shadowmap);
 }
 
 void MyEngine::Material::ReleaseBlinnPhongShaders()
