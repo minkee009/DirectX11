@@ -13,3 +13,8 @@ void MyEngine::MeshRenderer::SetPassForceChangeVS(UINT renderPassNum, ID3D11Vert
 {
 	m_passForceChangeVS[renderPassNum] = VS;
 }
+
+void MyEngine::MeshRenderer::SetPassForceChangePS(UINT renderPassNum, ID3D11PixelShader* PS)
+{
+	m_passForceChangePS[renderPassNum] = PS;
+}

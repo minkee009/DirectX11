@@ -93,6 +93,7 @@ namespace MyEngine
 		static ComPtr<ID3D11VertexShader> s_pBlinnPhongVertexShader_useSkinningBone;
 		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongPixelShader;
 		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongToonPixelShader;
+		static ComPtr<ID3D11PixelShader>  s_pBlinnPhongShadowMapPixelShader;
 		static ComPtr<ID3DBlob> s_pBlinnPhongVSBlob;
 	public:
 		Material() = default;
@@ -120,6 +121,9 @@ namespace MyEngine
 
 		inline void SetBaseColor(const Color& baseColor) { m_baseColor = baseColor; }
 
+		static bool CompileLiteralCodeToVertexShader(ID3D11Device* pDevice, ID3D11VertexShader** ppVS, const char* literal, ID3DBlob** ppVSBlob = nullptr);
+		static bool CompileLiteralCodeToPixelShader(ID3D11Device* pDevice, ID3D11PixelShader** ppPS, const char* literal);
+
 		//±âº» ¼ÎÀÌ´õ (ºÐÈ«»ö)
 		static void InitDefaultShaders(ID3D11Device* device);
 		static void ReleaseDefaultShaders();
@@ -141,6 +145,7 @@ namespace MyEngine
 		inline static ID3D11VertexShader* GetBlinnPhongVertexShader_SkinningBone() { return s_pBlinnPhongVertexShader_useSkinningBone.Get(); }
 		inline static ID3D11PixelShader* GetBlinnPhongPixelShader() { return s_pBlinnPhongPixelShader.Get(); }
 		inline static ID3D11PixelShader* GetBlinnPhongToonPixelShader() { return s_pBlinnPhongToonPixelShader.Get(); }
+		inline static ID3D11PixelShader* GetBlinnPhongShadowMapPixelShader() { return s_pBlinnPhongShadowMapPixelShader.Get(); }
 		inline static ID3DBlob* GetBlinnPhongVSBlob() { return s_pBlinnPhongVSBlob.Get(); }
 	};
 }

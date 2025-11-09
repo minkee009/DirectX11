@@ -140,7 +140,12 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         hr = m_pd3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(m_pd3dDevice1.GetAddressOf()));
         if (SUCCEEDED(hr))
         {
-            (void)m_pContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(m_pContext.GetAddressOf()));
+            ID3D11DeviceContext1* pContext1 = nullptr;
+            hr = m_pContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(&pContext1));
+            if (SUCCEEDED(hr))
+            {
+                m_pContext.Attach(pContext1);
+            }
         }
 
         DXGI_SWAP_CHAIN_DESC1 sd = {};
@@ -1328,9 +1333,15 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pShadowMapRasterizerState = nullptr;
     m_pOutlineCB = nullptr;
     m_pGradientCB = nullptr;
-    m_states = nullptr;
-    m_effect = nullptr;
-    m_batch = nullptr;
+    if (m_pContext)
+    {
+        m_pContext->ClearState();
+        m_pContext->Flush();
+    }
+
+    m_batch.reset();      // PrimitiveBatch 해제
+    m_effect.reset();     // BasicEffect 해제
+    m_states.reset();     // CommonStates 해제 (이게 2개의 refcount 원인!)
     m_pDebugDrawIL = nullptr;
 }
 
@@ -1341,19 +1352,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 
-
-#if defined(_DEBUG)
-    {
-        Microsoft::WRL::ComPtr<ID3D11Debug> debug;
-        m_pd3dDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(debug.GetAddressOf()));
-        debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-    }
-#endif
-
 #endif //_DEBUG
-    m_pContext->ClearState();
-    m_pContext->Flush();
-
     m_pRenderTargetView = nullptr;
     m_pDepthStencilView = nullptr;
     m_pDepthStencil = nullptr;
@@ -1367,31 +1366,42 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pSamplerLinear = nullptr;
 
     m_pContext = nullptr;
-    
+
     m_pSwapChain1 = nullptr;
     m_pSwapChain = nullptr;
 
 #ifdef _DEBUG
-    {
-        HMODULE dxgidebugdll = GetModuleHandleW(L"dxgidebug.dll");
-        decltype(&DXGIGetDebugInterface) GetDebugInterface = reinterpret_cast<decltype(&DXGIGetDebugInterface)>(GetProcAddress(dxgidebugdll, "DXGIGetDebugInterface"));
-
-        IDXGIDebug* debug;
-
-        GetDebugInterface(IID_PPV_ARGS(&debug));
-
-        OutputDebugStringW(L"Starting Live Direct3D Object Dump:\r\n");
-        debug->ReportLiveObjects(DXGI_DEBUG_D3D11, DXGI_DEBUG_RLO_DETAIL);
-        OutputDebugStringW(L"Completed Live Direct3D Object Dump.\r\n");
-
-        debug->Release();
-    }
-#endif
-
+    // 7. Device should be released LAST
     m_pd3dDevice1 = nullptr;
     m_pd3dDevice = nullptr;
 
-                
+    // 8. Debug output AFTER device release
+    {
+        HMODULE dxgidebugdll = GetModuleHandleW(L"dxgidebug.dll");
+        if (dxgidebugdll)
+        {
+            decltype(&DXGIGetDebugInterface) GetDebugInterface =
+                reinterpret_cast<decltype(&DXGIGetDebugInterface)>(
+                    GetProcAddress(dxgidebugdll, "DXGIGetDebugInterface"));
+
+            if (GetDebugInterface)
+            {
+                IDXGIDebug* debug;
+                if (SUCCEEDED(GetDebugInterface(IID_PPV_ARGS(&debug))))
+                {
+                    OutputDebugStringW(L"Starting Live Direct3D Object Dump:\r\n");
+                    debug->ReportLiveObjects(DXGI_DEBUG_D3D11, DXGI_DEBUG_RLO_DETAIL);
+                    OutputDebugStringW(L"Completed Live Direct3D Object Dump.\r\n");
+                    debug->Release();
+                }
+            }
+        }
+    }
+#else
+    m_pd3dDevice1 = nullptr;
+    m_pd3dDevice = nullptr;
+#endif
+
     m_hWnd = nullptr;
 
 }
