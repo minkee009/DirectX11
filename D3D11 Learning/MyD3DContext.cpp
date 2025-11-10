@@ -391,12 +391,12 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
-    m_pCamera->GetTransform()->SetWorldPosition(-5.0f, 4.8f, 10.9f);
-    m_pCamera->GetTransform()->SetWorldEulerRotation(-17.0f, -20.0f, 0.0f);
+    m_pCamera->GetTransform()->SetWorldPosition(8.69f, 11.2f, 19.9f);
+    m_pCamera->GetTransform()->SetWorldEulerRotation(-16.1f, 11.4f, 0.0f);
     m_pCamera->SetAspectRatio((float)m_width, (float)m_height);
 
     m_pDirectionalLightT = std::make_unique<Transform>();
-    m_pDirectionalLightT->SetLocalEulerRotation({ -90,0,0 });
+    m_pDirectionalLightT->SetLocalEulerRotation({ -42.8f,74.5f,0 });
     m_pDirectionalLightT->SetLocalScale({ 1,1,1 });
 
     //오브젝트 생성
@@ -1113,8 +1113,6 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     
     GradientCB gradientCB = {};
-    gradientCB.ColorTop = m_gradientColorTop;
-    gradientCB.ColorBottom = m_gradientColorBottom;
     gradientCB.intensity = m_gradientIntensity;
     //gradientCB.minY = 0;
     //gradientCB.maxY = 10.0f;

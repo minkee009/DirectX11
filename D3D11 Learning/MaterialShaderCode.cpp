@@ -680,8 +680,6 @@ cbuffer MaterialBuffer : register(b1)
 
 cbuffer GradientBuffer : register(b5)
 {
-	float4 gradientTop;
-	float4 gradientBottom;
 	float3 gradientPos;
 	float gradientIntensity;
 }

@@ -71,8 +71,6 @@ namespace MyEngine {
 
 	struct GradientCB
 	{
-		XMFLOAT4 ColorTop;
-		XMFLOAT4 ColorBottom;
 		XMFLOAT3 GradientPos;
 		FLOAT intensity;
 	};
@@ -139,12 +137,12 @@ namespace MyEngine {
 		UINT m_currentRenderPassNum = 0;
 
 		std::unique_ptr<Transform> m_pDirectionalLightT;
-		XMFLOAT4 m_lightColor = { 1,0.988f,0.952f,1 };
+		XMFLOAT4 m_lightColor = { 1, 0.8823529411764706f,0.8352941176470588f,1 };
 		FLOAT m_lightDistance = 3.0f;
 		FLOAT m_lightProjectNear = 0.01f;
 		FLOAT m_lightProjectFar = 50.0f;
 
-		XMFLOAT4 m_ambientColor = { 0.85f,0.93f,1,1 };
+		XMFLOAT4 m_ambientColor = { 0.9255f,0.5059f,0.7490f,1 };
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
 		FLOAT m_diffuseGradientStrength = 0.3125f;
@@ -154,9 +152,7 @@ namespace MyEngine {
 
 		FLOAT m_outlineThickness = 0.02f;
 
-		XMFLOAT4 m_gradientColorTop = { 0.674f, 0.602f, 0.743f, 1.0f };
-		XMFLOAT4 m_gradientColorBottom = { 0.674f, 0.602f, 0.743f, 1.0f };
-		FLOAT m_gradientIntensity = 1.0f;
+		FLOAT m_gradientIntensity = 0.846f;
 
 		FLOAT m_reflectionFactor = 0.005f;
 		bool m_isPointLight = false;
@@ -191,7 +187,7 @@ namespace MyEngine {
 		std::unique_ptr<DirectX::PrimitiveBatch<VertexType>> m_batch;
 		ComPtr<ID3D11InputLayout> m_pDebugDrawIL;
 
-		bool m_enableDebugDraw = true;
+		bool m_enableDebugDraw = false;
 		bool m_enableDebugDrawZbuffer = false;
 		// ================
 

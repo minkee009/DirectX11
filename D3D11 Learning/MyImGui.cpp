@@ -370,10 +370,10 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##3")) {
-        m_d3dContext->m_lightColor = { 1,0.988f,0.952f,1 };
+        m_d3dContext->m_lightColor = { 1, 0.8823529411764706f,0.8352941176470588f,1 };;
     }
 
-    constexpr Vector3 light_defEulerRot = { -90,0,0 };
+    constexpr Vector3 light_defEulerRot = { -42.8f,74.5f,0 };
     static Vector3 light_rot = m_d3dContext->m_pDirectionalLightT->GetLocalEulerRotation();
 
     if (ImGui::DragFloat3("##LightRot", &light_rot.x, 0.1f))
@@ -402,7 +402,7 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##6")) {
-        m_d3dContext->m_ambientColor = { 0.85f,0.93f,1,1 };
+        m_d3dContext->m_ambientColor = { 0.9255f,0.5059f,0.7490f,1 };
     }
 
     ImGui::Text(u8"환경광(ambient) : 강도");
@@ -514,6 +514,9 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
+    ImGui::SetNextWindowPos(ImVec2(1600 - 280, 480), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(275, 350), ImGuiCond_Once);
+
     // ImGui 윈도우 어딘가에 추가
     ImGui::Begin(u8"그림자 맵 디버그");
 
@@ -550,6 +553,9 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
+    ImGui::SetNextWindowPos(ImVec2(1600 - 230, 395), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(225, 80), ImGuiCond_Once);
+
     ImGui::Begin(u8"아웃라인 디버그");
 
     ImGui::Text(u8"아웃라인 두께");
@@ -565,14 +571,19 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
+
+    ImGui::SetNextWindowPos(ImVec2(1600 - 230, 325), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(225, 65), ImGuiCond_Once);
+
     ImGui::Begin(u8"그라디언트 디버그");
 
 	ImGui::SliderFloat(u8"그라디언트 강도", &m_d3dContext->m_gradientIntensity, 0.0f, 1.0f);
-	ImGui::ColorEdit3(u8"그라디언트 색1(위)", &m_d3dContext->m_gradientColorTop.x);
-	ImGui::ColorEdit3(u8"그라디언트 색2(아래)", &m_d3dContext->m_gradientColorBottom.x);
 
     ImGui::End();
 
+
+    ImGui::SetNextWindowPos(ImVec2(1600 - 225, 230), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(220, 90), ImGuiCond_Once);
 
     ImGui::Begin(u8"디버그 드로잉");
 
