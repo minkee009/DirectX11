@@ -156,6 +156,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
         sd.BufferCount = 2;
 
         hr = dxgiFactory2->CreateSwapChainForHwnd(m_pd3dDevice.Get(), m_hWnd, &sd, nullptr, nullptr, m_pSwapChain1.GetAddressOf());
@@ -180,6 +181,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.OutputWindow = m_hWnd;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
+        sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
         sd.Windowed = TRUE;
 
         hr = dxgiFactory->CreateSwapChain(m_pd3dDevice.Get(), &sd, m_pSwapChain.GetAddressOf());
@@ -1366,7 +1368,7 @@ void MyEngine::MyD3DContext::Render()
 
 void MyEngine::MyD3DContext::Present()
 {
-    m_pSwapChain->Present(0, 0);
+    m_pSwapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
 }
 
 void MyEngine::MyD3DContext::UninitializeScene()
