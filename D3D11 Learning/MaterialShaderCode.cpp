@@ -685,7 +685,6 @@ cbuffer GradientBuffer : register(b5)
 }
 
 Texture2D txDiffuse : register(t0);
-TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
@@ -841,7 +840,6 @@ float4 PS(PS_INPUT input) : SV_TARGET
     // 알파가 낮으면 픽셀 폐기
     clip(baseTex.a - alphaCutoff);
 
-
 	float minusRimNdotL  = dot(-vLightPos.xyz , N);
 
 	// 림 라이트
@@ -860,12 +858,8 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	float4 rim = rimIntensity * vLightColor * rimLightStr;
     
     float3 baseRGB = (specular + diffuse + ambient + rim + minusRim).rgb * baseTex.rgb + emmisive.rgb ;
-    float3 envRGB = (specular + diffuse + ambient).rgb * skyBoxTX.Sample(samLinear, R).rgb;
-    
-    float3 finalRGB = lerp(baseRGB, envRGB, reflectionFactor);
 
 	float3 toGradientPos = gradientPos - input.WorldPos;
-	//float3 GradientL = normalize(toGradientPos);
 	float GradientDistance = length(toGradientPos);
 	GradientDistance = max(GradientDistance, 0.0001f);
 	float GradientAttenuation = 1.0f / (GradientDistance);
@@ -873,27 +867,9 @@ float4 PS(PS_INPUT input) : SV_TARGET
 	GradientAttenuation *= 3.5f * gradientIntensity; 
 	GradientAttenuation = saturate(GradientAttenuation);
 	
-	finalRGB = finalRGB * GradientAttenuation;
-	
-	// y 범위 값들
-    //float yMin = minY; // 0
-    //float yMax = maxY; // 10
+	baseRGB = baseRGB * GradientAttenuation;
 
-    // 안전하게 분모가 0이 되는 경우 방지
-    //float span = max(0.00001, yMax - yMin);
-
-    // 0..1 로 정규화 (y=0 -> 0, y=10 -> 1)
-	 //   float gradient = saturate( (input.WorldPos.y - yMin) / span );
-	//gradient = smoothstep(0.0, 1.0, gradient);
-
-	//float4 gradientColor = lerp(gradientBottom, gradientTop, gradient);
-	//
-	//finalRGB = finalRGB * gradientColor.rgb * gradientIntensity;
-
-	//finalRGB = lerp(vAmbientColor , finalRGB, lerp(1.0, gradient, gradientIntensity)); // 흰색으로 보간
-
-
-    return float4(finalRGB, baseTex.a);
+    return float4(baseRGB, baseTex.a);
 }
 )";
     const char* g_pscode_blinnphong_shadowmap = R"(
