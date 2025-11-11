@@ -271,10 +271,10 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 			context->PSSetSamplers(tex.slot, 1, m_pSampler.GetAddressOf());
 	}
 
-	//if (m_textures.empty())
-	//{
-	//	BindDefaultShaders(context);
-	//}
+	if (m_textures.empty() && !m_hasBaseColor)
+	{
+		BindDefaultShaders(context);
+	}
 }
 
 ComPtr<ID3D11VertexShader> MyEngine::Material::s_pDefaultVertexShader = nullptr;
@@ -388,8 +388,9 @@ void MyEngine::Material::InitDefaultShaders(ID3D11Device* device)
 {
 	//MVP Á¤Á¡ ¼ÎÀÌ´õ
 	CompileLiteralCodeToVertexShader(device, s_pDefaultVertexShader.GetAddressOf(), g_vscode_def, s_pDefaultVSBlob.GetAddressOf());
-	CompileLiteralCodeToVertexShader(device, s_pOutlineVertexShader.GetAddressOf(), g_vscode_outline);
-	CompileLiteralCodeToVertexShader(device, s_pOutlineVertexShader_useSkinningBone.GetAddressOf(), g_vscode_outline_useSkinning);
+	CompileLiteralCodeToVertexShader(device, s_pOutlineVertexShader.GetAddressOf(), g_vscode_outline);	CompileLiteralCodeToVertexShader(device, s_pOutlineVertexShader_useRigidBone.GetAddressOf(), g_vscode_outline_rigid);
+	CompileLiteralCodeToVertexShader(device, s_pOutlineVertexShader_useSkinningBone.GetAddressOf(), g_vscode_outline_skinning);
+
 
 	CompileLiteralCodeToPixelShader(device, s_pDefaultPixelShader.GetAddressOf(), g_pscode_def);
 	CompileLiteralCodeToPixelShader(device, s_pOutlinePixelShader.GetAddressOf(), g_pscode_outline);
@@ -408,7 +409,7 @@ void MyEngine::Material::ReleaseDefaultShaders()
 
 void MyEngine::Material::BindDefaultShaders(ID3D11DeviceContext* context)
 {
-	context->VSSetShader(Material::GetDefaultVertexShader(), nullptr, 0);
+	//context->VSSetShader(Material::GetDefaultVertexShader(), nullptr, 0);
 	context->PSSetShader(Material::GetDefaultPixelShader(), nullptr, 0);
 }
 

@@ -72,6 +72,7 @@ namespace MyEngine
 
 		std::vector<TextureBinding> m_textures;
 
+		bool m_hasBaseColor = false;
 		Color m_baseColor = { 1,1,1,1 };
 
 		bool m_useZWrite = true;
@@ -119,7 +120,7 @@ namespace MyEngine
 		inline const std::string& GetName() const { return m_name; }
 		inline const Color& GetBaseColor() const { return m_baseColor; }
 
-		inline void SetBaseColor(const Color& baseColor) { m_baseColor = baseColor; }
+		inline void SetBaseColor(const Color& baseColor) { m_hasBaseColor = true; m_baseColor = baseColor; }
 
 		static bool CompileLiteralCodeToVertexShader(ID3D11Device* pDevice, ID3D11VertexShader** ppVS, const char* literal, ID3DBlob** ppVSBlob = nullptr);
 		static bool CompileLiteralCodeToPixelShader(ID3D11Device* pDevice, ID3D11PixelShader** ppPS, const char* literal);

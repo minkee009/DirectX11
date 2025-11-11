@@ -4,7 +4,8 @@ namespace MyEngine
 {
     extern const char* g_vscode_def;
     extern const char* g_vscode_outline;
-    extern const char* g_vscode_outline_useSkinning;
+    extern const char* g_vscode_outline_rigid;
+    extern const char* g_vscode_outline_skinning;
 
     extern const char* g_vscode_blinnphong;
     extern const char* g_vscode_blinnphong_rigid;

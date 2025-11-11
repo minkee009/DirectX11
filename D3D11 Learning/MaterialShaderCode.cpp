@@ -114,7 +114,7 @@ PS_INPUT VS(VS_INPUT input)
 	return output;                                
 }
 )";
-    const char* g_vscode_outline_useSkinning = R"(
+    const char* g_vscode_outline_skinning = R"(
 cbuffer ConstantBuffer : register(b0)
 {
     matrix World;
@@ -213,6 +213,85 @@ PS_INPUT VS(VS_INPUT input)
     
     return output;
 }
+)";
+const char* g_vscode_outline_rigid = R"(
+    cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
+}
+
+cbuffer BoneBuffer : register(b2)
+{
+	matrix ModelMatricies[128];
+}
+cbuffer BoneBuffer : register(b3)
+{
+	uint boneIdx;
+}
+cbuffer ConstantBuffer : register(b4)
+{
+    float OutlineThickness;
+}               
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT) 0;
+	matrix tWorld = mul(ModelMatricies[boneIdx], World);
+
+    output.Pos = mul(input.Pos, tWorld);
+    output.WorldPos = output.Pos.xyz;
+
+	float3 N = normalize(input.Norm);
+	float3 expanded = output.WorldPos + N * OutlineThickness;
+	float4 expandedPos = float4(expanded, 1.0);
+
+    output.Pos = mul(expandedPos, View);
+    output.Pos = mul(output.Pos, Projection);
+    
+    output.Norm = normalize(mul(input.Norm, (float3x3) tWorld));
+    output.Tan = normalize(mul(input.Tan, (float3x3) tWorld));
+    output.Tex = input.Tex;
+    
+    return output;
+}
+
 )";
 
     const char* g_vscode_blinnphong = R"(
