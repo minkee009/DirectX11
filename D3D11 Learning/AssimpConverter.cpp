@@ -1,3 +1,4 @@
+
 #include "AssimpConverter.h"
 #include <queue>
 #include <stdexcept>
@@ -11,7 +12,53 @@ ID3D11DeviceContext* MyEngine::AssimpConverter::s_pContext = nullptr;
 namespace fs = std::filesystem;
 
 //#include <iostream>
-void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes,std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
+
+std::unordered_set<std::string> MyEngine::AssimpConverter::CollectUsedBoneNames(const aiScene* pScene)
+{
+    std::unordered_set<std::string> usedBones;
+
+    // 모든 메시를 순회하며 실제 스키닝에 사용되는 본 이름 수집
+    for (UINT i = 0; i < pScene->mNumMeshes; i++)
+    {
+        aiMesh* pMesh = pScene->mMeshes[i];
+        if (pMesh->HasBones())
+        {
+            for (UINT j = 0; j < pMesh->mNumBones; j++)
+            {
+                usedBones.insert(pMesh->mBones[j]->mName.C_Str());
+            }
+        }
+    }
+
+    return usedBones;
+}
+
+void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::unordered_set<std::string>& usedBones, std::unordered_set<std::string>& boneHierarchy)
+{
+    std::string nodeName = pNode->mName.C_Str();
+    bool isUsedBone = usedBones.find(nodeName) != usedBones.end();
+    bool hasChildBone = false;
+
+    // 자식들을 먼저 확인
+    for (UINT i = 0; i < pNode->mNumChildren; i++)
+    {
+        CollectBoneHierarchy(pNode->mChildren[i], usedBones, boneHierarchy);
+
+        std::string childName = pNode->mChildren[i]->mName.C_Str();
+        if (boneHierarchy.find(childName) != boneHierarchy.end())
+        {
+            hasChildBone = true;
+        }
+    }
+
+    // 이 노드가 본이거나, 자식 중에 본이 있으면 계층에 포함
+    if (isUsedBone || hasChildBone)
+    {
+        boneHierarchy.insert(nodeName);
+    }
+}
+
+void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
@@ -58,13 +105,14 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     //자식 노드 처리
     for (UINT i = 0; i < pNode->mNumChildren; i++)
     {
-        ProcessNode(bone.index, bones, meshes, matIDX, boneIDX,pNode->mChildren[i], pScene, nodeNameToIndexMap);
+        ProcessNode(bone.index, bones, meshes, matIDX, boneIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap);
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy)
 {
-    bool isInBoneHierarchy = pScene->findBone(pNode->mName);
+    std::string nodeName = pNode->mName.C_Str();
+    bool isInBoneHierarchy = boneHierarchy.find(nodeName) != boneHierarchy.end();
 
     int currentBoneIndex = -1;
 
@@ -83,7 +131,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
         );
 
         bones.emplace_back(bone);
-        nodeNameToIndexMap.insert({ pNode->mName.C_Str(), bone.index });
+        nodeNameToIndexMap.insert({ nodeName, bone.index });
         currentBoneIndex = bone.index;
     }
 
@@ -112,7 +160,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
         int childParentIndex = isInBoneHierarchy ? currentBoneIndex : parentIndex;
         ProcessNode(childParentIndex, bones, meshes, matIDX,
             pNode->mChildren[i], pScene, nodeNameToIndexMap,
-            correctionMap);
+            correctionMap, boneHierarchy);
     }
 }
 
@@ -130,13 +178,13 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
         VertexType vertex;
 
         vertex.position = { pMesh->mVertices[i].x,pMesh->mVertices[i].y,pMesh->mVertices[i].z };
-        
-		XMVECTOR currentPoint = { pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z };
+
+        XMVECTOR currentPoint = { pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z };
 
         minPt = XMVectorMin(minPt, currentPoint);
         maxPt = XMVectorMax(maxPt, currentPoint);
 
-        vertex.normal = { pMesh->mNormals[i].x,pMesh->mNormals[i].y,pMesh->mNormals[i].z};
+        vertex.normal = { pMesh->mNormals[i].x,pMesh->mNormals[i].y,pMesh->mNormals[i].z };
         vertex.tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
         if (pMesh->mTextureCoords[0])
         {
@@ -289,11 +337,11 @@ void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
 void MyEngine::AssimpConverter::Release()
 {
     s_importer.reset();
-	if (s_pDevice)
-	{
-		s_pDevice->Release();
-		s_pDevice = nullptr;
-	}
+    if (s_pDevice)
+    {
+        s_pDevice->Release();
+        s_pDevice = nullptr;
+    }
 }
 
 std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigidMeshRendererFromFile(std::string filePath)
@@ -306,7 +354,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType |
         aiProcess_FlipUVs;
-    
+
 
     Material::InitBlinnPhongShaders(s_pDevice);
 
@@ -328,10 +376,10 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
 
     ProcessNode(-1, rigidBones, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
 
-	for (auto& mesh : meshes)
-	{
+    for (auto& mesh : meshes)
+    {
         mesh.CreateBuffers(s_pDevice);
-	}
+    }
 
     rMesh.SetSubMesh(std::move(meshes));
     rMesh.SetMatIdx(std::move(matIndices));
@@ -371,12 +419,12 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
                 {
                     const auto& posKey = animNode->mPositionKeys[k];
                     currentAnimationClip.pos.AddKeyframe(
-                        posKey.mTime, 
+                        posKey.mTime,
                         Vector3
-                        { 
+                        {
                             static_cast<float>(posKey.mValue.x),
                             static_cast<float>(posKey.mValue.y),
-                            static_cast<float>(posKey.mValue.z) 
+                            static_cast<float>(posKey.mValue.z)
                         }
                     );
 
@@ -461,9 +509,9 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
         aiProcess_JoinIdenticalVertices |  // 중복 정점 제거
         aiProcess_ValidateDataStructure | // 구조 검증
-	    //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
-	    aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
-        aiProcess_FlipUVs; 
+        //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
+        aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
+        aiProcess_FlipUVs;
 
 
     Material::InitBlinnPhongShaders(s_pDevice);
@@ -481,12 +529,12 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     std::vector<UINT> indices;
 
     ProcessNode(meshes, indices, pScene->mRootNode, pScene);
-    
+
     for (auto& mesh : meshes)
     {
         mesh.CreateBuffers(s_pDevice);
     }
-    
+
     sMesh.SetSubMesh(std::move(meshes));
     sMesh.SetMatIdx(std::move(indices));
     sMesh.CalcBBox();
@@ -520,6 +568,10 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         throw std::runtime_error("model load error! :: check model file - " + std::string(s_importer->GetErrorString()));
     }
 
+    auto usedBones = CollectUsedBoneNames(pScene);
+    std::unordered_set<std::string> boneHierarchy;
+    CollectBoneHierarchy(pScene->mRootNode, usedBones, boneHierarchy);
+
     auto pSkinningMeshRenderer = std::make_unique<SkinningMeshRenderer>();
     SkinningMesh sMesh;
 
@@ -529,7 +581,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     std::vector<CorrectionNode> correctionMap;
 
     std::unordered_map<std::string, UINT> nodeNameToIndex;
-    ProcessNode(-1, skinningBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap);
+    ProcessNode(-1, skinningBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
 
     struct VertexBoneData
     {
@@ -625,7 +677,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
                     if (!currentBone.hasVertex)
                     {
-						currentBone.hasVertex = true;
+                        currentBone.hasVertex = true;
 
                         XMVECTOR pos = XMLoadFloat3(&vertex.position);
                         BoundingBox::CreateFromPoints(currentBone.bbox, pos, pos);
