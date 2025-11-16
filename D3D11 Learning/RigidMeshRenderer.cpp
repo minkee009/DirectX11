@@ -3,7 +3,7 @@
 
 #include "RigidMeshRenderer.h"
 #include "StaticMeshRenderer.h"
-#include "Time.h"
+#include "TimeManager.h"
 
 MyEngine::RigidMeshRenderer::RigidMeshRenderer()
 {
@@ -53,11 +53,13 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, m_pBoneMatrixData.get(), 0, 0);
 	context->VSSetConstantBuffers(2, 1, m_boneMatrixCB.GetAddressOf());
 
-	UINT stride = sizeof(VertexType);
+	UINT stride = sizeof(DefaultVertex);
 	UINT offset = 0;
 
 	int meshCount = 0;
 	auto& boneIndices = m_rigidMesh.GetBoneIndices();
+
+	auto& materialIndices = GetMatRefIndices();
 
 	for (auto& mesh : m_rigidMesh.GetMeshes())
 	{
@@ -69,7 +71,6 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		context->UpdateSubresource(m_boneMatrixIdxCB.Get(), 0, nullptr, &cb2, 0, 0);
 		context->VSSetConstantBuffers(3, 1, m_boneMatrixIdxCB.GetAddressOf());
 
-		auto& materialIndices = m_rigidMesh.GetMaterialIndices();
 		auto& mat = m_materials[materialIndices[meshCount++]];
 		if (GetEnabledBindMaterials())
 		{
@@ -126,7 +127,7 @@ void MyEngine::RigidMeshRenderer::AnimationUpdate()
 	auto& bones = m_rigidMesh.GetBones();
 	auto& duration = anim.begin()->second.duration;
 
-	m_time += Time::instance->GetDeltaTime() * m_speed;
+	m_time += TIME_GET_DELTA() * m_speed;
 	m_time = std::fmod(m_time, duration);
 
 	for (auto& pair : anim)

@@ -9,7 +9,7 @@ void MyEngine::Mesh::CreateBuffers(ID3D11Device* pDevice)
 
         D3D11_BUFFER_DESC vbd;
         vbd.Usage = D3D11_USAGE_IMMUTABLE;
-        vbd.ByteWidth = static_cast<UINT>(sizeof(VertexType) * m_vertices.size());
+        vbd.ByteWidth = static_cast<UINT>(sizeof(DefaultVertex) * m_vertices.size());
         vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         vbd.CPUAccessFlags = 0;
         vbd.MiscFlags = 0;
@@ -49,7 +49,7 @@ void MyEngine::Mesh::CreateBuffers(ID3D11Device* pDevice)
     }
 }
 
-MyEngine::Mesh::Mesh(const std::vector<VertexType>& vertices, const std::vector<UINT>& indices, const BoundingBox& bbox)
+MyEngine::Mesh::Mesh(const std::vector<DefaultVertex>& vertices, const std::vector<UINT>& indices, const BoundingBox& bbox)
     : m_vertices(vertices)
     , m_indices(indices)
     , m_bbox(bbox)
@@ -64,7 +64,7 @@ MyEngine::Mesh::~Mesh()
 
 void MyEngine::Mesh::Bind(ID3D11DeviceContext* ctx)
 {
-    UINT stride = sizeof(VertexType);
+    UINT stride = sizeof(DefaultVertex);
     UINT offset = 0;
 
     ctx->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);

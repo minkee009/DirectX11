@@ -25,7 +25,8 @@ namespace MyEngine
 		AmbientOcclusion = 1 << 5,
 		Roughness = 1 << 6,
 		Metalness = 1 << 7,
-		CubeMap = 1 << 8
+		CubeMap = 1 << 8,
+		LookUpTable = 1 << 9
 	}; 
 
 	struct TextureBinding
@@ -34,16 +35,6 @@ namespace MyEngine
 		std::string name;
 		UINT slot;
 		ComPtr<ID3D11ShaderResourceView> pSRV;
-	};
-
-	enum class ShaderType
-	{
-		Vertex,
-		Pixel,
-		//Geometry,
-		//Hull,
-		//Domain,
-		//Compute
 	};
 
 	enum class RenderType
@@ -65,6 +56,7 @@ namespace MyEngine
 		std::string m_name = "";
 		UINT m_textureFlags = 0; // 각 TextureType에 해당하는 bitmask
 		ComPtr<ID3D11Buffer> m_materialCB; // 상수버퍼
+
 		ComPtr<ID3D11VertexShader> m_pVertexShader;
 		ComPtr<ID3D11PixelShader>  m_pPixelShader;
 		ComPtr<ID3DBlob> m_pVSBlob;
@@ -102,10 +94,9 @@ namespace MyEngine
 		~Material();
 
 		void Bind(ID3D11DeviceContext* context);
-
-		bool InitAndCompileShader(ID3D11Device* device, ShaderType type, const std::wstring& path);
-		bool InitShader(ShaderType type, ID3D11DeviceChild* shader, ID3DBlob* vsBlob);
-		bool InitSampler(ID3D11Device* device,D3D11_FILTER filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+		bool InitVertexShader(ID3D11VertexShader* shader, ID3DBlob* vsBlob);
+		bool InitPixelShader(ID3D11PixelShader* shader);
+		bool InitSampler(ID3D11Device* device, D3D11_FILTER filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 			D3D11_TEXTURE_ADDRESS_MODE addressMode = D3D11_TEXTURE_ADDRESS_WRAP);
 		bool InitSampler(ID3D11SamplerState* pSampler);
 		bool InitAndConvertTexture(ID3D11DeviceContext* context, TextureType type, const std::string& name, UINT slot, const std::wstring& path);
@@ -114,9 +105,6 @@ namespace MyEngine
 
 		void CreateConstantBuffer(ID3D11DeviceContext* context);
 
-		inline ID3DBlob* GetVSBlob() const { return m_pVSBlob.Get(); }
-		inline ID3D11VertexShader* GetVertexShader() const { return m_pVertexShader.Get(); }
-		inline ID3D11PixelShader* GetPixelShader() const { return m_pPixelShader.Get(); }
 		inline const std::string& GetName() const { return m_name; }
 		inline const Color& GetBaseColor() const { return m_baseColor; }
 

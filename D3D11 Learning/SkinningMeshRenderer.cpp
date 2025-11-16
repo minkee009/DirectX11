@@ -3,7 +3,7 @@
 
 #include "SkinningMeshRenderer.h"
 #include "StaticMeshRenderer.h"
-#include "Time.h"
+#include "TimeManager.h"
 
 MyEngine::SkinningMeshRenderer::SkinningMeshRenderer()
 {
@@ -27,8 +27,9 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
 	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
 
-	UINT stride = sizeof(VertexType);
+	UINT stride = sizeof(DefaultVertex);
 	UINT offset = 0;
+	auto& materialIndices = GetMatRefIndices();
 
 	int meshCount = 0;
 	for (auto& mesh : m_skinningMesh.GetMeshes())
@@ -36,7 +37,6 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		if(GetEnabledBindMeshes())
 			mesh.Bind(context);
 
-		auto& materialIndices = m_skinningMesh.GetMaterialIndices();
 		auto& mat = m_materials[materialIndices[meshCount++]];
 		if (GetEnabledBindMaterials())
 		{
@@ -148,7 +148,7 @@ void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 	auto& bones = m_skinningMesh.GetBones();
 	auto& duration = anim.begin()->second.duration;
 
-	m_time += Time::instance->GetDeltaTime() * m_speed;
+	m_time += TIME_GET_DELTA() * m_speed;
 	m_time = std::fmod(m_time, duration);
 
 	for (auto& pair : anim)

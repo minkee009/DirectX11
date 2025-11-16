@@ -30,6 +30,8 @@ namespace MyEngine
 
 	protected:
 		std::vector<Material> m_materials;
+		std::vector<UINT> m_matRefIndices; //서브 메쉬 별 머터리얼 참조 ID
+
 		inline const std::unordered_map<UINT, std::unordered_set<UINT>>& GetPassExcludedMeshes() const { return m_passExcludedMeshes; };
 		inline const std::unordered_map<UINT, ID3D11VertexShader*>& GetPassForceChangeVS() const { return m_passForceChangeVS; };
 		inline const std::unordered_map<UINT, ID3D11PixelShader*>& GetPassForceChangePS() const { return m_passForceChangePS; };
@@ -37,6 +39,8 @@ namespace MyEngine
 	public:
 		virtual void Draw(ID3D11DeviceContext* context) = 0;
 		virtual const BoundingBox& GetBBox() = 0;
+
+		void SetMatRefIndices(std::vector<UINT>&& matIndices) { m_matRefIndices = std::move(matIndices); }
 
 		void SetPassExcludedMeshes(UINT renderPassNum, std::initializer_list<UINT> meshes);
 		void SetPassForceChangeVS(UINT renderPassNum, ID3D11VertexShader* VS);
@@ -51,6 +55,9 @@ namespace MyEngine
 
 		inline void SetEnabledBindMeshes(bool enabled) { m_enabledBindMeshes = enabled; }
 		inline void SetEnabledBindMaterials(bool enabled) { m_enabledBindMaterials = enabled; }
+
+
+		inline std::vector<UINT>& GetMatRefIndices() { return m_matRefIndices; }
 
 		inline const bool GetEnabledBindMeshes() const { return m_enabledBindMeshes; }
 		inline const bool GetEnabledBindMaterials() const { return m_enabledBindMaterials; }

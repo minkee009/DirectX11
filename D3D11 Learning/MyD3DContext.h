@@ -25,19 +25,6 @@ using namespace Microsoft::WRL;
 
 namespace MyEngine {
 
-	struct SkyBoxVertex {
-		XMFLOAT3 pos;
-	};
-
-	struct MyVertex {
-		XMFLOAT3 pos;
-		XMFLOAT3 normal;
-		XMFLOAT3 tangent;
-		XMFLOAT2 uv;
-		UINT boneIndices[4];
-		float boneWeights[4];
-	};
-
 	struct MyConstantBuffer {
 		XMMATRIX mWorld;
 		XMMATRIX mView;
@@ -107,16 +94,12 @@ namespace MyEngine {
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
 		//Scene 관련 변수
-		ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr;
-		ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;
-		ComPtr<ID3D11PixelShader> m_pPixelShaderSolid = nullptr;
+
+		ComPtr<ID3D11ShaderResourceView> m_pLUTSRV = nullptr;
+
 		ComPtr<ID3D11VertexShader> m_pSkyBoxVShader = nullptr;
 		ComPtr<ID3D11PixelShader> m_pSkyBoxPShader = nullptr;
-		ComPtr<ID3D11InputLayout> m_pCubeInputLayout = nullptr;
 		ComPtr<ID3D11InputLayout> m_pSkyBoxInputLayout = nullptr;
-
-		ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;
-		ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;
 
 		ComPtr<ID3D11Buffer> m_pSkyBoxVertexBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pSkyBoxIndexBuffer = nullptr;
@@ -125,9 +108,6 @@ namespace MyEngine {
 		ComPtr<ID3D11Buffer> m_pOutlineCB = nullptr;
 		ComPtr<ID3D11Buffer> m_pGradientCB = nullptr;
 
-		ComPtr<ID3D11ShaderResourceView> m_pCubeTextureRV = nullptr;
-		ComPtr<ID3D11ShaderResourceView> m_pCubeNormalMapRV = nullptr;
-		ComPtr<ID3D11ShaderResourceView> m_pCubeSpecularMapRV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
@@ -157,10 +137,6 @@ namespace MyEngine {
 		FLOAT m_reflectionFactor = 0.005f;
 		bool m_isPointLight = false;
 
-		UINT m_vertexCount = 0;
-		UINT m_vertexBufferStride = 0;
-		UINT m_vertexBufferOffset = 0;
-
 		UINT m_skyBoxVertexCount = 0;
 		UINT m_skyBoxVertexBufferStride = 0;
 		UINT m_skyBoxVertexBufferOffset = 0;
@@ -180,11 +156,11 @@ namespace MyEngine {
 		const float SHADOW_MAP_DEPTH = 25.0f;
 
 		// ================ Debug Draw
-		using VertexType = DirectX::VertexPositionColor;
+		using DefaultVertex = DirectX::VertexPositionColor;
 
 		std::unique_ptr<DirectX::CommonStates> m_states;
 		std::unique_ptr<DirectX::BasicEffect> m_effect;
-		std::unique_ptr<DirectX::PrimitiveBatch<VertexType>> m_batch;
+		std::unique_ptr<DirectX::PrimitiveBatch<DefaultVertex>> m_batch;
 		ComPtr<ID3D11InputLayout> m_pDebugDrawIL;
 
 		bool m_enableDebugDraw = false;
@@ -197,12 +173,10 @@ namespace MyEngine {
 		MyImGui m_imgui;
 //#endif //_DEBUG
 
-		bool InitCube();
 		bool InitSkyBox();
 		bool InitShadowMapTex();
 
 		void DrawSkyBox();
-		void DrawCube();
 		void DrawShadowMap();
 
 		void Clear();

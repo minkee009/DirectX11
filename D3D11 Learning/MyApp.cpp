@@ -1,13 +1,11 @@
-#include "Time.h"
+#include "TimeManager.h"
 #include "MyApp.h"
 #include "MyD3DContext.h"
 #include <wrl/client.h>
 
-//#ifdef _DEBUG
 #include <imgui.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-//#endif //_DEBUG
 
 MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 {
@@ -39,7 +37,7 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 	);
 	ShowWindow(m_hWnd, SW_SHOW);
 
-	m_pTime = new Time();
+	TimeManager::Get()->StartUp();
 
 	// Direct3D 컨텍스트 초기화
 	m_pD3DContext = new MyD3DContext();
@@ -54,10 +52,7 @@ MyEngine::MyApp::MyApp(HINSTANCE hInstance)
 
 MyEngine::MyApp::~MyApp()
 {
-	if (m_pTime) {
-		delete m_pTime;
-		m_pTime = nullptr;
-	}
+	TimeManager::Get()->Shutdown();
 
 	if (m_pD3DContext) {
 		m_pD3DContext->UninitializeScene();
@@ -169,7 +164,7 @@ int MyEngine::MyApp::Run()
 			DispatchMessage(&msg);
 		}
 		else {
-			m_pTime->Update();
+			TimeManager::Get()->Update();
 			m_pD3DContext->Render();
 		}
 	}

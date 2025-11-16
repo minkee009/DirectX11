@@ -1,4 +1,5 @@
-#include "Time.h"
+#include "TimeManager.h"
+#include "InputLayoutManager.h"
 #include "MyD3DContext.h"
 #include <dxgi.h>
 #include <directxcolors.h>
@@ -337,6 +338,9 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
 
     Material::InitDefaultShaders(m_pd3dDevice.Get());
+    Material::InitBlinnPhongShaders(m_pd3dDevice.Get());
+
+    D3DCTX::InputLayoutManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
 
 //#ifdef _DEBUG
     // ImGui 초기화
@@ -353,7 +357,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     HRESULT hr = S_OK;
 
-    InitCube();
     InitSkyBox();
     InitShadowMapTex();
 
@@ -386,6 +389,19 @@ bool MyEngine::MyD3DContext::InitializeScene()
     cbDesc.CPUAccessFlags = 0;
 
     hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pGradientCB.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    //LUT 텍스쳐 생성 (Todo: Texture Manager에게 위임시키기)
+    ScratchImage image;
+
+    //텍스쳐 로드
+    //hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
+    hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
+    if (FAILED(hr))
+        return false;
+
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pLUTSRV.GetAddressOf());
     if (FAILED(hr))
         return false;
 
@@ -470,204 +486,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
     return true;
 }
 
-bool MyEngine::MyD3DContext::InitCube()
-{
-    HRESULT hr = S_OK;
-
-    //컴파일 정보 저장용 객체
-    ID3DBlob* pVSBlob = nullptr;
-
-    // === 기본 셰이더 로드 ===
-    hr = CompileShaderFromFile(L"Resources/Shaders/testVS.hlsl", "VS", "vs_4_0", &pVSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"정점 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
-    if (FAILED(hr))
-    {
-        pVSBlob->Release();
-        return false;
-    }
-
-    //인풋 레이아웃 (셰이더 코드 바인딩) 설정
-    D3D11_INPUT_ELEMENT_DESC layout[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONEINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "BONEWEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
-    UINT numElements = ARRAYSIZE(layout);
-
-    //인풋 레이아웃 생성
-    hr = m_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-        pVSBlob->GetBufferSize(), m_pCubeInputLayout.GetAddressOf());
-    pVSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
-    ID3DBlob* pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"Resources/Shaders/testPS.hlsl", "PS", "ps_4_0", &pPSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf());
-    pPSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
-    hr = CompileShaderFromFile(L"Resources/Shaders/testPS.hlsl", "PSSolid", "ps_4_0", &pPSBlob);
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-            L"단일 픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-        return false;
-    }
-
-    hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_pPixelShaderSolid.GetAddressOf());
-    pPSBlob->Release();
-    if (FAILED(hr))
-        return false;
-
-    //정점 정의
-	MyVertex vertices[] =
-	{
-		// Top face (Y = 1)
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-
-		// Bottom face (Y = -1)
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-
-		// Left face (X = -1)
-		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),    XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),   XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),    XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f),     XMFLOAT2(0.0f, 0.0f) },
-
-		// Right face (X = 1)
-		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),   XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),  XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),   XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f),    XMFLOAT2(1.0f, 0.0f) },
-
-		// Back face (Z = -1)
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),   XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),    XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),     XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),    XMFLOAT2(1.0f, 0.0f) },
-
-		// Front face (Z = 1)
-		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),   XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f),  XMFLOAT2(0.0f, 0.0f) },
-	};
-
-    //정점 버퍼 정의
-    D3D11_BUFFER_DESC vbDesc = {};
-    m_vertexCount = ARRAYSIZE(vertices);
-    vbDesc.ByteWidth = sizeof(MyVertex) * m_vertexCount;
-    vbDesc.CPUAccessFlags = 0;
-    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    vbDesc.MiscFlags = 0;
-    vbDesc.Usage = D3D11_USAGE_DEFAULT;
-
-    //정점 버퍼 생성
-    D3D11_SUBRESOURCE_DATA vbData = {};
-    vbData.pSysMem = vertices;	// 버퍼를 생성할때 복사할 데이터의 주소 설정 
-    hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pVertexBuffer.GetAddressOf());
-
-    if (FAILED(hr))
-        return false;
-
-    m_vertexBufferStride = sizeof(MyVertex);
-    m_vertexBufferOffset = 0;
-
-    //인덱스 정의
-    UINT indices[] =
-    {
-        3,1,0,
-        2,1,3,
-
-        6,4,5,
-        7,4,6,
-
-        11,9,8,
-        10,9,11,
-
-        14,12,13,
-        15,12,14,
-
-        19,17,16,
-        18,17,19,
-
-        22,20,21,
-        23,20,22
-    };
-
-    //인덱스 버퍼 정의
-    D3D11_BUFFER_DESC ibDesc;
-    m_indexCount = ARRAYSIZE(indices);
-    ibDesc.Usage = D3D11_USAGE_DEFAULT;
-    ibDesc.ByteWidth = sizeof(UINT) * m_indexCount;
-    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    ibDesc.CPUAccessFlags = 0;
-    ibDesc.MiscFlags = 0;
-
-    //인덱스 버퍼 생성
-    D3D11_SUBRESOURCE_DATA InitData;
-    InitData.pSysMem = indices;
-    InitData.SysMemPitch = 0;
-    InitData.SysMemSlicePitch = 0;
-
-    hr = m_pd3dDevice->CreateBuffer(&ibDesc, &InitData, m_pIndexBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    ScratchImage image;
-
-    //텍스쳐 로드
-    //hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
-    hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
-    if (FAILED(hr))
-        return false;
-
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeTextureRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    hr = LoadFromDDSFile(L"Resources/Textures/normal_mapping_normal_map.dds", DDS_FLAGS_NONE, nullptr, image);
-    if (FAILED(hr))
-        return false;
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeNormalMapRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    hr = LoadFromDDSFile(L"Resources/Textures/spec_mapping.dds", DDS_FLAGS_NONE, nullptr, image);
-    if (FAILED(hr))
-        return false;
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pCubeSpecularMapRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
-
-    return true;
-}
 bool MyEngine::MyD3DContext::InitSkyBox()
 {
     HRESULT hr = S_OK;
@@ -854,13 +672,11 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
 
     // 리소스뷰 (RSV)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    // 수정: TYPELESS 리소스의 SRV 포맷은 R32_FLOAT을 사용합니다.
     srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = 1;
     srvDesc.Texture2D.MostDetailedMip = 0;
 
-    // m_pShadowSRV는 ID3D11ShaderResourceView* 멤버 변수여야 합니다.
     hr = m_pd3dDevice->CreateShaderResourceView(m_pShadowTex.Get(), &srvDesc, m_pShadowSRV.GetAddressOf());
     if (FAILED(hr))
         return false;
@@ -939,10 +755,6 @@ void MyEngine::MyD3DContext::DrawSkyBox()
 
 }
 
-void MyEngine::MyD3DContext::DrawCube()
-{
-}
-
 void MyEngine::MyD3DContext::DrawShadowMap()
 {
 
@@ -959,7 +771,7 @@ void MyEngine::MyD3DContext::Clear()
 void MyEngine::MyD3DContext::Render()
 {
     // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
-    m_pCamera->InputUpdate(Time::instance->GetDeltaTime());
+    m_pCamera->InputUpdate(TIME_GET_DELTA());
 
     m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
@@ -969,8 +781,8 @@ void MyEngine::MyD3DContext::Render()
     MyConstantBuffer cb;
     cb.mWorld = XMMatrixIdentity();
 
-    ID3D11ShaderResourceView* firstPassnullSRVs[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-    m_pContext->PSSetShaderResources(0, 7, firstPassnullSRVs);
+    ID3D11ShaderResourceView* firstPassnullSRVs[12] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 12, firstPassnullSRVs);
 
     // 컬러 렌더타겟은 사용 안 함
     m_pContext->PSSetShader(nullptr, nullptr, 0);
@@ -1022,7 +834,7 @@ void MyEngine::MyD3DContext::Render()
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
         m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get()); //나중에 수정하기 -> VertexType IL로 꼭 변경
+        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout()); //나중에 수정하기 -> VertexType IL로 꼭 변경
 
         meshRenderer->SetEnabledBindMeshes(true);
         meshRenderer->SetEnabledBindMaterials(false);
@@ -1033,14 +845,14 @@ void MyEngine::MyD3DContext::Render()
     Clear();
 
     ID3D11ShaderResourceView* nullSRVs[2] = { nullptr, nullptr };
-    m_pContext->PSSetShaderResources(6, 1, nullSRVs);  // 그림자맵 언바인딩
+    m_pContext->PSSetShaderResources(9, 1, nullSRVs);  // 그림자맵 언바인딩
 
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->RSSetViewports(1, &m_vp);
     m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
-    m_pContext->PSSetShaderResources(6, 1, m_pShadowSRV.GetAddressOf());
-    m_pContext->PSSetShaderResources(5, 1, m_pCubeTextureRV.GetAddressOf());
+    m_pContext->PSSetShaderResources(10, 1, m_pShadowSRV.GetAddressOf());
+    m_pContext->PSSetShaderResources(9, 1, m_pLUTSRV.GetAddressOf());
 
     cb.mWorld = XMMatrixIdentity();
     cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
@@ -1098,7 +910,7 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
         m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
 
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
@@ -1135,7 +947,7 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
         m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(m_pCubeInputLayout.Get());
+        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
 
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
@@ -1281,9 +1093,6 @@ void MyEngine::MyD3DContext::Render()
         m_batch->End();
     }
 
-    m_pContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_vertexBufferStride, &m_vertexBufferOffset);
-    m_pContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
 //#ifdef _DEBUG
     m_imgui.BeginFrame();
     m_imgui.Update();
@@ -1306,21 +1115,13 @@ void MyEngine::MyD3DContext::UninitializeScene()
 
     m_sceneObjects.clear();
     m_pDirectionalLightT.reset();
-    m_pVertexBuffer = nullptr;
-    m_pIndexBuffer = nullptr;
     m_pSkyBoxVertexBuffer = nullptr;
     m_pSkyBoxIndexBuffer = nullptr;
     m_pConstantBuffer = nullptr;
-    m_pCubeInputLayout = nullptr;
+    m_pLUTSRV = nullptr;
     m_pSkyBoxInputLayout = nullptr;
-    m_pVertexShader = nullptr;
-    m_pPixelShader = nullptr;
-    m_pPixelShaderSolid = nullptr;
     m_pSkyBoxVShader = nullptr;
     m_pSkyBoxPShader = nullptr;
-    m_pCubeTextureRV = nullptr;
-    m_pCubeNormalMapRV = nullptr;
-    m_pCubeSpecularMapRV = nullptr;
     m_pSkyBoxTextureRV = nullptr;
     m_pDebugDrawIL = nullptr;
     m_pShadowTex = nullptr;
@@ -1345,6 +1146,8 @@ void MyEngine::MyD3DContext::UninitializeScene()
 
 MyEngine::MyD3DContext::~MyD3DContext()
 {
+    D3DCTX::InputLayoutManager::Get()->ShutDown();
+
     Material::ReleaseDefaultShaders();
     Material::ReleaseBlinnPhongShaders();
 #ifdef _DEBUG

@@ -167,7 +167,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
 
 MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiScene* pScene)
 {
-    std::vector<VertexType> vertices;
+    std::vector<DefaultVertex> vertices;
     std::vector<UINT> indices;
 
     XMVECTOR minPt = { pMesh->mVertices[0].x, pMesh->mVertices[0].y, pMesh->mVertices[0].z };
@@ -175,7 +175,7 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
 
     for (UINT i = 0; i < pMesh->mNumVertices; i++)
     {
-        VertexType vertex;
+        DefaultVertex vertex;
 
         vertex.position = { pMesh->mVertices[i].x,pMesh->mVertices[i].y,pMesh->mVertices[i].z };
 
@@ -215,23 +215,23 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
     switch (boneType)
     {
     case BoneType::None:
-        mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader(), Material::GetBlinnPhongVSBlob());
+        mat.InitVertexShader(Material::GetBlinnPhongVertexShader(), Material::GetBlinnPhongVSBlob());
         break;
     case BoneType::RigidBone:
-        mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader_RigidBone(), Material::GetBlinnPhongVSBlob());
+        mat.InitVertexShader(Material::GetBlinnPhongVertexShader_RigidBone(), Material::GetBlinnPhongVSBlob());
         break;
     case BoneType::SkinningBone:
-        mat.InitShader(ShaderType::Vertex, Material::GetBlinnPhongVertexShader_SkinningBone(), Material::GetBlinnPhongVSBlob());
+        mat.InitVertexShader(Material::GetBlinnPhongVertexShader_SkinningBone(), Material::GetBlinnPhongVSBlob());
         break;
     }
 
     switch (s_materialType)
     {
     case LoadMaterialType::BlinnPhong:
-        mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongPixelShader(), nullptr);
+        mat.InitPixelShader(Material::GetBlinnPhongPixelShader());
         break;
     case LoadMaterialType::BlinnPhongToon:
-        mat.InitShader(ShaderType::Pixel, Material::GetBlinnPhongToonPixelShader(), nullptr);
+        mat.InitPixelShader(Material::GetBlinnPhongToonPixelShader());
         break;
     }
 
@@ -382,9 +382,9 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     }
 
     rMesh.SetSubMesh(std::move(meshes));
-    rMesh.SetMatIdx(std::move(matIndices));
     rMesh.SetBones(std::move(rigidBones));
     rMesh.SetBoneIndices(std::move(boneIndices));
+    pRigidMeshRenderer->SetMatRefIndices(std::move(matIndices));
     pRigidMeshRenderer->SetMesh(std::move(rMesh));
 
 
@@ -536,8 +536,8 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     }
 
     sMesh.SetSubMesh(std::move(meshes));
-    sMesh.SetMatIdx(std::move(indices));
     sMesh.CalcBBox();
+    pStaticMeshRenderer->SetMatRefIndices(std::move(indices));
     pStaticMeshRenderer->SetMesh(std::move(sMesh));
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
@@ -712,10 +712,10 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     }
 
     sMesh.SetSubMesh(std::move(meshes));
-    sMesh.SetMatIdx(std::move(matIndices));
     sMesh.SetBones(std::move(skinningBones));
     sMesh.CalcBBox();
     pSkinningMeshRenderer->SetSkinningMesh(std::move(sMesh));
+    pSkinningMeshRenderer->SetMatRefIndices(std::move(matIndices));
     pSkinningMeshRenderer->MatrixUpdate();
     pSkinningMeshRenderer->CreateBoneMatrixBuffers(s_pContext);
 

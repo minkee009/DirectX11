@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -139,6 +139,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="AssimpConverter.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
+    <ClCompile Include="InputLayoutManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="MaterialShaderCode.cpp" />
@@ -151,7 +152,7 @@
     <ClCompile Include="SkinningMeshRenderer.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
     <ClCompile Include="StaticMeshRenderer.cpp" />
-    <ClCompile Include="Time.cpp" />
+    <ClCompile Include="TimeManager.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -170,12 +171,14 @@
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="MyImGui.h" />
     <ClInclude Include="RigidMeshRenderer.h" />
+    <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="SkinningMeshRenderer.h" />
     <ClInclude Include="StaticMesh.h" />
     <ClInclude Include="StaticMeshRenderer.h" />
-    <ClInclude Include="Time.h" />
+    <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="TimeManager.h" />
     <ClInclude Include="Transform.h" />
-    <ClInclude Include="VertexType.h" />
+    <ClInclude Include="InputLayoutManager.h" />
     <ClInclude Include="Material.h" />
   </ItemGroup>
   <ItemGroup>

@@ -2,17 +2,19 @@
 
 void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
-    UINT stride = sizeof(VertexType);
+    UINT stride = sizeof(DefaultVertex);
     UINT offset = 0;
 
     int matCount = 0;
     int drawCount = 0;
 
+    auto& materialIndices = GetMatRefIndices();
+
     for (auto& mesh : m_staticMesh.GetMeshes())
     {
         if(GetEnabledBindMeshes())
             mesh.Bind(context);
-        auto& materialIndices = m_staticMesh.GetMaterialIndices();
+
         auto& mat = m_materials[materialIndices[matCount++]];
         if (GetEnabledBindMaterials())
         {

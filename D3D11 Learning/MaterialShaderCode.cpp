@@ -579,9 +579,9 @@ TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
-Texture2D lutMap : register(t5);
+Texture2D lutMap : register(t9);
 SamplerState samLinear : register(s0);
-Texture2D shadowMap : register(t6); 
+Texture2D shadowMap : register(t10); 
 SamplerComparisonState samShadow : register(s1);
 
 
@@ -767,10 +767,10 @@ Texture2D txDiffuse : register(t0);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
-Texture2D lutMap : register(t5);
+Texture2D lutMap : register(t9);
 SamplerState samLinear : register(s0);
 SamplerState samPoint : register(s2);
-Texture2D shadowMap : register(t6); 
+Texture2D shadowMap : register(t10); 
 SamplerComparisonState samShadow : register(s1);
 
 
@@ -986,9 +986,9 @@ TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
-Texture2D lutMap : register(t5);
+Texture2D lutMap : register(t9);
 SamplerState samLinear : register(s0);
-Texture2D shadowMap : register(t6); 
+Texture2D shadowMap : register(t10); 
 SamplerComparisonState samShadow : register(s1);
 
 struct PS_INPUT

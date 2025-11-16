@@ -9,67 +9,17 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-bool MyEngine::Material::InitAndCompileShader(ID3D11Device* device, ShaderType type, const std::wstring& path)
+bool MyEngine::Material::InitVertexShader(ID3D11VertexShader* shader, ID3DBlob* vsBlob)
 {
-	switch (type)
-	{
-	case ShaderType::Vertex:
-	{
-		ID3DBlob* pVSBlob = nullptr;
-		HRESULT hr = CompileShaderFromFile(path.c_str(), "VS", "vs_4_0", &pVSBlob);
-		if (FAILED(hr))
-		{
-			MessageBox(nullptr,
-				L"버텍스 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-			return false;
-		}
-		hr = device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf());
-		if (FAILED(hr))
-		{
-			pVSBlob->Release();
-			return false;
-		}
-		m_pVSBlob = nullptr;
-		m_pVSBlob.Attach(pVSBlob); //m_vsBlob가 pVSBlob의 소유권을 갖도록
-		return true;
-	}
-	case ShaderType::Pixel:
-	{
-		ID3DBlob* pPSBlob = nullptr;
-		HRESULT hr = CompileShaderFromFile(path.c_str(), "PS", "ps_4_0", &pPSBlob);
-		if (FAILED(hr))
-		{
-			MessageBox(nullptr,
-				L"픽셀 셰이더가 컴파일되지 않았습니다.", L"오류", MB_OK);
-			return false;
-		}
-		hr = device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, m_pPixelShader.GetAddressOf());
-		if (FAILED(hr))
-		{
-			pPSBlob->Release();
-			return false;
-		}
-		pPSBlob->Release();
-		return true;
-	}
-	}
-	return false;
+	m_pVertexShader = static_cast<ID3D11VertexShader*>(shader);
+	m_pVSBlob = vsBlob;
+	return true;
 }
 
-bool MyEngine::Material::InitShader(ShaderType type, ID3D11DeviceChild* shader, ID3DBlob* vsBlob)
+bool MyEngine::Material::InitPixelShader(ID3D11PixelShader* shader)
 {
-	switch (type)
-	{
-	case ShaderType::Vertex:
-		m_pVertexShader = static_cast<ID3D11VertexShader*>(shader);
-		m_pVSBlob = vsBlob;
-		return true;
-	case ShaderType::Pixel:
-		m_pPixelShader = static_cast<ID3D11PixelShader*>(shader);
-		return true;
-	}
-
-	return false;
+	m_pPixelShader = static_cast<ID3D11PixelShader*>(shader);
+	return true;
 }
 
 bool MyEngine::Material::InitSampler(ID3D11Device* device,D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode)

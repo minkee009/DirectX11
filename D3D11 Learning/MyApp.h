@@ -12,7 +12,6 @@ namespace MyEngine
 	{
 	private:
 		MyD3DContext* m_pD3DContext = nullptr;
-		Time* m_pTime = nullptr;
 		HINSTANCE m_hInst;
 		HWND m_hWnd;
 		int m_width = 1600;
