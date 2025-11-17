@@ -1,6 +1,6 @@
 #pragma once
 
-namespace MyEngine
+namespace MyEngine::D3DCTX
 {
     extern const char* g_vscode_def;
     extern const char* g_vscode_outline;
@@ -12,7 +12,7 @@ namespace MyEngine
     extern const char* g_vscode_blinnphong_skinning;
 }
 
-namespace MyEngine
+namespace MyEngine::D3DCTX
 {
     extern const char* g_pscode_def;
     extern const char* g_pscode_outline;

@@ -1,9 +1,10 @@
 #include "InputLayoutManager.h"
+#include "ShaderManager.h"
 #include "Material.h"
 
 void MyEngine::D3DCTX::InputLayoutManager::StartUp(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
-    ID3DBlob* pVSBlob = Material::GetBlinnPhongVSBlob();
+    ID3DBlob* pVSBlob = ShaderManager::Get()->GetBlinnPhongVSBlob();
     if (!pVSBlob) return; // 셰이더 바이트 코드를 얻지 못했다면 종료
 
     D3D11_INPUT_ELEMENT_DESC layout[] =

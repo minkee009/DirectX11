@@ -9,13 +9,13 @@ namespace MyEngine
 	class StaticMeshRenderer : public MeshRenderer
 	{
 	private:
-		StaticMesh m_staticMesh;
+		std::shared_ptr<StaticMesh> m_pStaticMesh;
 	public:
-		inline const StaticMesh& GetMesh() const { return m_staticMesh; }
-		inline void SetMesh(StaticMesh&& mesh) { m_staticMesh = std::move(mesh); }
+		inline const StaticMesh& GetMesh() const { return *m_pStaticMesh; }
+		inline void SetMesh(std::shared_ptr<StaticMesh> mesh) { m_pStaticMesh = mesh; }
 
 		void Draw(ID3D11DeviceContext* context) override;
-		const BoundingBox& GetBBox() override { return m_staticMesh.GetBBox(); }
+		const BoundingBox& GetBBox() override { return m_pStaticMesh->GetBBox(); }
 	};
 }
 

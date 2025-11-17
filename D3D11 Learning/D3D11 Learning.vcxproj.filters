@@ -72,10 +72,19 @@
     <ClCompile Include="MeshRenderer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="MaterialShaderCode.cpp">
+    <ClCompile Include="InputLayoutManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="InputLayoutManager.cpp">
+    <ClCompile Include="LiteralShaderCode.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -137,9 +146,6 @@
     <ClInclude Include="MeshRenderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MaterialShaderCode.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="InputLayoutManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -149,7 +155,16 @@
     <ClInclude Include="ShaderManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="LiteralShaderCode.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="TextureManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Singleton.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

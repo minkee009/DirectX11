@@ -1,4 +1,6 @@
 #include "TimeManager.h"
+#include "TextureManager.h"
+#include "ShaderManager.h"
 #include "InputLayoutManager.h"
 #include "MyD3DContext.h"
 #include <dxgi.h>
@@ -337,9 +339,9 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
 
-    Material::InitDefaultShaders(m_pd3dDevice.Get());
-    Material::InitBlinnPhongShaders(m_pd3dDevice.Get());
 
+    D3DCTX::TextureManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
+    D3DCTX::ShaderManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
     D3DCTX::InputLayoutManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
 
 //#ifdef _DEBUG
@@ -452,19 +454,19 @@ bool MyEngine::MyD3DContext::InitializeScene()
     // 2 : scene draw
 
     // skinningTest.fbx setting
-    m_meshRenderers[0]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers[0]->SetPassForceChangeVS(1, Material::GetOutlineVertexShader_SkinningBone());
+    m_meshRenderers[0]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+    m_meshRenderers[0]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 
     // Miyu_Akey_Rigging.obj setting
     m_meshRenderers[1]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
     m_meshRenderers[1]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
-    m_meshRenderers[1]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+    m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // Ground.fbx setting
-    m_meshRenderers[2]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+    m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // zeldaPosed001.fbx setting
-    m_meshRenderers[3]->SetPassForceChangeVS(0, Material::GetBlinnPhongVertexShader());
+    m_meshRenderers[3]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // DebugDraw
     m_states = std::make_unique<CommonStates>(m_pd3dDevice.Get());
@@ -915,7 +917,7 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        Material::BindOutlineShaders(m_pContext.Get());
+        D3DCTX::ShaderManager::Get()->BindOutlineShaders(m_pContext.Get(), meshRenderer.get());
 
         meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
@@ -1033,6 +1035,7 @@ void MyEngine::MyD3DContext::Render()
         }
 
         auto& bones = skinnedMesh->GetSkinningMesh().GetBones();
+        auto& currentBonePoses = skinnedMesh->GetBonePoses();
 
         // 본 드로우
         for (auto& sbone : bones)
@@ -1040,13 +1043,18 @@ void MyEngine::MyD3DContext::Render()
             if (sbone.parentIndex == -1)
                 continue;
 
-            auto finMat = sbone.model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
+
+            auto& bone_pose = currentBonePoses[sbone.index];
+
+            auto finMat = bone_pose.model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
             auto startPos = Vector3::Transform(Vector3::Zero, finMat);
 
             auto finMat2 = m_sceneObjects[0]->GetWorldMatrix();
             auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
 
-            finMat2 = bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
+            auto& parent_bone_pose = currentBonePoses[bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].index];
+
+            finMat2 = parent_bone_pose.model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
             endPos = Vector3::Transform(Vector3::Zero, finMat2);
 
             BoundingSphere sphr{ startPos,0.025f };
@@ -1055,6 +1063,7 @@ void MyEngine::MyD3DContext::Render()
         }
 
         // 본 경계박스 드로우
+
         for (auto& sbone : bones)
         {
             if (sbone.parentIndex == -1)
@@ -1063,10 +1072,11 @@ void MyEngine::MyD3DContext::Render()
             auto bone_center = sbone.bbox.Center;
             auto bone_extend = sbone.bbox.Extents;
 
-            bone_center = Vector3::Transform(bone_center, sbone.model.Transpose());
+            auto& bone_pose = currentBonePoses[sbone.index];
+            bone_center = Vector3::Transform(bone_center, bone_pose.model.Transpose());
             bone_center = Vector3::Transform(bone_center, m_sceneObjects[0]->GetWorldMatrix());
 
-            auto bone_rot = Quaternion::CreateFromRotationMatrix(sbone.model.Transpose());
+            auto bone_rot = Quaternion::CreateFromRotationMatrix(bone_pose.model.Transpose());
             bone_rot = bone_rot * m_sceneObjects[0]->GetLocalRotation();
 
             bone_extend = Vector3{ bone_extend.x * m_sceneObjects[0]->GetLocalScale().x, bone_extend.y * m_sceneObjects[0]->GetLocalScale().y, bone_extend.z * m_sceneObjects[0]->GetLocalScale().z };
@@ -1147,9 +1157,8 @@ void MyEngine::MyD3DContext::UninitializeScene()
 MyEngine::MyD3DContext::~MyD3DContext()
 {
     D3DCTX::InputLayoutManager::Get()->ShutDown();
-
-    Material::ReleaseDefaultShaders();
-    Material::ReleaseBlinnPhongShaders();
+    D3DCTX::ShaderManager::Get()->ShutDown();
+    D3DCTX::TextureManager::Get()->ShutDown();
 #ifdef _DEBUG
     m_imgui.Uninitialize();
 

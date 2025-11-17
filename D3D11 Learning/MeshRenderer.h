@@ -29,7 +29,7 @@ namespace MyEngine
 		std::unordered_map<UINT, ID3D11PixelShader*> m_passForceChangePS;
 
 	protected:
-		std::vector<Material> m_materials;
+		std::vector<std::shared_ptr<Material>> m_materials;
 		std::vector<UINT> m_matRefIndices; //서브 메쉬 별 머터리얼 참조 ID
 
 		inline const std::unordered_map<UINT, std::unordered_set<UINT>>& GetPassExcludedMeshes() const { return m_passExcludedMeshes; };
@@ -46,7 +46,7 @@ namespace MyEngine
 		void SetPassForceChangeVS(UINT renderPassNum, ID3D11VertexShader* VS);
 		void SetPassForceChangePS(UINT renderPassNum, ID3D11PixelShader* PS);
 
-		inline void AddMaterial(Material&& material) { m_materials.emplace_back(material); }
+		inline void AddMaterial(std::shared_ptr<Material> material) { m_materials.push_back(material); }
 		inline void SetRenderPassNum(UINT renderPassNum) { m_renderPassNum = renderPassNum; }
 
 		inline void ClearPassExcludedMeshes() { m_passExcludedMeshes.clear(); }

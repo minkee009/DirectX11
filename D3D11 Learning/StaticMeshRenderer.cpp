@@ -10,7 +10,7 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
 
     auto& materialIndices = GetMatRefIndices();
 
-    for (auto& mesh : m_staticMesh.GetMeshes())
+    for (auto& mesh : m_pStaticMesh->GetMeshes())
     {
         if(GetEnabledBindMeshes())
             mesh.Bind(context);
@@ -18,7 +18,7 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
         auto& mat = m_materials[materialIndices[matCount++]];
         if (GetEnabledBindMaterials())
         {
-            mat.Bind(context);
+            mat->Bind(context);
         }
         auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
         if (passForceVSIter != GetPassForceChangeVS().end())

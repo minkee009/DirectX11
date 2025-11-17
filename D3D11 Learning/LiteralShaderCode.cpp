@@ -1,6 +1,6 @@
-#include "MaterialShaderCode.h"
+#include "LiteralShaderCode.h"
 
-namespace MyEngine
+namespace MyEngine::D3DCTX
 {
     const char* g_vscode_def = R"(
 struct VS_INPUT                                   
@@ -214,7 +214,7 @@ PS_INPUT VS(VS_INPUT input)
     return output;
 }
 )";
-const char* g_vscode_outline_rigid = R"(
+    const char* g_vscode_outline_rigid = R"(
     cbuffer ConstantBuffer : register(b0)
 {
     matrix World;

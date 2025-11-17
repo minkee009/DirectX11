@@ -8,31 +8,29 @@
 MyEngine::SkinningMeshRenderer::SkinningMeshRenderer()
 {
 	m_pBoneModelMatrixData = std::make_unique<SkinningBoneMatCB>();
-	m_pBoneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
 }
 
 MyEngine::SkinningMeshRenderer::~SkinningMeshRenderer()
 {
-	m_boneModelMatrixCB = nullptr;
-	m_boneOffsetMatrixCB = nullptr;
+	m_pBoneModelMatrixCB = nullptr;
 }
 
 void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 {
 	D3D11_MAPPED_SUBRESOURCE mapped;
-	context->Map(m_boneModelMatrixCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+	context->Map(m_pBoneModelMatrixCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 	memcpy(mapped.pData, m_pBoneModelMatrixData.get(), sizeof(SkinningBoneMatCB));
-	context->Unmap(m_boneModelMatrixCB.Get(), 0);
+	context->Unmap(m_pBoneModelMatrixCB.Get(), 0);
 
-	context->VSSetConstantBuffers(2, 1, m_boneModelMatrixCB.GetAddressOf());
-	context->VSSetConstantBuffers(3, 1, m_boneOffsetMatrixCB.GetAddressOf());
+	context->VSSetConstantBuffers(2, 1, m_pBoneModelMatrixCB.GetAddressOf());
+	context->VSSetConstantBuffers(3, 1, m_pSkinningMesh->GetBoneOffsetMatirxBufferAddress());
 
 	UINT stride = sizeof(DefaultVertex);
 	UINT offset = 0;
 	auto& materialIndices = GetMatRefIndices();
 
 	int meshCount = 0;
-	for (auto& mesh : m_skinningMesh.GetMeshes())
+	for (auto& mesh : m_pSkinningMesh->GetMeshes())
 	{
 		if(GetEnabledBindMeshes())
 			mesh.Bind(context);
@@ -40,7 +38,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		auto& mat = m_materials[materialIndices[meshCount++]];
 		if (GetEnabledBindMaterials())
 		{
-			mat.Bind(context);
+			mat->Bind(context);
 		}
 		auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
 		if (passForceVSIter != GetPassForceChangeVS().end())
@@ -62,9 +60,40 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 	}
 }
 
-void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext* context)
+void MyEngine::SkinningMeshRenderer::CalcBBox()
 {
-	if (!m_boneModelMatrixCB)
+	bool firstBone = true;
+
+	auto& bones = m_pSkinningMesh->GetBones();
+
+	for (auto& bone : bones)
+	{
+		if (bone.parentIndex == -1)
+			continue;
+
+		if (bone.hasVertex)
+		{
+			auto& boneModelMat = m_bonePoses[bone.index].model;
+
+			BoundingBox transformed;
+			bone.bbox.Transform(transformed, boneModelMat.Transpose());
+
+			if (firstBone)
+			{
+				m_bbox = transformed;  // 첫 번째는 직접 할당
+				firstBone = false;
+			}
+			else
+			{
+				BoundingBox::CreateMerged(m_bbox, m_bbox, transformed);
+			}
+		}
+	}
+}
+
+void MyEngine::SkinningMeshRenderer::CreateBoneModelMatrixBuffer(ID3D11DeviceContext* context)
+{
+	if (!m_pBoneModelMatrixCB)
 	{
 		//상수버퍼 만들어주기
 		D3D11_BUFFER_DESC cbDesc;
@@ -77,38 +106,7 @@ void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext
 		ID3D11Device* pDevice;
 		context->GetDevice(&pDevice);
 
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_boneModelMatrixCB.GetAddressOf());
-		pDevice->Release();
-		if (FAILED(hr))
-			return;
-	}
-
-	if (!m_boneOffsetMatrixCB)
-	{
-		//본 offset 행렬은 최초 1회 초기화
-		auto& bones = m_skinningMesh.GetBones();
-		for (size_t i = 0; i < bones.size(); i++)
-		{
-			m_pBoneOffsetMatrixData->matricies[i] = bones[i].offset;
-		}
-
-		D3D11_SUBRESOURCE_DATA initData;
-		initData.pSysMem = m_pBoneOffsetMatrixData.get();
-		initData.SysMemPitch = 0;
-		initData.SysMemSlicePitch = 0;
-
-		//상수버퍼 만들어주기
-		D3D11_BUFFER_DESC cbDesc;
-		ZeroMemory(&cbDesc, sizeof(cbDesc));
-		cbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		cbDesc.ByteWidth = sizeof(SkinningBoneMatCB);
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = 0;
-
-		ID3D11Device* pDevice;
-		context->GetDevice(&pDevice);
-
-		HRESULT hr = pDevice->CreateBuffer(&cbDesc, &initData, m_boneOffsetMatrixCB.GetAddressOf());
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, nullptr, m_pBoneModelMatrixCB.GetAddressOf());
 		pDevice->Release();
 		if (FAILED(hr))
 			return;
@@ -117,26 +115,26 @@ void MyEngine::SkinningMeshRenderer::CreateBoneMatrixBuffers(ID3D11DeviceContext
 
 void MyEngine::SkinningMeshRenderer::MatrixUpdate()
 {
-	auto& bones = m_skinningMesh.GetBones();
+	auto& bones = m_pSkinningMesh->GetBones();
 	for (UINT i = 0; i < bones.size(); i++)
 	{
+		auto& bonePose = m_bonePoses[i];
 		auto& bone = bones[i];
 
 		if (bone.parentIndex != -1)
 		{
-			auto& boneParent = bones[bone.parentIndex];
-			bone.model = boneParent.model * bone.local;
+			bonePose.model = m_bonePoses[bone.parentIndex].model * bonePose.local;
 		}
 		else
 		{
-			bone.model = bone.local;
+			bonePose.model = bonePose.local;
 		}
 
 		if(m_pBoneModelMatrixData)
-			m_pBoneModelMatrixData->matricies[i] = bone.model;
+			m_pBoneModelMatrixData->matricies[i] = bonePose.model;
 	}
 
-	m_skinningMesh.CalcBBox();
+	CalcBBox();
 }
 
 void MyEngine::SkinningMeshRenderer::AnimationUpdate()
@@ -145,7 +143,7 @@ void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 		return;
 
 	auto& anim = m_boneAnimations[m_animationIdx];
-	auto& bones = m_skinningMesh.GetBones();
+	auto& bones = m_pSkinningMesh->GetBones();
 	auto& duration = anim.begin()->second.duration;
 
 	m_time += TIME_GET_DELTA() * m_speed;
@@ -169,8 +167,8 @@ void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 
 		Matrix T = Matrix::CreateTranslation(currentPos);
 
-		bone.local = S * R * T;
-		bone.local = bone.local.Transpose();
+		m_bonePoses[bone.index].local = S * R * T;
+		m_bonePoses[bone.index].local = m_bonePoses[bone.index].local.Transpose();
 	}
 }
 
@@ -184,29 +182,46 @@ void MyEngine::SkinningMeshRenderer::Pause()
 	m_playing = false;
 }
 
-void MyEngine::SkinningMesh::CalcBBox()
+MyEngine::SkinningMesh::SkinningMesh()
 {
-	bool firstBone = true;
+	m_pBoneOffsetMatrixData = std::make_unique<SkinningBoneMatCB>();
+}
 
-	for (auto& bone : m_bones)
+MyEngine::SkinningMesh::~SkinningMesh()
+{
+	m_pBoneOffsetMatrixData = nullptr;
+}
+
+inline void MyEngine::SkinningMesh::CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context)
+{
+	if (!m_pBoneOffsetMatrixCB)
 	{
-		if (bone.parentIndex == -1)
-			continue;
-
-		if (bone.hasVertex)
+		//본 offset 행렬은 최초 1회 초기화
+		auto& bones = m_bones;
+		for (size_t i = 0; i < bones.size(); i++)
 		{
-			BoundingBox transformed;
-			bone.bbox.Transform(transformed, bone.model.Transpose());
-
-			if (firstBone)
-			{
-				m_bbox = transformed;  // 첫 번째는 직접 할당
-				firstBone = false;
-			}
-			else
-			{
-				BoundingBox::CreateMerged(m_bbox, m_bbox, transformed);
-			}
+			m_pBoneOffsetMatrixData->matricies[i] = bones[i].offset;
 		}
+
+		D3D11_SUBRESOURCE_DATA initData;
+		initData.pSysMem = m_pBoneOffsetMatrixData.get();
+		initData.SysMemPitch = 0;
+		initData.SysMemSlicePitch = 0;
+
+		//상수버퍼 만들어주기
+		D3D11_BUFFER_DESC cbDesc;
+		ZeroMemory(&cbDesc, sizeof(cbDesc));
+		cbDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		cbDesc.ByteWidth = sizeof(SkinningBoneMatCB);
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = 0;
+
+		ID3D11Device* pDevice;
+		context->GetDevice(&pDevice);
+
+		HRESULT hr = pDevice->CreateBuffer(&cbDesc, &initData, m_pBoneOffsetMatrixCB.GetAddressOf());
+		pDevice->Release();
+		if (FAILED(hr))
+			return;
 	}
 }

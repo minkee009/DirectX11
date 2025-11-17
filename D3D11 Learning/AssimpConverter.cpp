@@ -1,4 +1,3 @@
-
 #include "AssimpConverter.h"
 #include <queue>
 #include <stdexcept>
@@ -10,6 +9,10 @@ ID3D11Device* MyEngine::AssimpConverter::s_pDevice = nullptr;
 ID3D11DeviceContext* MyEngine::AssimpConverter::s_pContext = nullptr;
 
 namespace fs = std::filesystem;
+using namespace MyEngine::D3DCTX;
+
+#include "ShaderManager.h"
+#include "TextureManager.h"
 
 //#include <iostream>
 
@@ -210,28 +213,26 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
 {
     Material mat{ { pMat->GetName().C_Str()} };
 
-    mat.InitSampler(s_pDevice);
-
     switch (boneType)
     {
     case BoneType::None:
-        mat.InitVertexShader(Material::GetBlinnPhongVertexShader(), Material::GetBlinnPhongVSBlob());
+        mat.InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader());
         break;
     case BoneType::RigidBone:
-        mat.InitVertexShader(Material::GetBlinnPhongVertexShader_RigidBone(), Material::GetBlinnPhongVSBlob());
+        mat.InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_RigidBone());
         break;
     case BoneType::SkinningBone:
-        mat.InitVertexShader(Material::GetBlinnPhongVertexShader_SkinningBone(), Material::GetBlinnPhongVSBlob());
+        mat.InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
         break;
     }
 
     switch (s_materialType)
     {
     case LoadMaterialType::BlinnPhong:
-        mat.InitPixelShader(Material::GetBlinnPhongPixelShader());
+        mat.InitPixelShader(ShaderManager::Get()->GetBlinnPhongPixelShader());
         break;
     case LoadMaterialType::BlinnPhongToon:
-        mat.InitPixelShader(Material::GetBlinnPhongToonPixelShader());
+        mat.InitPixelShader(ShaderManager::Get()->GetBlinnPhongToonPixelShader());
         break;
     }
 
@@ -354,9 +355,6 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType |
         aiProcess_FlipUVs;
-
-
-    Material::InitBlinnPhongShaders(s_pDevice);
 
     const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
 
@@ -494,7 +492,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pRigidMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::RigidBone));
+        pRigidMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::RigidBone)));
     }
 
     return pRigidMeshRenderer;
@@ -512,9 +510,6 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
         aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
         aiProcess_FlipUVs;
-
-
-    Material::InitBlinnPhongShaders(s_pDevice);
 
     const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
 
@@ -542,7 +537,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pStaticMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::None));
+        pStaticMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::RigidBone)));
     }
 
     return pStaticMeshRenderer;

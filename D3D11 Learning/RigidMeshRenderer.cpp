@@ -57,11 +57,11 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	UINT offset = 0;
 
 	int meshCount = 0;
-	auto& boneIndices = m_rigidMesh.GetBoneIndices();
+	auto& boneIndices = m_pRigidMesh->GetBoneIndices();
 
 	auto& materialIndices = GetMatRefIndices();
 
-	for (auto& mesh : m_rigidMesh.GetMeshes())
+	for (auto& mesh : m_pRigidMesh->GetMeshes())
 	{
 		RigidBoneMatIdxCB cb2;
 		if(GetEnabledBindMeshes())
@@ -74,7 +74,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		auto& mat = m_materials[materialIndices[meshCount++]];
 		if (GetEnabledBindMaterials())
 		{
-			mat.Bind(context);
+			mat->Bind(context);
 		}
 		auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
 		if (passForceVSIter != GetPassForceChangeVS().end())
@@ -98,23 +98,23 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 }
 void MyEngine::RigidMeshRenderer::MatrixUpdate()
 {
-	auto& bones = m_rigidMesh.GetBones();
-
+	auto& bones = m_pRigidMesh->GetBones();
 	for (UINT i = 0; i < bones.size(); i++)
 	{
+		auto& bonePose = m_bonePoses[i];
 		auto& bone = bones[i];
 
 		if (bone.parentIndex != -1)
 		{
-			auto& boneParent = bones[bone.parentIndex];
-			bone.model = boneParent.model * bone.local;
+			bonePose.model = m_bonePoses[bone.parentIndex].model * bonePose.local;
 		}
 		else
 		{
-			bone.model = bone.local;
+			bonePose.model = bonePose.local;
 		}
 
-		m_pBoneMatrixData->matricies[i] = bone.model;
+		if (m_pBoneMatrixData)
+			m_pBoneMatrixData->matricies[i] = bonePose.model;
 	}
 }
 
@@ -124,7 +124,7 @@ void MyEngine::RigidMeshRenderer::AnimationUpdate()
 		return;
 
 	auto& anim = m_boneAnimations[m_animationIdx];
-	auto& bones = m_rigidMesh.GetBones();
+	auto& bones = m_pRigidMesh->GetBones();
 	auto& duration = anim.begin()->second.duration;
 
 	m_time += TIME_GET_DELTA() * m_speed;
@@ -148,8 +148,8 @@ void MyEngine::RigidMeshRenderer::AnimationUpdate()
 
 		Matrix T = Matrix::CreateTranslation(currentPos);
 
-		bone.local = S * R * T;
-		bone.local = bone.local.Transpose();
+		m_bonePoses[bone.index].local = S * R * T;
+		m_bonePoses[bone.index].local = m_bonePoses[bone.index].local.Transpose();
 	}
 }
 

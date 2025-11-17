@@ -23,6 +23,10 @@ namespace MyEngine
 		bool hasVertex = false;
 		BoundingBox bbox;
 		Matrix offset;  //바인드 역행렬 <- 상수 값
+	};
+
+	struct SkinningBonePose
+	{
 		Matrix local; //로컬행렬 프레임당 한번만 연산
 		Matrix model; //프레임당 한번만 연산
 	};
@@ -31,32 +35,47 @@ namespace MyEngine
 	{
 	private:
 		std::vector<SkinningBone> m_bones;
+		std::unique_ptr<SkinningBoneMatCB> m_pBoneOffsetMatrixData;
+		ComPtr<ID3D11Buffer> m_pBoneOffsetMatrixCB;
 	public:
+		SkinningMesh();
+		~SkinningMesh();
+
 		void SetBones(std::vector<SkinningBone>&& bones) { m_bones = std::move(bones); }
 		inline std::vector<SkinningBone>& GetBones() { return m_bones; }
-		void CalcBBox() override;
+
+		inline void CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context);
+		inline ID3D11Buffer* GetBoneOffsetMatirxBuffer() { return m_pBoneOffsetMatrixCB.Get(); }
+		inline ID3D11Buffer** GetBoneOffsetMatirxBufferAddress() { return m_pBoneOffsetMatrixCB.GetAddressOf(); }
 	};
 
 	class SkinningMeshRenderer : public MeshRenderer
 	{
 	private:
-		SkinningMesh m_skinningMesh;
-		ComPtr<ID3D11Buffer> m_boneModelMatrixCB;
-		ComPtr<ID3D11Buffer> m_boneOffsetMatrixCB;
+		std::shared_ptr<SkinningMesh> m_pSkinningMesh;
 		std::unique_ptr<SkinningBoneMatCB> m_pBoneModelMatrixData;
-		std::unique_ptr<SkinningBoneMatCB> m_pBoneOffsetMatrixData;
+		ComPtr<ID3D11Buffer> m_pBoneModelMatrixCB;
+		std::vector<SkinningBonePose> m_bonePoses;
+		
+		bool m_isBBoxCalculated = false;
+		BoundingBox m_bbox;
 	public:
 		SkinningMeshRenderer();
 		~SkinningMeshRenderer();
-		inline void SetSkinningMesh(SkinningMesh&& mesh) { m_skinningMesh = std::move(mesh); }
-		inline SkinningMesh& GetSkinningMesh() { return m_skinningMesh; }
+		inline void SetSkinningMesh(std::shared_ptr<SkinningMesh> mesh) { m_pSkinningMesh = mesh; }
+		inline void SetBonePoses(std::vector<SkinningBonePose>&& poses) { m_bonePoses = std::move(poses); }
 
-		void CreateBoneMatrixBuffers(ID3D11DeviceContext* context);
+		inline SkinningMesh& GetSkinningMesh() { return *m_pSkinningMesh; }
+		inline const std::vector<SkinningBonePose>& GetBonePoses() const { return m_bonePoses; }
+
+		void CreateBoneModelMatrixBuffer(ID3D11DeviceContext* context);
 
 		void MatrixUpdate();
 
 		void Draw(ID3D11DeviceContext* context);
-		const BoundingBox& GetBBox() override { return m_skinningMesh.GetBBox(); }
+		void CalcBBox();
+
+		const BoundingBox& GetBBox() override { if (!m_isBBoxCalculated) { CalcBBox(); m_isBBoxCalculated = true; } return m_bbox; }
 
 		// ====== 애니메이션 처리 ====== //
 	private:

@@ -140,18 +140,21 @@
     <ClCompile Include="AssimpConverter.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="InputLayoutManager.cpp" />
+    <ClCompile Include="LiteralShaderCode.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
-    <ClCompile Include="MaterialShaderCode.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="MyD3DContext.cpp" />
     <ClCompile Include="MyImGui.cpp" />
     <ClCompile Include="RigidMeshRenderer.cpp" />
+    <ClCompile Include="ShaderManager.cpp" />
     <ClCompile Include="SkinningMeshRenderer.cpp" />
     <ClCompile Include="StaticMesh.cpp" />
     <ClCompile Include="StaticMeshRenderer.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TimeManager.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
@@ -164,7 +167,7 @@
     <ClInclude Include="DebugTextRenderer.h" />
     <ClInclude Include="AssimpConverter.h" />
     <ClInclude Include="IRenderable.h" />
-    <ClInclude Include="MaterialShaderCode.h" />
+    <ClInclude Include="LiteralShaderCode.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MyD3DContext.h" />
@@ -172,9 +175,11 @@
     <ClInclude Include="MyImGui.h" />
     <ClInclude Include="RigidMeshRenderer.h" />
     <ClInclude Include="ShaderManager.h" />
+    <ClInclude Include="Singleton.h" />
     <ClInclude Include="SkinningMeshRenderer.h" />
     <ClInclude Include="StaticMesh.h" />
     <ClInclude Include="StaticMeshRenderer.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TimeManager.h" />
     <ClInclude Include="Transform.h" />

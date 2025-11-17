@@ -26,8 +26,12 @@ namespace MyEngine
 	{
 		int index = -1;
 		int parentIndex = -1;
-		Matrix local; //상수 값 - 로드할 때 한번만 연산
-		Matrix model; //프레임당 한번만 연산
+	};
+
+	struct RigidBonePose
+	{
+		Matrix local; 
+		Matrix model;
 	};
 
 	class RigidMesh : public StaticMesh
@@ -45,16 +49,19 @@ namespace MyEngine
 	class RigidMeshRenderer : public MeshRenderer
 	{
 	private:
-		RigidMesh m_rigidMesh;
+		std::shared_ptr<RigidMesh> m_pRigidMesh;
+		
+		std::vector<RigidBonePose> m_bonePoses;
 		ComPtr<ID3D11Buffer> m_boneMatrixCB;
 		ComPtr<ID3D11Buffer> m_boneMatrixIdxCB;
 		std::unique_ptr<RigidBoneMatCB> m_pBoneMatrixData;
 	public:
 		RigidMeshRenderer();
-		inline void SetMesh(RigidMesh&& mesh) { m_rigidMesh = std::move(mesh); }
+		inline void SetMesh(std::shared_ptr<RigidMesh> mesh) { m_pRigidMesh = mesh; }
+		inline void SetBonePoses(std::vector<RigidBonePose>&& poses) { m_bonePoses = std::move(poses); }
 
 		void Draw(ID3D11DeviceContext* context) override;
-		const BoundingBox& GetBBox() override { return m_rigidMesh.GetBBox(); }
+		const BoundingBox& GetBBox() override { return m_pRigidMesh->GetBBox(); }
 		void MatrixUpdate();
 
 		// ====== 애니메이션 처리 ====== //
