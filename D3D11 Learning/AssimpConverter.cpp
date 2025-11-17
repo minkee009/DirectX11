@@ -36,6 +36,8 @@ std::unordered_set<std::string> MyEngine::AssimpConverter::CollectUsedBoneNames(
     return usedBones;
 }
 
+#include <iostream>
+
 void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::unordered_set<std::string>& usedBones, std::unordered_set<std::string>& boneHierarchy)
 {
     std::string nodeName = pNode->mName.C_Str();
@@ -78,7 +80,7 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes, std::vect
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
@@ -95,24 +97,27 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     auto& matrix = pNode->mTransformation;
     bone.index = static_cast<int>(bones.size());
     bone.parentIndex = parentIndex;
-    //bone.local = Matrix(
-    //    matrix.a1, matrix.a2, matrix.a3, matrix.a4,
-    //    matrix.b1, matrix.b2, matrix.b3, matrix.b4,
-    //    matrix.c1, matrix.c2, matrix.c3, matrix.c4,
-    //    matrix.d1, matrix.d2, matrix.d3, matrix.d4
-    //);
 
+    RigidBonePose bonePose;
+    bonePose.local = Matrix(
+        matrix.a1, matrix.a2, matrix.a3, matrix.a4,
+        matrix.b1, matrix.b2, matrix.b3, matrix.b4,
+        matrix.c1, matrix.c2, matrix.c3, matrix.c4,
+        matrix.d1, matrix.d2, matrix.d3, matrix.d4
+    );
+    
+    bonePoses.emplace_back(bonePose);
     bones.emplace_back(bone);
     nodeNameToIndexMap.insert({ pNode->mName.C_Str(),bone.index });
 
     //자식 노드 처리
     for (UINT i = 0; i < pNode->mNumChildren; i++)
     {
-        ProcessNode(bone.index, bones, meshes, matIDX, boneIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap);
+        ProcessNode(bone.index, bones, bonePoses, meshes, matIDX, boneIDX, pNode->mChildren[i], pScene, nodeNameToIndexMap);
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<SkinningBonePose>& bonePoses, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy)
 {
     std::string nodeName = pNode->mName.C_Str();
     bool isInBoneHierarchy = boneHierarchy.find(nodeName) != boneHierarchy.end();
@@ -126,13 +131,16 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
         auto& matrix = pNode->mTransformation;
         bone.index = static_cast<int>(bones.size());
         bone.parentIndex = parentIndex;
-        //bone.local = Matrix(
-        //    matrix.a1, matrix.a2, matrix.a3, matrix.a4,
-        //    matrix.b1, matrix.b2, matrix.b3, matrix.b4,
-        //    matrix.c1, matrix.c2, matrix.c3, matrix.c4,
-        //    matrix.d1, matrix.d2, matrix.d3, matrix.d4
-        //);
 
+        SkinningBonePose bonePose;
+        bonePose.local = Matrix(
+            matrix.a1, matrix.a2, matrix.a3, matrix.a4,
+            matrix.b1, matrix.b2, matrix.b3, matrix.b4,
+            matrix.c1, matrix.c2, matrix.c3, matrix.c4,
+            matrix.d1, matrix.d2, matrix.d3, matrix.d4
+        );
+
+        bonePoses.emplace_back(bonePose);
         bones.emplace_back(bone);
         nodeNameToIndexMap.insert({ nodeName, bone.index });
         currentBoneIndex = bone.index;
@@ -161,7 +169,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
     {
         // 부모 인덱스는 현재 노드가 본인 경우만 전달
         int childParentIndex = isInBoneHierarchy ? currentBoneIndex : parentIndex;
-        ProcessNode(childParentIndex, bones, meshes, matIDX,
+        ProcessNode(childParentIndex, bones, bonePoses, meshes, matIDX,
             pNode->mChildren[i], pScene, nodeNameToIndexMap,
             correctionMap, boneHierarchy);
     }
@@ -361,27 +369,23 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     std::vector<UINT> matIndices;
     std::vector<UINT> boneIndices;
     std::vector<RigidBone> rigidBones;
+    std::vector<RigidBonePose> rigidBonePoses;
 
     std::unordered_map <std::string, UINT> nodeNameToIndex;
 
-    ProcessNode(-1, rigidBones, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
+    ProcessNode(-1, rigidBones, rigidBonePoses, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
 
     for (auto& mesh : meshes)
     {
         mesh.CreateBuffers(s_pDevice);
     }
 
-
-    std::vector<RigidBonePose> bonePoses;
-    bonePoses.resize(rigidBones.size());
-    for (auto& pose : bonePoses) pose = { Matrix::Identity, Matrix::Identity };
-
     rMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     rMesh.SetBones(std::move(rigidBones));
     rMesh.SetBoneIndices(std::move(boneIndices));
 
     pRigidMeshRenderer->SetMatRefIndices(std::move(matIndices));
-    pRigidMeshRenderer->SetBonePoses(std::move(bonePoses));
+    pRigidMeshRenderer->SetBonePoses(std::move(rigidBonePoses));
     pRigidMeshRenderer->SetMesh(std::make_shared<RigidMesh>(std::move(rMesh)));
     pRigidMeshRenderer->CreateBoneMatrixBuffer(s_pContext);
 
@@ -571,10 +575,11 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     std::vector<Mesh> meshes;
     std::vector<UINT> matIndices;
     std::vector<SkinningBone> skinningBones;
+    std::vector<SkinningBonePose> skinningBonePosess;
     std::vector<CorrectionNode> correctionMap;
 
     std::unordered_map<std::string, UINT> nodeNameToIndex;
-    ProcessNode(-1, skinningBones, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
+    ProcessNode(-1, skinningBones, skinningBonePosess, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
 
     struct VertexBoneData
     {
@@ -704,10 +709,6 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         bbox.Transform(bbox, sbone.offset.Transpose());
     }
 
-    std::vector<SkinningBonePose> bonePoses;
-    bonePoses.resize(skinningBones.size());
-    //for (auto& pose : bonePoses) pose = { Matrix::Identity, Matrix::Identity };
-
     sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     sMesh.SetBones(std::move(skinningBones));
     sMesh.CreateBoneOffsetMatrixBuffer(s_pContext);
@@ -715,7 +716,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     pSkinningMeshRenderer->SetSkinningMesh(std::make_shared<SkinningMesh>(std::move(sMesh)));
     pSkinningMeshRenderer->SetMatRefIndices(std::move(matIndices));
-    pSkinningMeshRenderer->SetBonePoses(std::move(bonePoses));
+    pSkinningMeshRenderer->SetBonePoses(std::move(skinningBonePosess));
     pSkinningMeshRenderer->MatrixUpdate();
     pSkinningMeshRenderer->CreateBoneModelMatrixBuffer(s_pContext);
 

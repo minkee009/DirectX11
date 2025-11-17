@@ -153,7 +153,7 @@ void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 	{
 		auto& index = pair.first;
 		auto& clip = pair.second;
-		auto& bone = bones[index];
+		auto& bone = m_bonePoses[index];
 
 		auto actualTime = m_time * clip.frameRate;
 
@@ -167,8 +167,8 @@ void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 
 		Matrix T = Matrix::CreateTranslation(currentPos);
 
-		m_bonePoses[bone.index].local = S * R * T;
-		m_bonePoses[bone.index].local = m_bonePoses[bone.index].local.Transpose();
+		bone.local = S * R * T;
+		bone.local = bone.local.Transpose();
 	}
 }
 
@@ -199,17 +199,6 @@ MyEngine::SkinningMesh::SkinningMesh(SkinningMesh&& other) noexcept
 	, m_pBoneOffsetMatrixCB(std::move(other.m_pBoneOffsetMatrixCB))
 {
 
-}
-
-MyEngine::SkinningMesh& MyEngine::SkinningMesh::operator=(SkinningMesh&& other) noexcept
-{
-	if (this != &other)
-	{
-		m_bones = std::move(other.m_bones);
-		m_pBoneOffsetMatrixData = std::move(other.m_pBoneOffsetMatrixData);
-		m_pBoneOffsetMatrixCB = std::move(other.m_pBoneOffsetMatrixCB);
-	}
-	return *this;
 }
 
 void MyEngine::SkinningMesh::CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context)

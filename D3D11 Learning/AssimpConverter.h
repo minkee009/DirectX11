@@ -31,8 +31,8 @@ namespace MyEngine
 		static void CollectBoneHierarchy(aiNode* pNode, const std::unordered_set<std::string>& usedBones, std::unordered_set<std::string>& boneHierarchy);
 
 		static void ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene);
-		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap);
-		static void ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy);
+		static void ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap);
+		static void ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<SkinningBonePose>& bonePoses,std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy);
 		static Mesh ProcessMesh(aiMesh* pMesh, const aiScene* pScene);
 		static Material ProcessMaterial(aiMaterial* pMat, const aiScene* pScene, const BoneType& boneType);
 	public:

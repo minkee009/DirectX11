@@ -42,7 +42,6 @@ namespace MyEngine
 		~SkinningMesh();
 
 		SkinningMesh(SkinningMesh&& other) noexcept;
-		SkinningMesh& operator=(SkinningMesh&& other) noexcept;
 
 		void SetBones(std::vector<SkinningBone>&& bones) { m_bones = std::move(bones); }
 		inline std::vector<SkinningBone>& GetBones() { return m_bones; }
