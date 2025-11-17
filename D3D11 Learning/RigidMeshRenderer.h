@@ -60,6 +60,8 @@ namespace MyEngine
 		inline void SetMesh(std::shared_ptr<RigidMesh> mesh) { m_pRigidMesh = mesh; }
 		inline void SetBonePoses(std::vector<RigidBonePose>&& poses) { m_bonePoses = std::move(poses); }
 
+		void CreateBoneMatrixBuffer(ID3D11DeviceContext* context);
+
 		void Draw(ID3D11DeviceContext* context) override;
 		const BoundingBox& GetBBox() override { return m_pRigidMesh->GetBBox(); }
 		void MatrixUpdate();

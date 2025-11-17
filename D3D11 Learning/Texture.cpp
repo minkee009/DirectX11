@@ -11,7 +11,7 @@ bool MyEngine::Texture::SetSamplerState(ID3D11SamplerState* pSampler)
     return false;
 }
 
-bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const std::wstring& path)
+bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const std::string& name, const std::wstring& path)
 {
 	//dds인지 아닌지 확인
 	bool isDDS = false;
@@ -50,25 +50,7 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 		return false;
 
 	m_pSRV = pSRV;
-
-	size_t dotPos = path.find(L'.');
-	if (dotPos == std::wstring::npos)
-	{
-		m_name = std::string{ path.begin(), path.end() };
-		return true;
-	}
-	size_t slashPos = path.find_last_of(L"/\\", dotPos);
-
-	// slashPos가 없다면 (npos면) 시작부터 dotPos까지가 이름
-	if (slashPos == std::wstring::npos)
-	{
-		auto wPath = path.substr(0, dotPos);
-		m_name = std::string{ wPath.begin(),wPath.end() };
-	}	
-
-	// slash 다음부터 dot 전까지 이름을 가져옴
-	auto trueWPath = path.substr(slashPos + 1, dotPos - (slashPos + 1));
-	m_name = std::string{ trueWPath.begin(),trueWPath.end() };
+	m_name = name;
 
 	return true;
 }

@@ -518,7 +518,7 @@ PS_INPUT VS(VS_INPUT input)
 
 }
 
-namespace MyEngine
+namespace MyEngine::D3DCTX
 {
     const char* g_pscode_def = R"(			 
 struct PS_INPUT                                    

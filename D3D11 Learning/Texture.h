@@ -31,7 +31,7 @@ namespace MyEngine
 		inline ID3D11ShaderResourceView** GetSRVAddress() { return m_pSRV.GetAddressOf(); }
 
 		//파일로 부터 텍스쳐 리소스(SRV)를 만드는 함수
-		bool LoadTextureFromFile(ID3D11DeviceContext* context, const std::wstring& path);
+		bool LoadTextureFromFile(ID3D11DeviceContext* context, const std::string& name, const std::wstring& path);
 		bool LoadTextureFromMemory(ID3D11DeviceContext* context, const std::string& name, const uint8_t* pData, size_t dataSize, const std::wstring& formatExt);
 	};
 }

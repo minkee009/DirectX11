@@ -10,7 +10,7 @@ MyEngine::RigidMeshRenderer::RigidMeshRenderer()
 	m_pBoneMatrixData = std::make_unique<RigidBoneMatCB>();
 }
 
-void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
+void MyEngine::RigidMeshRenderer::CreateBoneMatrixBuffer(ID3D11DeviceContext* context)
 {
 	if (!m_boneMatrixCB)
 	{
@@ -49,7 +49,10 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 		if (FAILED(hr))
 			return;
 	}
+}
 
+void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
+{
 	context->UpdateSubresource(m_boneMatrixCB.Get(), 0, nullptr, m_pBoneMatrixData.get(), 0, 0);
 	context->VSSetConstantBuffers(2, 1, m_boneMatrixCB.GetAddressOf());
 

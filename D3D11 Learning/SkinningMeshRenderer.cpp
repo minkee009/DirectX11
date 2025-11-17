@@ -192,7 +192,27 @@ MyEngine::SkinningMesh::~SkinningMesh()
 	m_pBoneOffsetMatrixData = nullptr;
 }
 
-inline void MyEngine::SkinningMesh::CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context)
+MyEngine::SkinningMesh::SkinningMesh(SkinningMesh&& other) noexcept 
+	: StaticMesh(std::move(other))
+	, m_bones(std::move(other.m_bones))
+	, m_pBoneOffsetMatrixData(std::move(other.m_pBoneOffsetMatrixData))
+	, m_pBoneOffsetMatrixCB(std::move(other.m_pBoneOffsetMatrixCB))
+{
+
+}
+
+MyEngine::SkinningMesh& MyEngine::SkinningMesh::operator=(SkinningMesh&& other) noexcept
+{
+	if (this != &other)
+	{
+		m_bones = std::move(other.m_bones);
+		m_pBoneOffsetMatrixData = std::move(other.m_pBoneOffsetMatrixData);
+		m_pBoneOffsetMatrixCB = std::move(other.m_pBoneOffsetMatrixCB);
+	}
+	return *this;
+}
+
+void MyEngine::SkinningMesh::CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context)
 {
 	if (!m_pBoneOffsetMatrixCB)
 	{

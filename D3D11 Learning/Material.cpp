@@ -60,6 +60,8 @@ void MyEngine::Material::CreateConstantBuffer(ID3D11DeviceContext* context)
 
 MyEngine::Material::Material(const std::string& name)
 	: m_name(name)
+	, m_pVertexShader(nullptr)
+	, m_pPixelShader(nullptr)
 {
 }
 

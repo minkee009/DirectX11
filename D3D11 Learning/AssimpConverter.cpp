@@ -95,12 +95,12 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     auto& matrix = pNode->mTransformation;
     bone.index = static_cast<int>(bones.size());
     bone.parentIndex = parentIndex;
-    bone.local = Matrix(
-        matrix.a1, matrix.a2, matrix.a3, matrix.a4,
-        matrix.b1, matrix.b2, matrix.b3, matrix.b4,
-        matrix.c1, matrix.c2, matrix.c3, matrix.c4,
-        matrix.d1, matrix.d2, matrix.d3, matrix.d4
-    );
+    //bone.local = Matrix(
+    //    matrix.a1, matrix.a2, matrix.a3, matrix.a4,
+    //    matrix.b1, matrix.b2, matrix.b3, matrix.b4,
+    //    matrix.c1, matrix.c2, matrix.c3, matrix.c4,
+    //    matrix.d1, matrix.d2, matrix.d3, matrix.d4
+    //);
 
     bones.emplace_back(bone);
     nodeNameToIndexMap.insert({ pNode->mName.C_Str(),bone.index });
@@ -126,12 +126,12 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
         auto& matrix = pNode->mTransformation;
         bone.index = static_cast<int>(bones.size());
         bone.parentIndex = parentIndex;
-        bone.local = Matrix(
-            matrix.a1, matrix.a2, matrix.a3, matrix.a4,
-            matrix.b1, matrix.b2, matrix.b3, matrix.b4,
-            matrix.c1, matrix.c2, matrix.c3, matrix.c4,
-            matrix.d1, matrix.d2, matrix.d3, matrix.d4
-        );
+        //bone.local = Matrix(
+        //    matrix.a1, matrix.a2, matrix.a3, matrix.a4,
+        //    matrix.b1, matrix.b2, matrix.b3, matrix.b4,
+        //    matrix.c1, matrix.c2, matrix.c3, matrix.c4,
+        //    matrix.d1, matrix.d2, matrix.d3, matrix.d4
+        //);
 
         bones.emplace_back(bone);
         nodeNameToIndexMap.insert({ nodeName, bone.index });
@@ -294,15 +294,11 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
                             formatExt = L"." + std::wstring(hint.begin(), hint.end());
                         }
 
-                        mat.InitAndConvertTextureFromMemory(
-                            s_pContext,
-                            myType,
-                            path_str,
-                            slot,
-                            data,       // 일반화된 포인터
-                            size,       // 일반화된 크기
-                            formatExt   // 일반화된 확장자
-                        );
+                        auto matTex = std::make_shared<Texture>();
+
+                        matTex->LoadTextureFromMemory(s_pContext, path_str, data, size, formatExt);
+
+                        mat.InitTexture(myType, slot, matTex);
                     }
                 }
                 else
@@ -311,13 +307,9 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
                     fs::path filename_only = original_path.filename();
                     fs::path final_texPath = base_directory / filename_only;
 
-                    mat.InitAndConvertTexture(
-                        s_pContext,
-                        myType,
-                        filename_only.string(),
-                        slot,
-                        final_texPath.wstring()
-                    );
+                    auto matTex = std::make_shared<Texture>();
+                    matTex->LoadTextureFromFile(s_pContext, filename_only.string(),final_texPath.wstring());
+                    mat.InitTexture(myType, slot, matTex);
                 }
             }
         }
@@ -379,11 +371,19 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         mesh.CreateBuffers(s_pDevice);
     }
 
-    rMesh.SetSubMesh(std::move(meshes));
+
+    std::vector<RigidBonePose> bonePoses;
+    bonePoses.resize(rigidBones.size());
+    for (auto& pose : bonePoses) pose = { Matrix::Identity, Matrix::Identity };
+
+    rMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     rMesh.SetBones(std::move(rigidBones));
     rMesh.SetBoneIndices(std::move(boneIndices));
+
     pRigidMeshRenderer->SetMatRefIndices(std::move(matIndices));
-    pRigidMeshRenderer->SetMesh(std::move(rMesh));
+    pRigidMeshRenderer->SetBonePoses(std::move(bonePoses));
+    pRigidMeshRenderer->SetMesh(std::make_shared<RigidMesh>(std::move(rMesh)));
+    pRigidMeshRenderer->CreateBoneMatrixBuffer(s_pContext);
 
 
     if (pScene->HasAnimations())
@@ -530,10 +530,10 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         mesh.CreateBuffers(s_pDevice);
     }
 
-    sMesh.SetSubMesh(std::move(meshes));
+    sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     sMesh.CalcBBox();
     pStaticMeshRenderer->SetMatRefIndices(std::move(indices));
-    pStaticMeshRenderer->SetMesh(std::move(sMesh));
+    pStaticMeshRenderer->SetMesh(std::make_shared<StaticMesh>(std::move(sMesh)));
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
@@ -554,8 +554,6 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     // _$AssimpFbx$Translation, _$AssimpFbx$_PreRotation, _$AssimpFbx$_Rotation 등의 노드 분기 생성 방지
     s_importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
-
-    Material::InitBlinnPhongShaders(s_pDevice);
 
     const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
 
@@ -706,13 +704,20 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         bbox.Transform(bbox, sbone.offset.Transpose());
     }
 
-    sMesh.SetSubMesh(std::move(meshes));
+    std::vector<SkinningBonePose> bonePoses;
+    bonePoses.resize(skinningBones.size());
+    for (auto& pose : bonePoses) pose = { Matrix::Identity, Matrix::Identity };
+
+    sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     sMesh.SetBones(std::move(skinningBones));
+    sMesh.CreateBoneOffsetMatrixBuffer(s_pContext);
     sMesh.CalcBBox();
-    pSkinningMeshRenderer->SetSkinningMesh(std::move(sMesh));
+
+    pSkinningMeshRenderer->SetSkinningMesh(std::make_shared<SkinningMesh>(std::move(sMesh)));
     pSkinningMeshRenderer->SetMatRefIndices(std::move(matIndices));
+    pSkinningMeshRenderer->SetBonePoses(std::move(bonePoses));
     pSkinningMeshRenderer->MatrixUpdate();
-    pSkinningMeshRenderer->CreateBoneMatrixBuffers(s_pContext);
+    pSkinningMeshRenderer->CreateBoneModelMatrixBuffer(s_pContext);
 
     if (pScene->HasAnimations())
     {
@@ -820,7 +825,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pSkinningMeshRenderer->AddMaterial(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::SkinningBone));
+        pSkinningMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::SkinningBone)));
     }
 
     return pSkinningMeshRenderer;

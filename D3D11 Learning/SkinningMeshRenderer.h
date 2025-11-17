@@ -41,10 +41,13 @@ namespace MyEngine
 		SkinningMesh();
 		~SkinningMesh();
 
+		SkinningMesh(SkinningMesh&& other) noexcept;
+		SkinningMesh& operator=(SkinningMesh&& other) noexcept;
+
 		void SetBones(std::vector<SkinningBone>&& bones) { m_bones = std::move(bones); }
 		inline std::vector<SkinningBone>& GetBones() { return m_bones; }
 
-		inline void CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context);
+		void CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context);
 		inline ID3D11Buffer* GetBoneOffsetMatirxBuffer() { return m_pBoneOffsetMatrixCB.Get(); }
 		inline ID3D11Buffer** GetBoneOffsetMatirxBufferAddress() { return m_pBoneOffsetMatrixCB.GetAddressOf(); }
 	};
