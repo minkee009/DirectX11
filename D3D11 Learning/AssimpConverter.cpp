@@ -537,7 +537,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pStaticMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::RigidBone)));
+        pStaticMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::None)));
     }
 
     return pStaticMeshRenderer;
@@ -706,7 +706,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     std::vector<SkinningBonePose> bonePoses;
     bonePoses.resize(skinningBones.size());
-    for (auto& pose : bonePoses) pose = { Matrix::Identity, Matrix::Identity };
+    //for (auto& pose : bonePoses) pose = { Matrix::Identity, Matrix::Identity };
 
     sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     sMesh.SetBones(std::move(skinningBones));

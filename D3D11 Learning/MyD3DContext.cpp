@@ -828,6 +828,8 @@ void MyEngine::MyD3DContext::Render()
 
     m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
     for (size_t i = 0; i < m_sceneObjects.size(); ++i)
     {
         auto& meshRenderer = m_meshRenderers[i];
@@ -835,8 +837,6 @@ void MyEngine::MyD3DContext::Render()
 
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout()); //나중에 수정하기 -> VertexType IL로 꼭 변경
 
         meshRenderer->SetEnabledBindMeshes(true);
         meshRenderer->SetEnabledBindMaterials(false);
@@ -917,7 +917,7 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        D3DCTX::ShaderManager::Get()->BindOutlineShaders(m_pContext.Get(), meshRenderer.get());
+        D3DCTX::ShaderManager::Get()->BindOutlineShaders(m_pContext.Get());
 
         meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
