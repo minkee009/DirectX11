@@ -195,9 +195,9 @@ PS_INPUT VS(VS_INPUT input)
 
     output.Pos = mul(input.Pos, finalWorld);
     output.WorldPos = output.Pos.xyz;
+    output.Norm = normalize(mul(input.Norm, (float3x3) finalWorld));
 
-	float3 N = normalize(input.Norm);
-	float3 expanded = output.WorldPos + N * OutlineThickness;
+	float3 expanded = output.WorldPos + output.Norm * OutlineThickness;
 	float4 expandedPos = float4(expanded, 1.0);
 
 
@@ -207,7 +207,6 @@ PS_INPUT VS(VS_INPUT input)
 	// finalWorld 행렬이 적용된 위치를 LightViewProjection으로 변환
 	output.LightPos = mul(float4(output.WorldPos, 1.0f),LightViewProjection);
     
-    output.Norm = normalize(mul(input.Norm, (float3x3) finalWorld));
     output.Tan = normalize(mul(input.Tan, (float3x3) finalWorld));
     output.Tex = input.Tex;
     
