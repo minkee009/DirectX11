@@ -33,7 +33,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 	for (auto& mesh : m_pSkinningMesh->GetMeshes())
 	{
 		if(GetEnabledBindMeshes())
-			mesh.Bind(context);
+			mesh->Bind(context);
 
 		auto& mat = m_materials[materialIndices[meshCount++]];
 		if (GetEnabledBindMaterials())
@@ -56,7 +56,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 			&& passIter->second.find(meshCount) != passIter->second.end())
 			continue;
 
-		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
+		context->DrawIndexed(static_cast<UINT>(mesh->GetIndices().size()), 0, 0);
 	}
 }
 

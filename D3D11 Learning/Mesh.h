@@ -7,12 +7,14 @@
 #include <d3d11.h>
 #include <directxtk/SimpleMath.h>
 
+#include "Resource.h"
+
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
 namespace MyEngine
 {
-	class Mesh
+	class Mesh : public Resource
 	{
 	private:
 		ComPtr<ID3D11Buffer> m_pVertexBuffer, m_pIndexBuffer;

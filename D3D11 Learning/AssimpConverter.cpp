@@ -63,13 +63,13 @@ void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::u
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
+void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
-        meshes.push_back(ProcessMesh(pMesh, pScene));
+        meshes.push_back(std::make_shared<Mesh>((ProcessMesh(pMesh, pScene))));
         matIDX.push_back(pMesh->mMaterialIndex);
     }
 
@@ -80,13 +80,13 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<Mesh>& meshes, std::vect
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
 {
     //메쉬 정보 처리
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
-        meshes.push_back(ProcessMesh(pMesh, pScene));
+        meshes.push_back(std::make_shared<Mesh>(ProcessMesh(pMesh, pScene)));
         matIDX.push_back(pMesh->mMaterialIndex);
         boneIDX.push_back(static_cast<int>(bones.size()));
         //std::cout << boneIDX.size() << " : " << pMesh->mName.C_Str() << "[ parent : " << (currentDepth - 1) << " ]" << std::endl;
@@ -117,7 +117,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
     }
 }
 
-void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<SkinningBonePose>& bonePoses, std::vector<Mesh>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy)
+void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<SkinningBone>& bones, std::vector<SkinningBonePose>& bonePoses, std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap, std::vector<CorrectionNode>& correctionMap, const std::unordered_set<std::string>& boneHierarchy)
 {
     std::string nodeName = pNode->mName.C_Str();
     bool isInBoneHierarchy = boneHierarchy.find(nodeName) != boneHierarchy.end();
@@ -150,7 +150,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
-        meshes.push_back(ProcessMesh(pMesh, pScene));
+        meshes.push_back(std::make_shared<Mesh>(ProcessMesh(pMesh, pScene)));
         matIDX.push_back(pMesh->mMaterialIndex);
 
         if (pMesh->HasBones())
@@ -367,7 +367,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
     StaticMesh sMesh;
 
-    std::vector<Mesh> meshes;
+    std::vector<std::shared_ptr<Mesh>> meshes;
     std::vector<UINT> indices;
 
     // 리소스 테이블에 찾는 메쉬가 있는지 체크
@@ -377,10 +377,10 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
 
     for (auto& mesh : meshes)
     {
-        mesh.CreateBuffers(s_pDevice);
+        mesh->CreateBuffers(s_pDevice);
     }
 
-    sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
+    sMesh.SetSubMesh(std::move(meshes));
     sMesh.CalcBBox();
     pStaticMeshRenderer->SetMatRefIndices(std::move(indices));
     pStaticMeshRenderer->SetMesh(std::make_shared<StaticMesh>(std::move(sMesh)));
@@ -414,7 +414,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     auto pRigidMeshRenderer = std::make_unique<RigidMeshRenderer>();
     RigidMesh rMesh;
 
-    std::vector<Mesh> meshes;
+    std::vector<std::shared_ptr<Mesh>> meshes;
     std::vector<UINT> matIndices;
     std::vector<UINT> boneIndices;
     std::vector<RigidBone> rigidBones;
@@ -427,14 +427,14 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
 
     for (auto& mesh : meshes)
     {
-        mesh.CreateBuffers(s_pDevice);
+        mesh->CreateBuffers(s_pDevice);
     }
 
     std::vector<RigidBonePose> rigidBonePoses;
     rigidBonePoses.resize(initRigidBonePoses.size());
     std::memcpy(rigidBonePoses.data(), initRigidBonePoses.data(), sizeof(RigidBonePose) * initRigidBonePoses.size());
 
-    rMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
+    rMesh.SetSubMesh(std::move(meshes));
     rMesh.SetBones(std::move(rigidBones));
     rMesh.SetBoneIndices(std::move(boneIndices));
 
@@ -581,7 +581,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     auto pSkinningMeshRenderer = std::make_unique<SkinningMeshRenderer>();
     SkinningMesh sMesh;
 
-    std::vector<Mesh> meshes;
+    std::vector<std::shared_ptr<Mesh>> meshes;
     std::vector<UINT> matIndices;
     std::vector<SkinningBone> skinningBones;
     std::vector<SkinningBonePose> initSkinningBonePoses;
@@ -607,7 +607,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     // 각 메쉬의 정점 수에 맞춰 내부 벡터 초기화
     for (size_t i = 0; i < meshes.size(); ++i)
     {
-        allMeshBoneData[i].resize(meshes[i].GetVertices().size());
+        allMeshBoneData[i].resize(meshes[i]->GetVertices().size());
     }
 
     for (size_t i = 0; i < correctionMap.size(); i++)
@@ -640,7 +640,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     for (UINT meshIdx = 0; meshIdx < meshes.size(); ++meshIdx)
     {
-        auto& currentMeshVertices = meshes[meshIdx].GetVertices();
+        auto& currentMeshVertices = meshes[meshIdx]->GetVertices();
         auto& meshBoneData = allMeshBoneData[meshIdx];
 
         for (UINT vertIdx = 0; vertIdx < currentMeshVertices.size(); ++vertIdx)
@@ -706,7 +706,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     for (auto& mesh : meshes)
     {
-        mesh.CreateBuffers(s_pDevice);
+        mesh->CreateBuffers(s_pDevice);
     }
 
     for (auto& sbone : skinningBones)
@@ -723,7 +723,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     std::memcpy(skinningBonePoses.data(), initSkinningBonePoses.data(), sizeof(RigidBonePose)* initSkinningBonePoses.size());
 
 
-    sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
+    sMesh.SetSubMesh(std::move(meshes));
     sMesh.SetBones(std::move(skinningBones));
     sMesh.CreateBoneOffsetMatrixBuffer(s_pContext);
     sMesh.CalcBBox();

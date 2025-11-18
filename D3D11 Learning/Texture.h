@@ -5,6 +5,8 @@
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 #include <string>
 
+#include "Resource.h"
+
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
@@ -14,7 +16,7 @@ namespace MyEngine
 	/// 공유 텍스쳐를 위한 메타 데이터 클래스
 	/// 텍스쳐에 대한 참조 접근을 제공
 	/// </summary>
-	class Texture
+	class Texture : public Resource
 	{
 	private:
 		std::string m_name;

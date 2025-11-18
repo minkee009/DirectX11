@@ -9,6 +9,7 @@
 
 #pragma comment(lib, "d3d11.lib")
 
+#include "Resource.h"
 #include "Texture.h"
 
 using namespace DirectX;
@@ -52,7 +53,7 @@ namespace MyEngine
 		Color baseColor;
 	};
 
-	class Material
+	class Material : public Resource
 	{
 	private:	
 		std::string m_name = "";

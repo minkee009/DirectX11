@@ -13,7 +13,7 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
     for (auto& mesh : m_pStaticMesh->GetMeshes())
     {
         if(GetEnabledBindMeshes())
-            mesh.Bind(context);
+            mesh->Bind(context);
 
         auto& mat = m_materials[materialIndices[matCount++]];
         if (GetEnabledBindMaterials())
@@ -38,6 +38,6 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
             && passExcludeIter->second.find(drawCount) != passExcludeIter->second.end())
             continue;
 
-        context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
+        context->DrawIndexed(static_cast<UINT>(mesh->GetIndices().size()), 0, 0);
     }
 }

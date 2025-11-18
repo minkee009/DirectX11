@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include "directxtk/SimpleMath.h"
+#include "Resource.h"
 
 using namespace DirectX::SimpleMath;
 
@@ -101,7 +102,7 @@ namespace MyEngine
 		return Quaternion::Slerp(q0, q1, static_cast<float>(t));
 	}
 
-	struct AnimationClip
+	struct AnimationClip : public Resource
 	{
 		double duration;
 		double frameRate;

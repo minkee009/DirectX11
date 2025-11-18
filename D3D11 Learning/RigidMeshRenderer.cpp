@@ -68,7 +68,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	{
 		RigidBoneMatIdxCB cb2;
 		if(GetEnabledBindMeshes())
-			mesh.Bind(context);
+			mesh->Bind(context);
 		cb2.index = boneIndices[meshCount];
 
 		context->UpdateSubresource(m_boneMatrixIdxCB.Get(), 0, nullptr, &cb2, 0, 0);
@@ -96,7 +96,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 			&& passIter->second.find(meshCount) != passIter->second.end())
 			continue;
 
-		context->DrawIndexed(static_cast<UINT>(mesh.GetIndices().size()), 0, 0);
+		context->DrawIndexed(static_cast<UINT>(mesh->GetIndices().size()), 0, 0);
 	}
 }
 void MyEngine::RigidMeshRenderer::MatrixUpdate()
