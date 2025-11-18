@@ -14,7 +14,7 @@ namespace MyEngine
 	class AssimpConverter
 	{
 	private:
-		static std::unique_ptr<Assimp::Importer> s_importer;
+		static std::unique_ptr<Assimp::Importer> s_pImporter;
 		static uint32_t s_importFlags;
 		static ID3D11Device* s_pDevice;
 		static ID3D11DeviceContext* s_pContext;

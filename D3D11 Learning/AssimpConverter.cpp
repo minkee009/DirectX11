@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <filesystem>
 
-std::unique_ptr<Assimp::Importer> MyEngine::AssimpConverter::s_importer = nullptr;
+std::unique_ptr<Assimp::Importer> MyEngine::AssimpConverter::s_pImporter = nullptr;
 uint32_t MyEngine::AssimpConverter::s_importFlags = 0;
 ID3D11Device* MyEngine::AssimpConverter::s_pDevice = nullptr;
 ID3D11DeviceContext* MyEngine::AssimpConverter::s_pContext = nullptr;
@@ -332,12 +332,12 @@ void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
 {
     s_pContext = context;
     s_pContext->GetDevice(&s_pDevice);
-    s_importer = std::make_unique<Assimp::Importer>();
+    s_pImporter = std::make_unique<Assimp::Importer>();
 }
 
 void MyEngine::AssimpConverter::Release()
 {
-    s_importer.reset();
+    s_pImporter.reset();
     if (s_pDevice)
     {
         s_pDevice->Release();
@@ -356,10 +356,10 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         aiProcess_SortByPType |
         aiProcess_FlipUVs;
 
-    const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
+    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
 
     if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_importer->GetErrorString()));
+        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
     }
 
     auto pRigidMeshRenderer = std::make_unique<RigidMeshRenderer>();
@@ -490,7 +490,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
             }
         }
 
-        pRigidMeshRenderer->SetAnimations(std::move(boneAnimations));
+        pRigidMeshRenderer->SetAnimations(std::make_shared<std::vector<std::unordered_map<UINT, AnimationClip>>>(boneAnimations));
     }
 
 
@@ -515,10 +515,10 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
         aiProcess_FlipUVs;
 
-    const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
+    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
 
     if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_importer->GetErrorString()));
+        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
     }
 
     auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
@@ -557,12 +557,12 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         aiProcess_FlipUVs;
 
     // _$AssimpFbx$Translation, _$AssimpFbx$_PreRotation, _$AssimpFbx$_Rotation 등의 노드 분기 생성 방지
-    s_importer->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+    s_pImporter->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
-    const aiScene* pScene = s_importer->ReadFile(filePath.c_str(), s_importFlags);
+    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
 
     if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_importer->GetErrorString()));
+        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
     }
 
     auto usedBones = CollectUsedBoneNames(pScene);
@@ -820,7 +820,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
             }
         }
 
-        pSkinningMeshRenderer->SetAnimations(std::move(boneAnimations));
+        pSkinningMeshRenderer->SetAnimations(std::make_shared<std::vector<std::unordered_map<UINT, AnimationClip>>>(boneAnimations));
     }
 
 

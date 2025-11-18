@@ -69,7 +69,7 @@ namespace MyEngine
 		// ====== 局聪皋捞记 贸府 ====== //
 	private:
 		bool m_playing = true;
-		std::vector<std::unordered_map<UINT, AnimationClip>> m_boneAnimations;
+		std::shared_ptr<std::vector<std::unordered_map<UINT, AnimationClip>>> m_pBoneAnimations;
 		double m_time = 0;
 		double m_speed = 1.0;
 		UINT m_animationIdx = 0;
@@ -77,7 +77,7 @@ namespace MyEngine
 	public:
 		void AnimationUpdate();
 
-		inline void SetAnimations(std::vector<std::unordered_map<UINT, AnimationClip>>&& animations) { m_boneAnimations = std::move(animations); }
+		inline void SetAnimations(std::shared_ptr<std::vector<std::unordered_map<UINT, AnimationClip>>> animations) { m_pBoneAnimations = animations; }
 
 		void Play();
 		void Pause();
@@ -86,7 +86,7 @@ namespace MyEngine
 		inline void SetSpeed(double speed) { m_speed = speed; }
 		inline void SetAnimationIndex(UINT index) { m_animationIdx = index; }
 
-		inline double GetDuration() const { if (m_boneAnimations.empty()) return 0.0; else return m_boneAnimations[m_animationIdx].begin()->second.duration; }
+		inline double GetDuration() const { if (m_pBoneAnimations->empty()) return 0.0; else return (*m_pBoneAnimations)[m_animationIdx].begin()->second.duration; }
 		inline double GetTime() const { return m_time; }
 		inline double GetSpeed() const { return m_speed; }
 	};

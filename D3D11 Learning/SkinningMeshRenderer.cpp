@@ -139,10 +139,10 @@ void MyEngine::SkinningMeshRenderer::MatrixUpdate()
 
 void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 {
-	if (m_boneAnimations.empty() || !m_playing)
+	if (m_pBoneAnimations->empty() || !m_playing)
 		return;
 
-	auto& anim = m_boneAnimations[m_animationIdx];
+	auto& anim = (*m_pBoneAnimations)[m_animationIdx];
 	auto& bones = m_pSkinningMesh->GetBones();
 	auto& duration = anim.begin()->second.duration;
 
