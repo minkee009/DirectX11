@@ -1034,7 +1034,7 @@ void MyEngine::MyD3DContext::Render()
             DX::Draw(m_batch.get(), obb, Colors::Aqua);
         }
 
-        auto& bones = skinnedMesh->GetSkinningMesh().GetBones();
+        auto& bones = skinnedMesh->GetMesh().GetBones();
         auto& currentBonePoses = skinnedMesh->GetBonePoses();
 
         // 본 드로우

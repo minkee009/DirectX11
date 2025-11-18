@@ -27,7 +27,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 
 	UINT stride = sizeof(DefaultVertex);
 	UINT offset = 0;
-	auto& materialIndices = GetMatRefIndices();
+	auto& materialIndices = m_pSkinningMesh->GetMatRefIndices();
 
 	int meshCount = 0;
 	for (auto& mesh : m_pSkinningMesh->GetMeshes())
@@ -139,10 +139,10 @@ void MyEngine::SkinningMeshRenderer::MatrixUpdate()
 
 void MyEngine::SkinningMeshRenderer::AnimationUpdate()
 {
-	if (m_pBoneAnimations->empty() || !m_playing)
+	if (m_pBoneAnimations.empty() || !m_playing)
 		return;
 
-	auto& anim = (*m_pBoneAnimations)[m_animationIdx];
+	auto& anim = m_pBoneAnimations[m_animationIdx]->channels;
 	auto& bones = m_pSkinningMesh->GetBones();
 	auto& duration = anim.begin()->second.duration;
 

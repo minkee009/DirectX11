@@ -102,7 +102,7 @@ namespace MyEngine
 		return Quaternion::Slerp(q0, q1, static_cast<float>(t));
 	}
 
-	struct AnimationClip : public Resource
+	struct AnimationChannel
 	{
 		double duration;
 		double frameRate;
@@ -110,5 +110,10 @@ namespace MyEngine
 		AnimationCurve<Vector3> pos;
 		AnimationCurve<Quaternion> rot;
 		AnimationCurve<Vector3> scale;
+	};
+
+	struct AnimationClip : public Resource
+	{
+		std::unordered_map<UINT, AnimationChannel> channels;
 	};
 }

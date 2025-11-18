@@ -60,8 +60,8 @@ namespace MyEngine
 		UINT m_textureFlags = 0; // 각 TextureType에 해당하는 bitmask
 		ComPtr<ID3D11Buffer> m_materialCB; // 상수버퍼
 
-		ID3D11VertexShader* m_pVertexShader;
-		ID3D11PixelShader* m_pPixelShader;
+		ID3D11VertexShader* m_pVertexShader = nullptr;
+		ID3D11PixelShader* m_pPixelShader = nullptr;
 
 		std::vector<TextureBinding> m_textures;
 
@@ -86,6 +86,7 @@ namespace MyEngine
 		inline const std::string& GetName() const { return m_name; }
 		inline const Color& GetBaseColor() const { return m_baseColor; }
 
+		inline void SetName(std::string&& name) { m_name = name; }
 		inline void SetBaseColor(const Color& baseColor) { m_hasBaseColor = true; m_baseColor = baseColor; }
 	};
 }

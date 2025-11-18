@@ -36,6 +36,7 @@ namespace MyEngine
 	private:
 		std::vector<SkinningBone> m_bones;
 		std::vector<SkinningBonePose> m_initBonePoses;
+		std::unordered_map<std::string, UINT> m_boneNameToIdxMap;
 		std::unique_ptr<SkinningBoneMatCB> m_pBoneOffsetMatrixData;
 		ComPtr<ID3D11Buffer> m_pBoneOffsetMatrixCB;
 	public:
@@ -46,9 +47,11 @@ namespace MyEngine
 
 		void SetBones(std::vector<SkinningBone>&& bones) { m_bones = std::move(bones); }
 		void SetInitBonePoses(std::vector<SkinningBonePose>&& bonePoses) { m_initBonePoses = std::move(bonePoses); }
-
+		void SetBoneNameToIdxMap(std::unordered_map<std::string, UINT>&& nameMap) { m_boneNameToIdxMap = std::move(nameMap); }
+		
 		inline std::vector<SkinningBone>& GetBones() { return m_bones; }
 		inline std::vector<SkinningBonePose>& GetInitBonePoses() { return m_initBonePoses; }
+		inline std::unordered_map<std::string, UINT>& GetBoneNameToIdxMap() { return m_boneNameToIdxMap; }
 
 		void CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context);
 		inline ID3D11Buffer* GetBoneOffsetMatirxBuffer() { return m_pBoneOffsetMatrixCB.Get(); }
@@ -68,10 +71,10 @@ namespace MyEngine
 	public:
 		SkinningMeshRenderer();
 		~SkinningMeshRenderer();
-		inline void SetSkinningMesh(std::shared_ptr<SkinningMesh> mesh) { m_pSkinningMesh = mesh; }
+		inline void SetMesh(std::shared_ptr<SkinningMesh> mesh) { m_pSkinningMesh = mesh; }
 		inline void SetBonePoses(std::vector<SkinningBonePose>&& poses) { m_bonePoses = std::move(poses); }
 
-		inline SkinningMesh& GetSkinningMesh() { return *m_pSkinningMesh; }
+		inline SkinningMesh& GetMesh() { return *m_pSkinningMesh; }
 		inline const std::vector<SkinningBonePose>& GetBonePoses() const { return m_bonePoses; }
 
 		void CreateBoneModelMatrixBuffer(ID3D11DeviceContext* context);
@@ -86,13 +89,13 @@ namespace MyEngine
 		// ====== 局聪皋捞记 贸府 ====== //
 	private:
 		bool m_playing = true;
-		std::shared_ptr<std::vector<std::unordered_map<UINT, AnimationClip>>> m_pBoneAnimations;
+		std::vector<std::shared_ptr<AnimationClip>> m_pBoneAnimations;
 		double m_time = 0;
 		double m_speed = 1.0;
 		UINT m_animationIdx = 0;
 	public:
 		void AnimationUpdate();
-		inline void SetAnimations(std::shared_ptr<std::vector<std::unordered_map<UINT, AnimationClip>>> animations) { m_pBoneAnimations = animations; }
+		inline void SetAnimations(std::vector<std::shared_ptr<AnimationClip>>&& animations) { m_pBoneAnimations = std::move(animations); }
 
 		void Play();
 		void Pause();
@@ -101,7 +104,7 @@ namespace MyEngine
 		inline void SetSpeed(double speed) { m_speed = speed; }
 		inline void SetAnimationIndex(UINT index) { m_animationIdx = index; }
 
-		inline double GetDuration() const { if (m_pBoneAnimations->empty()) return 0.0; else return (*m_pBoneAnimations)[m_animationIdx].begin()->second.duration; }
+		inline double GetDuration() const { if (m_pBoneAnimations.empty()) return 0.0; else return m_pBoneAnimations[m_animationIdx]->channels.begin()->second.duration; }
 		inline double GetTime() const { return m_time; }
 		inline double GetSpeed() const { return m_speed; }
 	};

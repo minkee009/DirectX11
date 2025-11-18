@@ -49,10 +49,10 @@ void MyEngine::Mesh::CreateBuffers(ID3D11Device* pDevice)
     }
 }
 
-MyEngine::Mesh::Mesh(const std::vector<DefaultVertex>& vertices, const std::vector<UINT>& indices, const BoundingBox& bbox)
-    : m_vertices(vertices)
-    , m_indices(indices)
-    , m_bbox(bbox)
+MyEngine::Mesh::Mesh()
+    : m_vertices()
+    , m_indices()
+    , m_bbox()
 {
 }
 

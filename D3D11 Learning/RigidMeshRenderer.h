@@ -39,16 +39,18 @@ namespace MyEngine
 	private:
 		std::vector<RigidBone> m_bones;
 		std::vector<RigidBonePose> m_initBonePoses;
+		std::unordered_map<std::string, UINT> m_boneNameToIdxMap;
 		std::vector<UINT> m_boneIndices;
 	public:
 		void SetBones(std::vector<RigidBone>&& bones) { m_bones = std::move(bones); }
 		void SetInitBonePoses(std::vector<RigidBonePose>&& bonePoses) { m_initBonePoses = std::move(bonePoses); }
+		void SetBoneIndices(std::vector<UINT>&& indices) { m_boneIndices = std::move(indices); }
+		void SetBoneNameToIdxMap(std::unordered_map<std::string, UINT>&& nameMap) { m_boneNameToIdxMap = std::move(nameMap); }
 
 		inline std::vector<RigidBone>& GetBones() { return m_bones; }
 		inline std::vector<RigidBonePose>& GetInitBonePoses() { return m_initBonePoses; }
-
-		void SetBoneIndices(std::vector<UINT>&& indices) { m_boneIndices = std::move(indices); }
 		inline std::vector<UINT>& GetBoneIndices() { return m_boneIndices; }
+		inline std::unordered_map<std::string, UINT>& GetBoneNameToIdxMap() { return m_boneNameToIdxMap; }
 	};
 
 	class RigidMeshRenderer : public MeshRenderer
@@ -73,7 +75,7 @@ namespace MyEngine
 		// ====== 局聪皋捞记 贸府 ====== //
 	private:
 		bool m_playing = true;
-		std::shared_ptr<std::vector<std::unordered_map<UINT, AnimationClip>>> m_pBoneAnimations;
+		std::vector<std::shared_ptr<AnimationClip>> m_pBoneAnimations;
 		double m_time = 0;
 		double m_speed = 1.0;
 		UINT m_animationIdx = 0;
@@ -81,7 +83,7 @@ namespace MyEngine
 	public:
 		void AnimationUpdate();
 
-		inline void SetAnimations(std::shared_ptr<std::vector<std::unordered_map<UINT, AnimationClip>>> animations) { m_pBoneAnimations = animations; }
+		inline void SetAnimations(std::vector<std::shared_ptr<AnimationClip>>&& animations) { m_pBoneAnimations = std::move(animations); }
 
 		void Play();
 		void Pause();
@@ -90,7 +92,7 @@ namespace MyEngine
 		inline void SetSpeed(double speed) { m_speed = speed; }
 		inline void SetAnimationIndex(UINT index) { m_animationIdx = index; }
 
-		inline double GetDuration() const { if (m_pBoneAnimations->empty()) return 0.0; else return (*m_pBoneAnimations)[m_animationIdx].begin()->second.duration; }
+		inline double GetDuration() const { if (m_pBoneAnimations.empty()) return 0.0; else return m_pBoneAnimations[m_animationIdx]->channels.begin()->second.duration; }
 		inline double GetTime() const { return m_time; }
 		inline double GetSpeed() const { return m_speed; }
 	};

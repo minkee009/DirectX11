@@ -13,8 +13,19 @@ using namespace MyEngine::D3DCTX;
 
 #include "ShaderManager.h"
 #include "TextureManager.h"
+#include "ResourceManager.h"
 
-//#include <iostream>
+// ======== 리소스 매니저와의 연계 , 꼭 읽어 주세요 ========
+// 
+// 
+// 1. 리소스 키는 다음과 같은 규칙으로 생성
+//  -> aiScene 이름 + ai클래스의 mName 
+// 
+// 2. 하위 리소스의 경우 파일 경로로 키 생성 
+//  -> 내부로직에서 embedded리소스였을 경우에만 [클래스 이름]- + 파일경로 형태로 키 생성 
+//
+//
+// ======================================================
 
 std::unordered_set<std::string> MyEngine::AssimpConverter::CollectUsedBoneNames(const aiScene* pScene)
 {
@@ -66,10 +77,23 @@ void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::u
 void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
     //메쉬 정보 처리
+    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
-        meshes.push_back(std::make_shared<Mesh>((ProcessMesh(pMesh, pScene))));
+        std::shared_ptr<Mesh> mesh = nullptr;
+        std::string meshName = "[SubMesh]-" + sceneName + std::string{ pMesh->mName.C_Str() };
+        if (ResourceManager::Get()->Containskey(meshName))
+        {
+            mesh = ResourceManager::Get()->Load<Mesh>(meshName);
+        }
+        else
+        {
+            mesh = ResourceManager::Get()->Load<Mesh>(meshName);
+            ProcessMesh(pMesh, mesh, pScene);
+        }
+
+        meshes.push_back(mesh);
         matIDX.push_back(pMesh->mMaterialIndex);
     }
 
@@ -83,10 +107,23 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& 
 void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
 {
     //메쉬 정보 처리
+    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
-        meshes.push_back(std::make_shared<Mesh>(ProcessMesh(pMesh, pScene)));
+        std::shared_ptr<Mesh> mesh = nullptr;
+        std::string meshName = "[SubMesh]-" + sceneName + std::string{ pMesh->mName.C_Str() };
+        if (ResourceManager::Get()->Containskey(meshName))
+        {
+            mesh = ResourceManager::Get()->Load<Mesh>(meshName);
+        }
+        else
+        {
+            mesh = ResourceManager::Get()->Load<Mesh>(meshName);
+            ProcessMesh(pMesh, mesh, pScene);
+        }
+
+        meshes.push_back(mesh);
         matIDX.push_back(pMesh->mMaterialIndex);
         boneIDX.push_back(static_cast<int>(bones.size()));
         //std::cout << boneIDX.size() << " : " << pMesh->mName.C_Str() << "[ parent : " << (currentDepth - 1) << " ]" << std::endl;
@@ -147,10 +184,23 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
     }
 
     //메쉬 정보 처리
+    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
-        meshes.push_back(std::make_shared<Mesh>(ProcessMesh(pMesh, pScene)));
+        std::shared_ptr<Mesh> mesh = nullptr;
+        std::string meshName = "[SubMesh]-" + sceneName + std::string{pMesh->mName.C_Str()};
+        if (ResourceManager::Get()->Containskey(meshName))
+        {
+            mesh = ResourceManager::Get()->Load<Mesh>(meshName);
+        }
+        else
+        {
+            mesh = ResourceManager::Get()->Load<Mesh>(meshName);
+            ProcessMesh(pMesh, mesh, pScene);
+        }
+
+        meshes.push_back(mesh);
         matIDX.push_back(pMesh->mMaterialIndex);
 
         if (pMesh->HasBones())
@@ -176,7 +226,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
 }
 
 
-MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiScene* pScene)
+void MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, std::shared_ptr<Mesh> resourceMesh, const aiScene* pScene)
 {
     std::vector<DefaultVertex> vertices;
     std::vector<UINT> indices;
@@ -214,33 +264,35 @@ MyEngine::Mesh MyEngine::AssimpConverter::ProcessMesh(aiMesh* pMesh, const aiSce
     BoundingBox bbox;
     BoundingBox::CreateFromPoints(bbox, minPt, maxPt);
 
-    return Mesh(vertices, indices, bbox);
+    resourceMesh->SetVertices(std::move(vertices));
+    resourceMesh->SetIndices(std::move(indices));
+    resourceMesh->SetBBox(std::move(bbox));
 }
 
-MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, const aiScene* pScene, const BoneType& boneType)
+void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_ptr<Material> resourceMat, const aiScene* pScene, const BoneType& boneType)
 {
-    Material mat{ { pMat->GetName().C_Str()} };
+    resourceMat->SetName(pMat->GetName().C_Str());
 
     switch (boneType)
     {
     case BoneType::None:
-        mat.InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader());
+        resourceMat->InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader());
         break;
     case BoneType::RigidBone:
-        mat.InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_RigidBone());
+        resourceMat->InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_RigidBone());
         break;
     case BoneType::SkinningBone:
-        mat.InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+        resourceMat->InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
         break;
     }
 
     switch (s_materialType)
     {
     case LoadMaterialType::BlinnPhong:
-        mat.InitPixelShader(ShaderManager::Get()->GetBlinnPhongPixelShader());
+        resourceMat->InitPixelShader(ShaderManager::Get()->GetBlinnPhongPixelShader());
         break;
     case LoadMaterialType::BlinnPhongToon:
-        mat.InitPixelShader(ShaderManager::Get()->GetBlinnPhongToonPixelShader());
+        resourceMat->InitPixelShader(ShaderManager::Get()->GetBlinnPhongToonPixelShader());
         break;
     }
 
@@ -248,11 +300,11 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
     aiColor4D diffuseColor;
     if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor))
     {
-        mat.SetBaseColor({ diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a });
+        resourceMat->SetBaseColor({ diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a });
     }
     else
     {
-        mat.SetBaseColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        resourceMat->SetBaseColor({ 1.0f, 1.0f, 1.0f, 1.0f });
     }
 
     // ---- Texture 매핑 ---- //
@@ -302,11 +354,21 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
                             formatExt = L"." + std::wstring(hint.begin(), hint.end());
                         }
 
-                        auto matTex = std::make_shared<Texture>();
+                        std::shared_ptr<Texture> matTex = nullptr;
 
-                        matTex->LoadTextureFromMemory(s_pContext, path_str, data, size, formatExt);
+                        std::string embeddedTexPathStr = "[Texture]-" + path_str;
 
-                        mat.InitTexture(myType, slot, matTex);
+                        if (ResourceManager::Get()->Containskey(embeddedTexPathStr))
+                        {
+                            matTex = ResourceManager::Get()->Load<Texture>(embeddedTexPathStr);
+                            resourceMat->InitTexture(myType, slot, matTex);
+                        }
+                        else
+                        {
+                            matTex = ResourceManager::Get()->Load<Texture>(embeddedTexPathStr);
+                            matTex->LoadTextureFromMemory(s_pContext, embeddedTexPathStr, data, size, formatExt);
+                            resourceMat->InitTexture(myType, slot, matTex);
+                        }
                     }
                 }
                 else
@@ -315,17 +377,27 @@ MyEngine::Material MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, 
                     fs::path filename_only = original_path.filename();
                     fs::path final_texPath = base_directory / filename_only;
 
-                    auto matTex = std::make_shared<Texture>();
-                    matTex->LoadTextureFromFile(s_pContext, filename_only.string(),final_texPath.wstring());
-                    mat.InitTexture(myType, slot, matTex);
+                    std::string filenameStr = filename_only.string();
+
+                    std::shared_ptr<Texture> matTex = nullptr;
+
+                    if (ResourceManager::Get()->Containskey(filenameStr))
+                    {
+                        matTex = ResourceManager::Get()->Load<Texture>(filenameStr);
+                        resourceMat->InitTexture(myType, slot, matTex);
+                    }
+                    else
+                    {
+                        matTex = ResourceManager::Get()->Load<Texture>(filenameStr);
+                        matTex->LoadTextureFromFile(s_pContext, filenameStr, final_texPath.wstring());
+                        resourceMat->InitTexture(myType, slot, matTex);
+                    }
                 }
             }
         }
     }
 
-    mat.CreateConstantBuffer(s_pContext);
-
-    return mat;
+    resourceMat->CreateConstantBuffer(s_pContext);
 }
 
 void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
@@ -363,31 +435,56 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
     if (!pScene) {
         throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
     }
+    auto sceneName = std::string{ pScene->mName.C_Str() };
 
     auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
-    StaticMesh sMesh;
+    std::shared_ptr<StaticMesh> sMesh = nullptr;
 
-    std::vector<std::shared_ptr<Mesh>> meshes;
-    std::vector<UINT> indices;
+    std::string meshName = "[StaticMesh]-" + sceneName + filePath;
 
     // 리소스 테이블에 찾는 메쉬가 있는지 체크
-
-    // 없으면 리소스 테이블에 등록한 직 후 노드 돌기 
-    ProcessNode(meshes, indices, pScene->mRootNode, pScene);
-
-    for (auto& mesh : meshes)
+    if (ResourceManager::Get()->Containskey(meshName))
     {
-        mesh->CreateBuffers(s_pDevice);
+        sMesh = ResourceManager::Get()->Load<StaticMesh>(meshName);
+        pStaticMeshRenderer->SetMesh(sMesh);
     }
+    else
+    {
+        sMesh = ResourceManager::Get()->Load<StaticMesh>(meshName);
+        std::vector<std::shared_ptr<Mesh>> meshes;
+        std::vector<UINT> matIndices;
 
-    sMesh.SetSubMesh(std::move(meshes));
-    sMesh.CalcBBox();
-    pStaticMeshRenderer->SetMatRefIndices(std::move(indices));
-    pStaticMeshRenderer->SetMesh(std::make_shared<StaticMesh>(std::move(sMesh)));
+        // 없으면 리소스 테이블에 등록한 직 후 노드 돌기 
+        ProcessNode(meshes, matIndices, pScene->mRootNode, pScene);
+
+        for (auto& mesh : meshes)
+        {
+            mesh->CreateBuffers(s_pDevice);
+        }
+
+        sMesh->SetSubMesh(std::move(meshes));
+        sMesh->CalcBBox();
+        sMesh->SetMatRefIndices(std::move(matIndices));
+        pStaticMeshRenderer->SetMesh(sMesh);
+    }
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pStaticMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::None)));
+        std::string matName = sceneName + std::string{ pScene->mMaterials[i]->GetName().C_Str() };
+
+        std::shared_ptr<Material> mat = nullptr;
+
+        if (ResourceManager::Get()->Containskey(matName))
+        {
+            mat = ResourceManager::Get()->Load<Material>(matName);
+        }
+        else
+        {
+            mat = ResourceManager::Get()->Load<Material>(matName);
+            ProcessMaterial(pScene->mMaterials[i], mat, pScene, BoneType::None);
+        }
+
+        pStaticMeshRenderer->AddMaterial(mat);
     }
 
     return pStaticMeshRenderer;
@@ -411,146 +508,197 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
     }
 
+    auto sceneName = std::string{ pScene->mName.C_Str() };
     auto pRigidMeshRenderer = std::make_unique<RigidMeshRenderer>();
-    RigidMesh rMesh;
 
-    std::vector<std::shared_ptr<Mesh>> meshes;
-    std::vector<UINT> matIndices;
-    std::vector<UINT> boneIndices;
-    std::vector<RigidBone> rigidBones;
-    std::vector<RigidBonePose> initRigidBonePoses;
+    std::shared_ptr<RigidMesh> rMesh = nullptr;
 
+    std::string meshName = "[RigidMesh]-" + sceneName + filePath;
 
-    std::unordered_map <std::string, UINT> nodeNameToIndex;
-
-    ProcessNode(-1, rigidBones, initRigidBonePoses, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
-
-    for (auto& mesh : meshes)
+    // 리소스 테이블에 찾는 메쉬가 있는지 체크
+    if (ResourceManager::Get()->Containskey(meshName))
     {
-        mesh->CreateBuffers(s_pDevice);
+        rMesh = ResourceManager::Get()->Load<RigidMesh>(meshName);
+        pRigidMeshRenderer->SetMesh(rMesh);
+        std::vector<RigidBonePose>& initRigidBonePoses = rMesh->GetInitBonePoses();
+
+        std::vector<RigidBonePose> rigidBonePoses;
+        rigidBonePoses.resize(initRigidBonePoses.size());
+        std::memcpy(rigidBonePoses.data(), initRigidBonePoses.data(), sizeof(RigidBonePose) * initRigidBonePoses.size());
+
+        pRigidMeshRenderer->SetBonePoses(std::move(rigidBonePoses));
+        pRigidMeshRenderer->CreateBoneMatrixBuffer(s_pContext);
     }
+    else
+    {
+        rMesh = ResourceManager::Get()->Load<RigidMesh>(meshName);
+        std::vector<std::shared_ptr<Mesh>> meshes;
+        std::vector<UINT> matIndices;
+        std::vector<UINT> boneIndices;
+        std::vector<RigidBone> rigidBones;
+        std::vector<RigidBonePose> initRigidBonePoses;
 
-    std::vector<RigidBonePose> rigidBonePoses;
-    rigidBonePoses.resize(initRigidBonePoses.size());
-    std::memcpy(rigidBonePoses.data(), initRigidBonePoses.data(), sizeof(RigidBonePose) * initRigidBonePoses.size());
 
-    rMesh.SetSubMesh(std::move(meshes));
-    rMesh.SetBones(std::move(rigidBones));
-    rMesh.SetBoneIndices(std::move(boneIndices));
+        std::unordered_map <std::string, UINT> nodeNameToIndex;
 
-    pRigidMeshRenderer->SetMatRefIndices(std::move(matIndices));
-    pRigidMeshRenderer->SetBonePoses(std::move(rigidBonePoses));
-    pRigidMeshRenderer->SetMesh(std::make_shared<RigidMesh>(std::move(rMesh)));
-    pRigidMeshRenderer->CreateBoneMatrixBuffer(s_pContext);
+        ProcessNode(-1, rigidBones, initRigidBonePoses, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
 
+        for (auto& mesh : meshes)
+        {
+            mesh->CreateBuffers(s_pDevice);
+        }
+
+        std::vector<RigidBonePose> rigidBonePoses;
+        rigidBonePoses.resize(initRigidBonePoses.size());
+        std::memcpy(rigidBonePoses.data(), initRigidBonePoses.data(), sizeof(RigidBonePose) * initRigidBonePoses.size());
+
+        rMesh->SetSubMesh(std::move(meshes));
+        rMesh->SetBones(std::move(rigidBones));
+        rMesh->SetBoneIndices(std::move(boneIndices));
+        rMesh->SetMatRefIndices(std::move(matIndices));
+        rMesh->SetBoneNameToIdxMap(std::move(nodeNameToIndex));
+
+        pRigidMeshRenderer->SetBonePoses(std::move(rigidBonePoses));
+        pRigidMeshRenderer->SetMesh(rMesh);
+        pRigidMeshRenderer->CreateBoneMatrixBuffer(s_pContext);
+    }
 
     if (pScene->HasAnimations())
     {
-        std::vector<std::unordered_map<UINT, AnimationClip>> boneAnimations;
+        std::vector<std::shared_ptr<AnimationClip>> boneAnimations;
         boneAnimations.resize(pScene->mNumAnimations);
+
+        auto& nodeNameToIndex = rMesh->GetBoneNameToIdxMap();
 
         for (UINT i = 0; i < pScene->mNumAnimations; i++)
         {
             auto& animation = pScene->mAnimations[i];
-            //std::cout << animation->mName.C_Str() << std::endl;
-            for (UINT j = 0; j < animation->mNumChannels; j++)
+
+            std::string animationClipName = "[AnimationClip]-" + sceneName + std::string{ animation->mName.C_Str() };
+            std::shared_ptr<AnimationClip> animationClip = nullptr;
+            if (ResourceManager::Get()->Containskey(animationClipName))
             {
-                auto& animNode = animation->mChannels[j];
-
-                //std::cout << "    ->" << animNode->mNodeName.C_Str() << std::endl;
-
-                //if (nodeNameToIndex.find({ animNode->mNodeName.C_Str() }) != nodeNameToIndex.end())
-                //    std::cout << "    nameMatching!" << std::endl;
-
-                auto currentNodeIdx = nodeNameToIndex[{ animNode->mNodeName.C_Str() }];
-                auto& currentAnimationClip = boneAnimations[i][currentNodeIdx];
-                currentAnimationClip.frameRate = animation->mTicksPerSecond;
-                if (animation->mTicksPerSecond != 0.0)
-                    currentAnimationClip.duration = static_cast<float>(animation->mDuration / animation->mTicksPerSecond);
-                else
-                    currentAnimationClip.duration = static_cast<float>(animation->mDuration);
-
-                //std::cout << "        # posKeys : " << animNode->mNumPositionKeys << std::endl;
-                for (UINT k = 0; k < animNode->mNumPositionKeys; k++)
+                animationClip = ResourceManager::Get()->Load<AnimationClip>(animationClipName);
+                boneAnimations[i] = animationClip;
+            }
+            else
+            {
+                animationClip = ResourceManager::Get()->Load<AnimationClip>(animationClipName);
+                for (UINT j = 0; j < animation->mNumChannels; j++)
                 {
-                    const auto& posKey = animNode->mPositionKeys[k];
-                    currentAnimationClip.pos.AddKeyframe(
-                        posKey.mTime,
-                        Vector3
-                        {
-                            static_cast<float>(posKey.mValue.x),
-                            static_cast<float>(posKey.mValue.y),
-                            static_cast<float>(posKey.mValue.z)
-                        }
-                    );
+                    auto& animNode = animation->mChannels[j];
 
-                    //std::cout << "        [pos] - { "
-                    //    << posKey.mValue.x
-                    //    << ", "
-                    //    << posKey.mValue.y
-                    //    << ", "
-                    //    << posKey.mValue.z
-                    //    << "} " << std::endl;
-                }
-                //std::cout << "    ==============================" << std::endl;
-                //std::cout << "        # rotKeys : " << animNode->mNumRotationKeys << std::endl;
-                for (UINT k = 0; k < animNode->mNumRotationKeys; k++)
-                {
-                    const auto& rotKey = animNode->mRotationKeys[k];
-                    currentAnimationClip.rot.AddKeyframe(
-                        rotKey.mTime,
-                        Quaternion
-                        {
-                            static_cast<float>(rotKey.mValue.x),
-                            static_cast<float>(rotKey.mValue.y),
-                            static_cast<float>(rotKey.mValue.z),
-                            static_cast<float>(rotKey.mValue.w)
-                        }
-                    );
+                    //std::cout << animation->mName.C_Str() << std::endl;
 
-                    //std::cout << "        [rot] - { "
-                    //    << animNode->mRotationKeys[k].mValue.x
-                    //    << ", "
-                    //    << animNode->mRotationKeys[j].mValue.y
-                    //    << ", "
-                    //    << animNode->mRotationKeys[j].mValue.z 
-                    //    << ", "
-                    //    << animNode->mRotationKeys[j].mValue.w
-                    //    << "} " << std::endl;
-                }
-                //std::cout << "    ==============================" << std::endl;
-                //std::cout << "        # scaleKeys : " << animNode->mNumScalingKeys << std::endl;
-                for (UINT k = 0; k < animNode->mNumScalingKeys; k++)
-                {
-                    const auto& scaleKey = animNode->mScalingKeys[k];
-                    currentAnimationClip.scale.AddKeyframe(
-                        scaleKey.mTime,
-                        Vector3
-                        {
-                            static_cast<float>(scaleKey.mValue.x),
-                            static_cast<float>(scaleKey.mValue.y),
-                            static_cast<float>(scaleKey.mValue.z)
-                        }
-                    );
+                    //std::cout << "    ->" << animNode->mNodeName.C_Str() << std::endl;
 
-                    //std::cout << "        [scale] - { "
-                    //    << animNode->mScalingKeys[k].mValue.x
-                    //    << ", "
-                    //    << animNode->mScalingKeys[k].mValue.y
-                    //    << ", "
-                    //    << animNode->mScalingKeys[k].mValue.z
-                    //    << "} " << std::endl;
+                    //if (nodeNameToIndex.find({ animNode->mNodeName.C_Str() }) != nodeNameToIndex.end())
+                    //    std::cout << "    nameMatching!" << std::endl;
+
+                    auto currentNodeIdx = nodeNameToIndex[{ animNode->mNodeName.C_Str() }];
+                    auto& currentAnimationClip = animationClip->channels[currentNodeIdx] = {};
+                    currentAnimationClip.frameRate = animation->mTicksPerSecond;
+                    if (animation->mTicksPerSecond != 0.0)
+                        currentAnimationClip.duration = static_cast<float>(animation->mDuration / animation->mTicksPerSecond);
+                    else
+                        currentAnimationClip.duration = static_cast<float>(animation->mDuration);
+
+                    //std::cout << "        # posKeys : " << animNode->mNumPositionKeys << std::endl;
+                    for (UINT k = 0; k < animNode->mNumPositionKeys; k++)
+                    {
+                        const auto& posKey = animNode->mPositionKeys[k];
+                        currentAnimationClip.pos.AddKeyframe(
+                            posKey.mTime,
+                            Vector3
+                            {
+                                static_cast<float>(posKey.mValue.x),
+                                static_cast<float>(posKey.mValue.y),
+                                static_cast<float>(posKey.mValue.z)
+                            }
+                        );
+
+                        //std::cout << "        [pos] - { "
+                        //    << posKey.mValue.x
+                        //    << ", "
+                        //    << posKey.mValue.y
+                        //    << ", "
+                        //    << posKey.mValue.z
+                        //    << "} " << std::endl;
+                    }
+                    //std::cout << "    ==============================" << std::endl;
+                    //std::cout << "        # rotKeys : " << animNode->mNumRotationKeys << std::endl;
+                    for (UINT k = 0; k < animNode->mNumRotationKeys; k++)
+                    {
+                        const auto& rotKey = animNode->mRotationKeys[k];
+                        currentAnimationClip.rot.AddKeyframe(
+                            rotKey.mTime,
+                            Quaternion
+                            {
+                                static_cast<float>(rotKey.mValue.x),
+                                static_cast<float>(rotKey.mValue.y),
+                                static_cast<float>(rotKey.mValue.z),
+                                static_cast<float>(rotKey.mValue.w)
+                            }
+                        );
+
+                        //std::cout << "        [rot] - { "
+                        //    << animNode->mRotationKeys[k].mValue.x
+                        //    << ", "
+                        //    << animNode->mRotationKeys[j].mValue.y
+                        //    << ", "
+                        //    << animNode->mRotationKeys[j].mValue.z
+                        //    << ", "
+                        //    << animNode->mRotationKeys[j].mValue.w
+                        //    << "} " << std::endl;
+                    }
+                    //std::cout << "    ==============================" << std::endl;
+                    //std::cout << "        # scaleKeys : " << animNode->mNumScalingKeys << std::endl;
+                    for (UINT k = 0; k < animNode->mNumScalingKeys; k++)
+                    {
+                        const auto& scaleKey = animNode->mScalingKeys[k];
+                        currentAnimationClip.scale.AddKeyframe(
+                            scaleKey.mTime,
+                            Vector3
+                            {
+                                static_cast<float>(scaleKey.mValue.x),
+                                static_cast<float>(scaleKey.mValue.y),
+                                static_cast<float>(scaleKey.mValue.z)
+                            }
+                        );
+
+                        //std::cout << "        [scale] - { "
+                        //    << animNode->mScalingKeys[k].mValue.x
+                        //    << ", "
+                        //    << animNode->mScalingKeys[k].mValue.y
+                        //    << ", "
+                        //    << animNode->mScalingKeys[k].mValue.z
+                        //    << "} " << std::endl;
+                    }
                 }
             }
+            boneAnimations[i] = animationClip;
         }
 
-        pRigidMeshRenderer->SetAnimations(std::make_shared<std::vector<std::unordered_map<UINT, AnimationClip>>>(boneAnimations));
+        pRigidMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
-
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pRigidMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::RigidBone)));
+        std::string matName = sceneName + std::string{ pScene->mMaterials[i]->GetName().C_Str() };
+
+        std::shared_ptr<Material> mat = nullptr;
+
+        if (ResourceManager::Get()->Containskey(matName))
+        {
+            mat = ResourceManager::Get()->Load<Material>(matName);
+        }
+        else
+        {
+            mat = ResourceManager::Get()->Load<Material>(matName);
+            ProcessMaterial(pScene->mMaterials[i], mat, pScene, BoneType::RigidBone);
+        }
+
+        pRigidMeshRenderer->AddMaterial(mat);
     }
 
     return pRigidMeshRenderer;
@@ -574,273 +722,330 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
     }
 
-    auto usedBones = CollectUsedBoneNames(pScene);
-    std::unordered_set<std::string> boneHierarchy;
-    CollectBoneHierarchy(pScene->mRootNode, usedBones, boneHierarchy);
+    auto sceneName = std::string{ pScene->mName.C_Str() };
+
+
 
     auto pSkinningMeshRenderer = std::make_unique<SkinningMeshRenderer>();
-    SkinningMesh sMesh;
+    std::shared_ptr<SkinningMesh> sMesh = nullptr;
+    std::string meshName = "[SkinningMesh]-" + sceneName + filePath;
 
-    std::vector<std::shared_ptr<Mesh>> meshes;
-    std::vector<UINT> matIndices;
-    std::vector<SkinningBone> skinningBones;
-    std::vector<SkinningBonePose> initSkinningBonePoses;
-    std::vector<CorrectionNode> correctionMap;
-
-    std::unordered_map<std::string, UINT> nodeNameToIndex;
-    ProcessNode(-1, skinningBones, initSkinningBonePoses, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
-
-    struct VertexBoneData
+    if (ResourceManager::Get()->Containskey(meshName))
     {
-        std::vector<std::pair<UINT, float>> boneWeights; // {boneIndex, weight}
-        void AddBoneData(UINT boneIndex, float weight)
-        {
-            //이후 4개만 남기기
-            boneWeights.emplace_back(boneIndex, weight);
-        }
-    };
+        sMesh = ResourceManager::Get()->Load<SkinningMesh>(meshName);
+        pSkinningMeshRenderer->SetMesh(sMesh);
 
-    // [메쉬 인덱스] -> [정점 인덱스] -> [뼈대 데이터 리스트]
-    std::vector<std::vector<VertexBoneData>> allMeshBoneData;
-    allMeshBoneData.resize(meshes.size());
+        std::vector<SkinningBonePose>& initSkinningBonePoses = sMesh->GetInitBonePoses();
 
-    // 각 메쉬의 정점 수에 맞춰 내부 벡터 초기화
-    for (size_t i = 0; i < meshes.size(); ++i)
-    {
-        allMeshBoneData[i].resize(meshes[i]->GetVertices().size());
+
+        std::vector<SkinningBonePose> skinningBonePoses;
+        skinningBonePoses.resize(initSkinningBonePoses.size());
+        std::memcpy(skinningBonePoses.data(), initSkinningBonePoses.data(), sizeof(RigidBonePose) * initSkinningBonePoses.size());
+
+        pSkinningMeshRenderer->SetBonePoses(std::move(skinningBonePoses));
+        pSkinningMeshRenderer->MatrixUpdate();
+        pSkinningMeshRenderer->CreateBoneModelMatrixBuffer(s_pContext);
     }
-
-    for (size_t i = 0; i < correctionMap.size(); i++)
+    else
     {
-        auto& node = correctionMap[i];
-        auto boneName = std::string{ node.pBone->mName.C_Str() };
-        // 이전에 ProcessNode에서 올바르게 설정된 메쉬 인덱스를 사용
-        UINT meshIdx = node.meshIdx;
+        sMesh = ResourceManager::Get()->Load<SkinningMesh>(meshName);
 
-        if (nodeNameToIndex.find(boneName) == nodeNameToIndex.end()) continue;
+        auto usedBones = CollectUsedBoneNames(pScene);
+        std::unordered_set<std::string> boneHierarchy;
+        CollectBoneHierarchy(pScene->mRootNode, usedBones, boneHierarchy);
 
-        UINT boneIdx = nodeNameToIndex[boneName];
+        std::vector<std::shared_ptr<Mesh>> meshes;
+        std::vector<UINT> matIndices;
+        std::vector<SkinningBone> skinningBones;
+        std::vector<SkinningBonePose> initSkinningBonePoses;
+        std::vector<CorrectionNode> correctionMap;
 
-        auto& matrix = node.pBone->mOffsetMatrix;
-        skinningBones[boneIdx].offset = Matrix(
-            matrix.a1, matrix.a2, matrix.a3, matrix.a4,
-            matrix.b1, matrix.b2, matrix.b3, matrix.b4,
-            matrix.c1, matrix.c2, matrix.c3, matrix.c4,
-            matrix.d1, matrix.d2, matrix.d3, matrix.d4
-        );
+        std::unordered_map<std::string, UINT> nodeNameToIndex;
+        ProcessNode(-1, skinningBones, initSkinningBonePoses, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
 
-
-        // 정점 가중치 정보 누적
-        for (UINT j = 0; j < node.pBone->mNumWeights; j++)
+        struct VertexBoneData
         {
-            const auto& weight = node.pBone->mWeights[j];
-            allMeshBoneData[meshIdx][weight.mVertexId].AddBoneData(boneIdx, weight.mWeight);
-        }
-    }
-
-    for (UINT meshIdx = 0; meshIdx < meshes.size(); ++meshIdx)
-    {
-        auto& currentMeshVertices = meshes[meshIdx]->GetVertices();
-        auto& meshBoneData = allMeshBoneData[meshIdx];
-
-        for (UINT vertIdx = 0; vertIdx < currentMeshVertices.size(); ++vertIdx)
-        {
-            auto& vertex = currentMeshVertices[vertIdx];
-            auto& boneData = meshBoneData[vertIdx].boneWeights;
-
-            // 1. 가중치 순으로 내림차순 정렬하여 가장 큰 4개의 뼈대만 선택
-            std::sort(boneData.begin(), boneData.end(), [](const auto& a, const auto& b) {
-                return a.second > b.second;
-                });
-
-            float totalWeight = 0.0f;
-
-            // 2. 최대 4개의 뼈대 인덱스와 가중치를 정점 구조체에 할당
-            for (int i = 0; i < 4; ++i)
+            std::vector<std::pair<UINT, float>> boneWeights; // {boneIndex, weight}
+            void AddBoneData(UINT boneIndex, float weight)
             {
-                if (i < boneData.size())
-                {
-                    vertex.boneIndices[i] = boneData[i].first;
-                    vertex.boneWeights[i] = boneData[i].second;
-                    totalWeight += boneData[i].second;
-
-                }
-                else
-                {
-                    // 4개 미만인 경우 나머지 초기화
-                    vertex.boneIndices[i] = 0;
-                    vertex.boneWeights[i] = 0.0f;
-                }
+                //이후 4개만 남기기
+                boneWeights.emplace_back(boneIndex, weight);
             }
+        };
 
-            // 3. 가중치 정규화 (선택: 합이 1.0이 되도록)
-            if (totalWeight > 0.0f)
+        // [메쉬 인덱스] -> [정점 인덱스] -> [뼈대 데이터 리스트]
+        std::vector<std::vector<VertexBoneData>> allMeshBoneData;
+        allMeshBoneData.resize(meshes.size());
+
+        // 각 메쉬의 정점 수에 맞춰 내부 벡터 초기화
+        for (size_t i = 0; i < meshes.size(); ++i)
+        {
+            allMeshBoneData[i].resize(meshes[i]->GetVertices().size());
+        }
+
+        for (size_t i = 0; i < correctionMap.size(); i++)
+        {
+            auto& node = correctionMap[i];
+            auto boneName = std::string{ node.pBone->mName.C_Str() };
+            // 이전에 ProcessNode에서 올바르게 설정된 메쉬 인덱스를 사용
+            UINT meshIdx = node.meshIdx;
+
+            if (nodeNameToIndex.find(boneName) == nodeNameToIndex.end()) continue;
+
+            UINT boneIdx = nodeNameToIndex[boneName];
+
+            auto& matrix = node.pBone->mOffsetMatrix;
+            skinningBones[boneIdx].offset = Matrix(
+                matrix.a1, matrix.a2, matrix.a3, matrix.a4,
+                matrix.b1, matrix.b2, matrix.b3, matrix.b4,
+                matrix.c1, matrix.c2, matrix.c3, matrix.c4,
+                matrix.d1, matrix.d2, matrix.d3, matrix.d4
+            );
+
+
+            // 정점 가중치 정보 누적
+            for (UINT j = 0; j < node.pBone->mNumWeights; j++)
             {
-                float factor = 1.0f / totalWeight;
+                const auto& weight = node.pBone->mWeights[j];
+                allMeshBoneData[meshIdx][weight.mVertexId].AddBoneData(boneIdx, weight.mWeight);
+            }
+        }
+
+        for (UINT meshIdx = 0; meshIdx < meshes.size(); ++meshIdx)
+        {
+            auto& currentMeshVertices = meshes[meshIdx]->GetVertices();
+            auto& meshBoneData = allMeshBoneData[meshIdx];
+
+            for (UINT vertIdx = 0; vertIdx < currentMeshVertices.size(); ++vertIdx)
+            {
+                auto& vertex = currentMeshVertices[vertIdx];
+                auto& boneData = meshBoneData[vertIdx].boneWeights;
+
+                // 1. 가중치 순으로 내림차순 정렬하여 가장 큰 4개의 뼈대만 선택
+                std::sort(boneData.begin(), boneData.end(), [](const auto& a, const auto& b) {
+                    return a.second > b.second;
+                    });
+
+                float totalWeight = 0.0f;
+
+                // 2. 최대 4개의 뼈대 인덱스와 가중치를 정점 구조체에 할당
                 for (int i = 0; i < 4; ++i)
                 {
-                    vertex.boneWeights[i] *= factor;
-                    auto& currentBone = skinningBones[vertex.boneIndices[i]];
-
-                    if (!currentBone.hasVertex)
+                    if (i < boneData.size())
                     {
-                        currentBone.hasVertex = true;
+                        vertex.boneIndices[i] = boneData[i].first;
+                        vertex.boneWeights[i] = boneData[i].second;
+                        totalWeight += boneData[i].second;
 
-                        XMVECTOR pos = XMLoadFloat3(&vertex.position);
-                        BoundingBox::CreateFromPoints(currentBone.bbox, pos, pos);
                     }
                     else
                     {
-                        // 기존 박스와 병합
-                        BoundingBox temp;
-                        XMVECTOR pos = XMLoadFloat3(&vertex.position);
-                        BoundingBox::CreateFromPoints(temp, pos, pos);
-                        BoundingBox::CreateMerged(currentBone.bbox, currentBone.bbox, temp);
+                        // 4개 미만인 경우 나머지 초기화
+                        vertex.boneIndices[i] = 0;
+                        vertex.boneWeights[i] = 0.0f;
                     }
                 }
+
+                // 3. 가중치 정규화 (선택: 합이 1.0이 되도록)
+                if (totalWeight > 0.0f)
+                {
+                    float factor = 1.0f / totalWeight;
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        vertex.boneWeights[i] *= factor;
+                        auto& currentBone = skinningBones[vertex.boneIndices[i]];
+
+                        if (!currentBone.hasVertex)
+                        {
+                            currentBone.hasVertex = true;
+
+                            XMVECTOR pos = XMLoadFloat3(&vertex.position);
+                            BoundingBox::CreateFromPoints(currentBone.bbox, pos, pos);
+                        }
+                        else
+                        {
+                            // 기존 박스와 병합
+                            BoundingBox temp;
+                            XMVECTOR pos = XMLoadFloat3(&vertex.position);
+                            BoundingBox::CreateFromPoints(temp, pos, pos);
+                            BoundingBox::CreateMerged(currentBone.bbox, currentBone.bbox, temp);
+                        }
+                    }
+                }
+
+                // 4. 초기화되지 않은 나머지 배열 요소는 0으로 보장 (VertexType 정의 시 초기화하는 것이 좋음)
             }
-
-            // 4. 초기화되지 않은 나머지 배열 요소는 0으로 보장 (VertexType 정의 시 초기화하는 것이 좋음)
         }
+
+        for (auto& mesh : meshes)
+        {
+            mesh->CreateBuffers(s_pDevice);
+        }
+
+        for (auto& sbone : skinningBones)
+        {
+            if (!sbone.hasVertex)
+                continue;
+
+            auto& bbox = sbone.bbox;
+            bbox.Transform(bbox, sbone.offset.Transpose());
+        }
+
+        std::vector<SkinningBonePose> skinningBonePoses;
+        skinningBonePoses.resize(initSkinningBonePoses.size());
+        std::memcpy(skinningBonePoses.data(), initSkinningBonePoses.data(), sizeof(RigidBonePose) * initSkinningBonePoses.size());
+
+
+        sMesh->SetSubMesh(std::move(meshes));
+        sMesh->SetBones(std::move(skinningBones));
+        sMesh->CreateBoneOffsetMatrixBuffer(s_pContext);
+        sMesh->CalcBBox();
+        sMesh->SetMatRefIndices(std::move(matIndices));
+        sMesh->SetBoneNameToIdxMap(std::move(nodeNameToIndex));
+
+        pSkinningMeshRenderer->SetMesh(sMesh);
+        pSkinningMeshRenderer->SetBonePoses(std::move(skinningBonePoses));
+        pSkinningMeshRenderer->MatrixUpdate();
+        pSkinningMeshRenderer->CreateBoneModelMatrixBuffer(s_pContext);
     }
 
-    for (auto& mesh : meshes)
-    {
-        mesh->CreateBuffers(s_pDevice);
-    }
-
-    for (auto& sbone : skinningBones)
-    {
-        if (!sbone.hasVertex)
-            continue;
-
-        auto& bbox = sbone.bbox;
-        bbox.Transform(bbox, sbone.offset.Transpose());
-    }
-
-    std::vector<SkinningBonePose> skinningBonePoses;
-    skinningBonePoses.resize(initSkinningBonePoses.size());
-    std::memcpy(skinningBonePoses.data(), initSkinningBonePoses.data(), sizeof(RigidBonePose)* initSkinningBonePoses.size());
-
-
-    sMesh.SetSubMesh(std::move(meshes));
-    sMesh.SetBones(std::move(skinningBones));
-    sMesh.CreateBoneOffsetMatrixBuffer(s_pContext);
-    sMesh.CalcBBox();
-
-    pSkinningMeshRenderer->SetSkinningMesh(std::make_shared<SkinningMesh>(std::move(sMesh)));
-    pSkinningMeshRenderer->SetMatRefIndices(std::move(matIndices));
-    pSkinningMeshRenderer->SetBonePoses(std::move(skinningBonePoses));
-    pSkinningMeshRenderer->MatrixUpdate();
-    pSkinningMeshRenderer->CreateBoneModelMatrixBuffer(s_pContext);
+   
 
     if (pScene->HasAnimations())
     {
-        std::vector<std::unordered_map<UINT, AnimationClip>> boneAnimations;
+        std::vector<std::shared_ptr<AnimationClip>> boneAnimations;
         boneAnimations.resize(pScene->mNumAnimations);
+
+        auto& nodeNameToIndex = sMesh->GetBoneNameToIdxMap();
 
         for (UINT i = 0; i < pScene->mNumAnimations; i++)
         {
             auto& animation = pScene->mAnimations[i];
-            //std::cout << animation->mName.C_Str() << std::endl;
-            for (UINT j = 0; j < animation->mNumChannels; j++)
+
+            std::string animationClipName = "[AnimationClip]-" + sceneName + std::string{ animation->mName.C_Str() };
+            std::shared_ptr<AnimationClip> animationClip = nullptr;
+            if (ResourceManager::Get()->Containskey(animationClipName))
             {
-                auto& animNode = animation->mChannels[j];
-
-                //std::cout << "    ->" << animNode->mNodeName.C_Str() << std::endl;
-
-                //if (nodeNameToIndex.find({ animNode->mNodeName.C_Str() }) != nodeNameToIndex.end())
-                //    std::cout << "    nameMatching!" << std::endl;
-
-                auto currentNodeIdx = nodeNameToIndex[{ animNode->mNodeName.C_Str() }];
-                auto& currentAnimationClip = boneAnimations[i][currentNodeIdx];
-                currentAnimationClip.frameRate = animation->mTicksPerSecond;
-                if (animation->mTicksPerSecond != 0.0)
-                    currentAnimationClip.duration = static_cast<float>(animation->mDuration / animation->mTicksPerSecond);
-                else
-                    currentAnimationClip.duration = static_cast<float>(animation->mDuration);
-
-                //std::cout << "        # posKeys : " << animNode->mNumPositionKeys << std::endl;
-                for (UINT k = 0; k < animNode->mNumPositionKeys; k++)
+                animationClip = ResourceManager::Get()->Load<AnimationClip>(animationClipName);
+                boneAnimations[i] = animationClip;
+            }
+            else
+            {
+                animationClip = ResourceManager::Get()->Load<AnimationClip>(animationClipName);
+                for (UINT j = 0; j < animation->mNumChannels; j++)
                 {
-                    const auto& posKey = animNode->mPositionKeys[k];
-                    currentAnimationClip.pos.AddKeyframe(
-                        posKey.mTime,
-                        Vector3
-                        {
-                            static_cast<float>(posKey.mValue.x),
-                            static_cast<float>(posKey.mValue.y),
-                            static_cast<float>(posKey.mValue.z)
-                        }
-                    );
+                    auto& animNode = animation->mChannels[j];
 
-                    //std::cout << "        [pos] - { "
-                    //    << posKey.mValue.x
-                    //    << ", "
-                    //    << posKey.mValue.y
-                    //    << ", "
-                    //    << posKey.mValue.z
-                    //    << "} " << std::endl;
-                }
-                //std::cout << "    ==============================" << std::endl;
-                //std::cout << "        # rotKeys : " << animNode->mNumRotationKeys << std::endl;
-                for (UINT k = 0; k < animNode->mNumRotationKeys; k++)
-                {
-                    const auto& rotKey = animNode->mRotationKeys[k];
-                    currentAnimationClip.rot.AddKeyframe(
-                        rotKey.mTime,
-                        Quaternion
-                        {
-                            static_cast<float>(rotKey.mValue.x),
-                            static_cast<float>(rotKey.mValue.y),
-                            static_cast<float>(rotKey.mValue.z),
-                            static_cast<float>(rotKey.mValue.w)
-                        }
-                    );
+                    //std::cout << animation->mName.C_Str() << std::endl;
 
-                    //std::cout << "        [rot] - { "
-                    //    << animNode->mRotationKeys[k].mValue.x
-                    //    << ", "
-                    //    << animNode->mRotationKeys[j].mValue.y
-                    //    << ", "
-                    //    << animNode->mRotationKeys[j].mValue.z
-                    //    << ", "
-                    //    << animNode->mRotationKeys[j].mValue.w
-                    //    << "} " << std::endl;
-                }
-                //std::cout << "    ==============================" << std::endl;
-                //std::cout << "        # scaleKeys : " << animNode->mNumScalingKeys << std::endl;
-                for (UINT k = 0; k < animNode->mNumScalingKeys; k++)
-                {
-                    const auto& scaleKey = animNode->mScalingKeys[k];
-                    currentAnimationClip.scale.AddKeyframe(
-                        scaleKey.mTime,
-                        Vector3
-                        {
-                            static_cast<float>(scaleKey.mValue.x),
-                            static_cast<float>(scaleKey.mValue.y),
-                            static_cast<float>(scaleKey.mValue.z)
-                        }
-                    );
+                    //std::cout << "    ->" << animNode->mNodeName.C_Str() << std::endl;
 
-                    //std::cout << "        [scale] - { "
-                    //    << animNode->mScalingKeys[k].mValue.x
-                    //    << ", "
-                    //    << animNode->mScalingKeys[k].mValue.y
-                    //    << ", "
-                    //    << animNode->mScalingKeys[k].mValue.z
-                    //    << "} " << std::endl;
+                    //if (nodeNameToIndex.find({ animNode->mNodeName.C_Str() }) != nodeNameToIndex.end())
+                    //    std::cout << "    nameMatching!" << std::endl;
+
+                    auto currentNodeIdx = nodeNameToIndex[{ animNode->mNodeName.C_Str() }];
+                    auto& currentAnimationClip = animationClip->channels[currentNodeIdx] = {};
+                    currentAnimationClip.frameRate = animation->mTicksPerSecond;
+                    if (animation->mTicksPerSecond != 0.0)
+                        currentAnimationClip.duration = static_cast<float>(animation->mDuration / animation->mTicksPerSecond);
+                    else
+                        currentAnimationClip.duration = static_cast<float>(animation->mDuration);
+
+                    //std::cout << "        # posKeys : " << animNode->mNumPositionKeys << std::endl;
+                    for (UINT k = 0; k < animNode->mNumPositionKeys; k++)
+                    {
+                        const auto& posKey = animNode->mPositionKeys[k];
+                        currentAnimationClip.pos.AddKeyframe(
+                            posKey.mTime,
+                            Vector3
+                            {
+                                static_cast<float>(posKey.mValue.x),
+                                static_cast<float>(posKey.mValue.y),
+                                static_cast<float>(posKey.mValue.z)
+                            }
+                        );
+
+                        //std::cout << "        [pos] - { "
+                        //    << posKey.mValue.x
+                        //    << ", "
+                        //    << posKey.mValue.y
+                        //    << ", "
+                        //    << posKey.mValue.z
+                        //    << "} " << std::endl;
+                    }
+                    //std::cout << "    ==============================" << std::endl;
+                    //std::cout << "        # rotKeys : " << animNode->mNumRotationKeys << std::endl;
+                    for (UINT k = 0; k < animNode->mNumRotationKeys; k++)
+                    {
+                        const auto& rotKey = animNode->mRotationKeys[k];
+                        currentAnimationClip.rot.AddKeyframe(
+                            rotKey.mTime,
+                            Quaternion
+                            {
+                                static_cast<float>(rotKey.mValue.x),
+                                static_cast<float>(rotKey.mValue.y),
+                                static_cast<float>(rotKey.mValue.z),
+                                static_cast<float>(rotKey.mValue.w)
+                            }
+                        );
+
+                        //std::cout << "        [rot] - { "
+                        //    << animNode->mRotationKeys[k].mValue.x
+                        //    << ", "
+                        //    << animNode->mRotationKeys[j].mValue.y
+                        //    << ", "
+                        //    << animNode->mRotationKeys[j].mValue.z
+                        //    << ", "
+                        //    << animNode->mRotationKeys[j].mValue.w
+                        //    << "} " << std::endl;
+                    }
+                    //std::cout << "    ==============================" << std::endl;
+                    //std::cout << "        # scaleKeys : " << animNode->mNumScalingKeys << std::endl;
+                    for (UINT k = 0; k < animNode->mNumScalingKeys; k++)
+                    {
+                        const auto& scaleKey = animNode->mScalingKeys[k];
+                        currentAnimationClip.scale.AddKeyframe(
+                            scaleKey.mTime,
+                            Vector3
+                            {
+                                static_cast<float>(scaleKey.mValue.x),
+                                static_cast<float>(scaleKey.mValue.y),
+                                static_cast<float>(scaleKey.mValue.z)
+                            }
+                        );
+
+                        //std::cout << "        [scale] - { "
+                        //    << animNode->mScalingKeys[k].mValue.x
+                        //    << ", "
+                        //    << animNode->mScalingKeys[k].mValue.y
+                        //    << ", "
+                        //    << animNode->mScalingKeys[k].mValue.z
+                        //    << "} " << std::endl;
+                    }
                 }
             }
+            boneAnimations[i] = animationClip;
         }
 
-        pSkinningMeshRenderer->SetAnimations(std::make_shared<std::vector<std::unordered_map<UINT, AnimationClip>>>(boneAnimations));
+        pSkinningMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
-
 
     for (UINT i = 0; i < pScene->mNumMaterials; i++)
     {
-        pSkinningMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::SkinningBone)));
+        std::string matName = sceneName + std::string{ pScene->mMaterials[i]->GetName().C_Str() };
+
+        std::shared_ptr<Material> mat = nullptr;
+
+        if (ResourceManager::Get()->Containskey(matName))
+        {
+            mat = ResourceManager::Get()->Load<Material>(matName);
+        }
+        else
+        {
+            mat = ResourceManager::Get()->Load<Material>(matName);
+            ProcessMaterial(pScene->mMaterials[i], mat, pScene, BoneType::SkinningBone);
+        }
+        pSkinningMeshRenderer->AddMaterial(mat);
     }
 
     return pSkinningMeshRenderer;

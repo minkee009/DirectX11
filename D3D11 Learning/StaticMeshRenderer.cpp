@@ -8,7 +8,7 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
     int matCount = 0;
     int drawCount = 0;
 
-    auto& materialIndices = GetMatRefIndices();
+    auto& materialIndices = m_pStaticMesh->GetMatRefIndices();
 
     for (auto& mesh : m_pStaticMesh->GetMeshes())
     {

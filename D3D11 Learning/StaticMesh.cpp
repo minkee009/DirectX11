@@ -11,6 +11,7 @@ MyEngine::StaticMesh::StaticMesh(StaticMesh&& other) noexcept
 	: m_subMeshes(std::move(other.m_subMeshes))
 	, m_bbox(std::move(other.m_bbox))
 	, m_isBBoxCalculated(std::move(other.m_isBBoxCalculated))
+	, m_matRefIndices(std::move(other.m_matRefIndices))
 {
 }
 

@@ -62,7 +62,7 @@ void MyEngine::RigidMeshRenderer::Draw(ID3D11DeviceContext* context)
 	int meshCount = 0;
 	auto& boneIndices = m_pRigidMesh->GetBoneIndices();
 
-	auto& materialIndices = GetMatRefIndices();
+	auto& materialIndices = m_pRigidMesh->GetMatRefIndices();
 
 	for (auto& mesh : m_pRigidMesh->GetMeshes())
 	{
@@ -123,10 +123,10 @@ void MyEngine::RigidMeshRenderer::MatrixUpdate()
 
 void MyEngine::RigidMeshRenderer::AnimationUpdate()
 {
-	if (m_pBoneAnimations->empty() || !m_playing)
+	if (m_pBoneAnimations.empty() || !m_playing)
 		return;
 
-	auto& anim = (*m_pBoneAnimations)[m_animationIdx];
+	auto& anim = m_pBoneAnimations[m_animationIdx]->channels;
 	auto& bones = m_pRigidMesh->GetBones();
 	auto& duration = anim.begin()->second.duration;
 
