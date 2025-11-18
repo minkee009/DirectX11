@@ -35,6 +35,7 @@ namespace MyEngine
 	{
 	private:
 		std::vector<SkinningBone> m_bones;
+		std::vector<SkinningBonePose> m_initBonePoses;
 		std::unique_ptr<SkinningBoneMatCB> m_pBoneOffsetMatrixData;
 		ComPtr<ID3D11Buffer> m_pBoneOffsetMatrixCB;
 	public:
@@ -44,7 +45,10 @@ namespace MyEngine
 		SkinningMesh(SkinningMesh&& other) noexcept;
 
 		void SetBones(std::vector<SkinningBone>&& bones) { m_bones = std::move(bones); }
+		void SetInitBonePoses(std::vector<SkinningBonePose>&& bonePoses) { m_initBonePoses = std::move(bonePoses); }
+
 		inline std::vector<SkinningBone>& GetBones() { return m_bones; }
+		inline std::vector<SkinningBonePose>& GetInitBonePoses() { return m_initBonePoses; }
 
 		void CreateBoneOffsetMatrixBuffer(ID3D11DeviceContext* context);
 		inline ID3D11Buffer* GetBoneOffsetMatirxBuffer() { return m_pBoneOffsetMatrixCB.Get(); }

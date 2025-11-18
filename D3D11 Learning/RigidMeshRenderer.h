@@ -38,10 +38,15 @@ namespace MyEngine
 	{
 	private:
 		std::vector<RigidBone> m_bones;
+		std::vector<RigidBonePose> m_initBonePoses;
 		std::vector<UINT> m_boneIndices;
 	public:
 		void SetBones(std::vector<RigidBone>&& bones) { m_bones = std::move(bones); }
+		void SetInitBonePoses(std::vector<RigidBonePose>&& bonePoses) { m_initBonePoses = std::move(bonePoses); }
+
 		inline std::vector<RigidBone>& GetBones() { return m_bones; }
+		inline std::vector<RigidBonePose>& GetInitBonePoses() { return m_initBonePoses; }
+
 		void SetBoneIndices(std::vector<UINT>&& indices) { m_boneIndices = std::move(indices); }
 		inline std::vector<UINT>& GetBoneIndices() { return m_boneIndices; }
 	};
@@ -50,7 +55,6 @@ namespace MyEngine
 	{
 	private:
 		std::shared_ptr<RigidMesh> m_pRigidMesh;
-		
 		std::vector<RigidBonePose> m_bonePoses;
 		ComPtr<ID3D11Buffer> m_boneMatrixCB;
 		ComPtr<ID3D11Buffer> m_boneMatrixIdxCB;

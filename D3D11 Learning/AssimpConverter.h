@@ -40,8 +40,8 @@ namespace MyEngine
 
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
-		static std::unique_ptr<RigidMeshRenderer> LoadRigidMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<StaticMeshRenderer> LoadStaticMeshRendererFromFile(std::string filePath);
+		static std::unique_ptr<RigidMeshRenderer> LoadRigidMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<SkinningMeshRenderer> LoadSkinningMeshRendererFromFile(std::string filePath);
 		static void SetLoadMaterialType(LoadMaterialType type);
 

@@ -345,6 +345,55 @@ void MyEngine::AssimpConverter::Release()
     }
 }
 
+std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticMeshRendererFromFile(std::string filePath)
+{
+    //importFlag 세팅
+    s_importFlags = aiProcess_Triangulate |    // vertex 삼각형 으로 출력
+        aiProcess_GenNormals |        // Normal 정보 생성  
+        aiProcess_GenUVCoords |      // 텍스처 좌표 생성
+        aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
+        aiProcess_JoinIdenticalVertices |  // 중복 정점 제거
+        aiProcess_ValidateDataStructure | // 구조 검증
+        //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
+        aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
+        aiProcess_FlipUVs;
+
+    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
+
+    if (!pScene) {
+        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
+    }
+
+    auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
+    StaticMesh sMesh;
+
+    std::vector<Mesh> meshes;
+    std::vector<UINT> indices;
+
+    // 리소스 테이블에 찾는 메쉬가 있는지 체크
+
+    // 없으면 리소스 테이블에 등록한 직 후 노드 돌기 
+    ProcessNode(meshes, indices, pScene->mRootNode, pScene);
+
+    for (auto& mesh : meshes)
+    {
+        mesh.CreateBuffers(s_pDevice);
+    }
+
+    sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
+    sMesh.CalcBBox();
+    pStaticMeshRenderer->SetMatRefIndices(std::move(indices));
+    pStaticMeshRenderer->SetMesh(std::make_shared<StaticMesh>(std::move(sMesh)));
+
+    for (UINT i = 0; i < pScene->mNumMaterials; i++)
+    {
+        pStaticMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::None)));
+    }
+
+    return pStaticMeshRenderer;
+}
+
+
 std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigidMeshRendererFromFile(std::string filePath)
 {
     //importFlag 세팅
@@ -369,16 +418,21 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     std::vector<UINT> matIndices;
     std::vector<UINT> boneIndices;
     std::vector<RigidBone> rigidBones;
-    std::vector<RigidBonePose> rigidBonePoses;
+    std::vector<RigidBonePose> initRigidBonePoses;
+
 
     std::unordered_map <std::string, UINT> nodeNameToIndex;
 
-    ProcessNode(-1, rigidBones, rigidBonePoses, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
+    ProcessNode(-1, rigidBones, initRigidBonePoses, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
 
     for (auto& mesh : meshes)
     {
         mesh.CreateBuffers(s_pDevice);
     }
+
+    std::vector<RigidBonePose> rigidBonePoses;
+    rigidBonePoses.resize(initRigidBonePoses.size());
+    std::memcpy(rigidBonePoses.data(), initRigidBonePoses.data(), sizeof(RigidBonePose) * initRigidBonePoses.size());
 
     rMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     rMesh.SetBones(std::move(rigidBones));
@@ -502,51 +556,6 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
     return pRigidMeshRenderer;
 }
 
-std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticMeshRendererFromFile(std::string filePath)
-{
-    //importFlag 세팅
-    s_importFlags = aiProcess_Triangulate |    // vertex 삼각형 으로 출력
-        aiProcess_GenNormals |        // Normal 정보 생성  
-        aiProcess_GenUVCoords |      // 텍스처 좌표 생성
-        aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
-        aiProcess_JoinIdenticalVertices |  // 중복 정점 제거
-        aiProcess_ValidateDataStructure | // 구조 검증
-        //aiProcess_ConvertToLeftHanded |  // DX용 왼손좌표계 변환 <- 제외사유 : SimpleMath로 구현한 트랜스폼 클래스 때문에 이미 오른손좌표계임
-        aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
-        aiProcess_FlipUVs;
-
-    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
-
-    if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
-    }
-
-    auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
-    StaticMesh sMesh;
-
-    std::vector<Mesh> meshes;
-    std::vector<UINT> indices;
-
-    ProcessNode(meshes, indices, pScene->mRootNode, pScene);
-
-    for (auto& mesh : meshes)
-    {
-        mesh.CreateBuffers(s_pDevice);
-    }
-
-    sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
-    sMesh.CalcBBox();
-    pStaticMeshRenderer->SetMatRefIndices(std::move(indices));
-    pStaticMeshRenderer->SetMesh(std::make_shared<StaticMesh>(std::move(sMesh)));
-
-    for (UINT i = 0; i < pScene->mNumMaterials; i++)
-    {
-        pStaticMeshRenderer->AddMaterial(std::make_shared<Material>(ProcessMaterial(pScene->mMaterials[i], pScene, BoneType::None)));
-    }
-
-    return pStaticMeshRenderer;
-}
-
 std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadSkinningMeshRendererFromFile(std::string filePath)
 {
     // importFlag 세팅
@@ -575,11 +584,11 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     std::vector<Mesh> meshes;
     std::vector<UINT> matIndices;
     std::vector<SkinningBone> skinningBones;
-    std::vector<SkinningBonePose> skinningBonePosess;
+    std::vector<SkinningBonePose> initSkinningBonePoses;
     std::vector<CorrectionNode> correctionMap;
 
     std::unordered_map<std::string, UINT> nodeNameToIndex;
-    ProcessNode(-1, skinningBones, skinningBonePosess, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
+    ProcessNode(-1, skinningBones, initSkinningBonePoses, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
 
     struct VertexBoneData
     {
@@ -709,6 +718,11 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         bbox.Transform(bbox, sbone.offset.Transpose());
     }
 
+    std::vector<SkinningBonePose> skinningBonePoses;
+    skinningBonePoses.resize(initSkinningBonePoses.size());
+    std::memcpy(skinningBonePoses.data(), initSkinningBonePoses.data(), sizeof(RigidBonePose)* initSkinningBonePoses.size());
+
+
     sMesh.SetSubMesh(std::make_shared<std::vector<Mesh>>(meshes));
     sMesh.SetBones(std::move(skinningBones));
     sMesh.CreateBoneOffsetMatrixBuffer(s_pContext);
@@ -716,7 +730,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
     pSkinningMeshRenderer->SetSkinningMesh(std::make_shared<SkinningMesh>(std::move(sMesh)));
     pSkinningMeshRenderer->SetMatRefIndices(std::move(matIndices));
-    pSkinningMeshRenderer->SetBonePoses(std::move(skinningBonePosess));
+    pSkinningMeshRenderer->SetBonePoses(std::move(skinningBonePoses));
     pSkinningMeshRenderer->MatrixUpdate();
     pSkinningMeshRenderer->CreateBoneModelMatrixBuffer(s_pContext);
 
