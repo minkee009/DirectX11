@@ -828,14 +828,14 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
                 auto& vertex = currentMeshVertices[vertIdx];
                 auto& boneData = meshBoneData[vertIdx].boneWeights;
 
-                // 1. 가중치 순으로 내림차순 정렬하여 가장 큰 4개의 뼈대만 선택
+                // 가중치 순으로 내림차순 정렬하여 가장 큰 4개의 뼈대만 선택
                 std::sort(boneData.begin(), boneData.end(), [](const auto& a, const auto& b) {
                     return a.second > b.second;
                     });
 
                 float totalWeight = 0.0f;
 
-                // 2. 최대 4개의 뼈대 인덱스와 가중치를 정점 구조체에 할당
+                // 최대 4개의 뼈대 인덱스와 가중치를 정점 구조체에 할당
                 for (int i = 0; i < 4; ++i)
                 {
                     if (i < boneData.size())
@@ -853,7 +853,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
                     }
                 }
 
-                // 3. 가중치 정규화 (선택: 합이 1.0이 되도록)
+                // 가중치 정규화
                 if (totalWeight > 0.0f)
                 {
                     float factor = 1.0f / totalWeight;
@@ -879,8 +879,6 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
                         }
                     }
                 }
-
-                // 4. 초기화되지 않은 나머지 배열 요소는 0으로 보장 (VertexType 정의 시 초기화하는 것이 좋음)
             }
         }
 
