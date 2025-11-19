@@ -2,7 +2,37 @@
 //#ifdef _DEBUG
 
 #include <Windows.h>
+#include <psapi.h>
 #include <d3d11.h>
+#include <wrl/client.h> 
+#include <dxgi1_3.h>
+#include <dxgi1_4.h>
+
+using Microsoft::WRL::ComPtr;
+
+namespace DebugStatusUI
+{
+	
+	struct DRamDebugData
+	{
+		bool isValidData = false;
+		SIZE_T workingSet;
+		SIZE_T privateBytes;
+		SIZE_T PagefileUsage;
+		SYSTEM_INFO si;
+		SIZE_T pageSize;
+	};
+	
+	struct GPURamDebugData
+	{
+		bool isValidData = false;
+		double usage;
+		double page;
+	};
+
+	DRamDebugData GetCpuMemoryUsage();
+	GPURamDebugData QueryGpuMemory(ComPtr<ID3D11Device> d3dDevice);
+}
 
 namespace MyEngine 
 {

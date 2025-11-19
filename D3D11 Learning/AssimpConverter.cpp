@@ -3,10 +3,10 @@
 #include <stdexcept>
 #include <filesystem>
 
-std::unique_ptr<Assimp::Importer> MyEngine::AssimpConverter::s_pImporter = nullptr;
 uint32_t MyEngine::AssimpConverter::s_importFlags = 0;
 ID3D11Device* MyEngine::AssimpConverter::s_pDevice = nullptr;
 ID3D11DeviceContext* MyEngine::AssimpConverter::s_pContext = nullptr;
+std::vector<std::shared_ptr<MyEngine::AssimpModel>> MyEngine::AssimpConverter::s_loadedModels;
 
 namespace fs = std::filesystem;
 using namespace MyEngine::D3DCTX;
@@ -404,18 +404,10 @@ void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
 {
     s_pContext = context;
     s_pContext->GetDevice(&s_pDevice);
-    s_pImporter = std::make_unique<Assimp::Importer>();
-
-    // 글로벌 스케일 5배
-    s_pImporter->SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 5.0f);
-
-    // _$AssimpFbx$Translation, _$AssimpFbx$_PreRotation, _$AssimpFbx$_Rotation 등의 노드 분기 생성 방지
-    s_pImporter->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 }
 
 void MyEngine::AssimpConverter::Release()
 {
-    s_pImporter.reset();
     if (s_pDevice)
     {
         s_pDevice->Release();
@@ -438,12 +430,27 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         aiProcess_PreTransformVertices |  // 노드의 변환행렬을 적용한 버텍스 생성한다.  *StaticMesh로 처리할때만
         aiProcess_FlipUVs;
 
-    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
+    std::string fileName = "[Model]-" + std::string{ filePath.c_str() };
 
-    if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
+    std::shared_ptr<AssimpModel> model = nullptr;
+    if (ResourceManager::Get()->Containskey(fileName))
+    {
+        model = ResourceManager::Get()->Load<AssimpModel>(fileName);
     }
-    auto sceneName = std::string{ pScene->mName.C_Str() };
+    else
+    {
+        model = ResourceManager::Get()->Load<AssimpModel>(fileName);
+        model->importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 5.0f);
+        model->importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+        model->LoadFromFile(filePath.c_str(), s_importFlags);
+
+    }
+
+
+    if (!model->pScene) {
+        throw std::runtime_error("model load error! :: check model file - " + std::string(model->importer.GetErrorString()));
+    }
+    auto sceneName = std::string{ model->pScene->mName.C_Str() };
 
     auto pStaticMeshRenderer = std::make_unique<StaticMeshRenderer>();
     std::shared_ptr<StaticMesh> sMesh = nullptr;
@@ -463,7 +470,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         std::vector<UINT> matIndices;
 
         // 없으면 리소스 테이블에 등록한 직 후 노드 돌기 
-        ProcessNode(meshes, matIndices, pScene->mRootNode, pScene);
+        ProcessNode(meshes, matIndices, model->pScene->mRootNode, model->pScene);
 
         for (auto& mesh : meshes)
         {
@@ -476,9 +483,9 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         pStaticMeshRenderer->SetMesh(sMesh);
     }
 
-    for (UINT i = 0; i < pScene->mNumMaterials; i++)
+    for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -489,7 +496,7 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         else
         {
             mat = ResourceManager::Get()->Load<Material>(matName);
-            ProcessMaterial(pScene->mMaterials[i], mat, pScene, BoneType::None);
+            ProcessMaterial(model->pScene->mMaterials[i], mat, model->pScene, BoneType::None);
         }
 
         pStaticMeshRenderer->AddMaterial(mat);
@@ -511,13 +518,26 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         aiProcess_SortByPType |
         aiProcess_FlipUVs;
 
-    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
+    std::string fileName = "[Model]-" + std::string{ filePath.c_str() };
 
-    if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
+    std::shared_ptr<AssimpModel> model = nullptr;
+    if (ResourceManager::Get()->Containskey(fileName))
+    {
+        model = ResourceManager::Get()->Load<AssimpModel>(fileName);
+    }
+    else
+    {
+        model = ResourceManager::Get()->Load<AssimpModel>(fileName);
+        model->importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 5.0f);
+        model->LoadFromFile(filePath.c_str(), s_importFlags);
     }
 
-    auto sceneName = std::string{ pScene->mName.C_Str() };
+
+    if (!model->pScene) {
+        throw std::runtime_error("model load error! :: check model file - " + std::string(model->importer.GetErrorString()));
+    }
+
+    auto sceneName = std::string{ model->pScene->mName.C_Str() };
     auto pRigidMeshRenderer = std::make_unique<RigidMeshRenderer>();
 
     std::shared_ptr<RigidMesh> rMesh = nullptr;
@@ -550,7 +570,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
 
         std::unordered_map <std::string, UINT> nodeNameToIndex;
 
-        ProcessNode(-1, rigidBones, initRigidBonePoses, meshes, matIndices, boneIndices, pScene->mRootNode, pScene, nodeNameToIndex);
+        ProcessNode(-1, rigidBones, initRigidBonePoses, meshes, matIndices, boneIndices, model->pScene->mRootNode, model->pScene, nodeNameToIndex);
 
         for (auto& mesh : meshes)
         {
@@ -572,16 +592,16 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         pRigidMeshRenderer->CreateBoneMatrixBuffer(s_pContext);
     }
 
-    if (pScene->HasAnimations())
+    if (model->pScene->HasAnimations())
     {
         std::vector<std::shared_ptr<AnimationClip>> boneAnimations;
-        boneAnimations.resize(pScene->mNumAnimations);
+        boneAnimations.resize(model->pScene->mNumAnimations);
 
         auto& nodeNameToIndex = rMesh->GetBoneNameToIdxMap();
 
-        for (UINT i = 0; i < pScene->mNumAnimations; i++)
+        for (UINT i = 0; i < model->pScene->mNumAnimations; i++)
         {
-            auto& animation = pScene->mAnimations[i];
+            auto& animation = model->pScene->mAnimations[i];
 
             std::string animationClipName = "[AnimationClip]-" + sceneName + std::string{ animation->mName.C_Str() };
             std::shared_ptr<AnimationClip> animationClip = nullptr;
@@ -691,9 +711,9 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         pRigidMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
 
-    for (UINT i = 0; i < pScene->mNumMaterials; i++)
+    for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -704,7 +724,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         else
         {
             mat = ResourceManager::Get()->Load<Material>(matName);
-            ProcessMaterial(pScene->mMaterials[i], mat, pScene, BoneType::RigidBone);
+            ProcessMaterial(model->pScene->mMaterials[i], mat, model->pScene, BoneType::RigidBone);
         }
 
         pRigidMeshRenderer->AddMaterial(mat);
@@ -723,13 +743,30 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         aiProcess_CalcTangentSpace |
         aiProcess_FlipUVs;
 
-    const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
+    std::string fileName = "[Model]-" + std::string{filePath.c_str()};
 
-    if (!pScene) {
-        throw std::runtime_error("model load error! :: check model file - " + std::string(s_pImporter->GetErrorString()));
+
+    std::shared_ptr<AssimpModel> model = nullptr;
+    if (ResourceManager::Get()->Containskey(fileName))
+    {
+        model = ResourceManager::Get()->Load<AssimpModel>(fileName);
+    }
+    else
+    {
+        model = ResourceManager::Get()->Load<AssimpModel>(fileName);
+        model->importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 5.0f);
+        model->importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+        model->LoadFromFile(filePath.c_str(), s_importFlags);
+
+        s_loadedModels.push_back(model);
     }
 
-    auto sceneName = std::string{ pScene->mName.C_Str() };
+
+    if (!model->pScene) {
+        throw std::runtime_error("model load error! :: check model file - " + std::string(model->importer.GetErrorString()));
+    }
+
+    auto sceneName = std::string{ model->pScene->mName.C_Str() };
 
 
 
@@ -757,9 +794,9 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
     {
         sMesh = ResourceManager::Get()->Load<SkinningMesh>(meshName);
 
-        auto usedBones = CollectUsedBoneNames(pScene);
+        auto usedBones = CollectUsedBoneNames(model->pScene);
         std::unordered_set<std::string> boneHierarchy;
-        CollectBoneHierarchy(pScene->mRootNode, usedBones, boneHierarchy);
+        CollectBoneHierarchy(model->pScene->mRootNode, usedBones, boneHierarchy);
 
         std::vector<std::shared_ptr<Mesh>> meshes;
         std::vector<UINT> matIndices;
@@ -768,7 +805,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         std::vector<CorrectionNode> correctionMap;
 
         std::unordered_map<std::string, UINT> nodeNameToIndex;
-        ProcessNode(-1, skinningBones, initSkinningBonePoses, meshes, matIndices, pScene->mRootNode, pScene, nodeNameToIndex, correctionMap, boneHierarchy);
+        ProcessNode(-1, skinningBones, initSkinningBonePoses, meshes, matIndices, model->pScene->mRootNode, model->pScene, nodeNameToIndex, correctionMap, boneHierarchy);
 
         struct VertexBoneData
         {
@@ -917,16 +954,16 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
    
 
-    if (pScene->HasAnimations())
+    if (model->pScene->HasAnimations())
     {
         std::vector<std::shared_ptr<AnimationClip>> boneAnimations;
-        boneAnimations.resize(pScene->mNumAnimations);
+        boneAnimations.resize(model->pScene->mNumAnimations);
 
         auto& nodeNameToIndex = sMesh->GetBoneNameToIdxMap();
 
-        for (UINT i = 0; i < pScene->mNumAnimations; i++)
+        for (UINT i = 0; i < model->pScene->mNumAnimations; i++)
         {
-            auto& animation = pScene->mAnimations[i];
+            auto& animation = model->pScene->mAnimations[i];
 
             std::string animationClipName = "[AnimationClip]-" + sceneName + std::string{ animation->mName.C_Str() };
             std::shared_ptr<AnimationClip> animationClip = nullptr;
@@ -1036,9 +1073,9 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         pSkinningMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
 
-    for (UINT i = 0; i < pScene->mNumMaterials; i++)
+    for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -1049,7 +1086,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         else
         {
             mat = ResourceManager::Get()->Load<Material>(matName);
-            ProcessMaterial(pScene->mMaterials[i], mat, pScene, BoneType::SkinningBone);
+            ProcessMaterial(model->pScene->mMaterials[i], mat, model->pScene, BoneType::SkinningBone);
         }
         pSkinningMeshRenderer->AddMaterial(mat);
     }

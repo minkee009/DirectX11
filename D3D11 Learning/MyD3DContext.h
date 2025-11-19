@@ -74,7 +74,8 @@ namespace MyEngine {
 		//Direct3D 관련 변수
 		ComPtr<ID3D11Device> m_pd3dDevice = nullptr;
 		ComPtr<ID3D11Device1> m_pd3dDevice1 = nullptr;
-		ComPtr<ID3D11DeviceContext> m_pContext = nullptr;
+		ComPtr<ID3D11DeviceContext> m_pContext = nullptr; 
+		ComPtr<IDXGIDevice3> m_dxgiDevice;
 		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
 		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
 		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView = nullptr;
@@ -184,6 +185,8 @@ namespace MyEngine {
 		void DrawSkyBox();
 		void DrawShadowMap();
 		void DrawSkeleton(Transform& t, SkinningMeshRenderer& renderer);
+
+		void CreateSkinningRenderer(const Vector3& pos);
 
 		void Clear();
 		void Present();

@@ -193,6 +193,15 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     dxgiFactory->Release();
 
+    if (!m_dxgiDevice)
+    {
+        ComPtr<IDXGIDevice> dxgiDevice;
+        if (SUCCEEDED(m_pd3dDevice.As(&dxgiDevice)))
+        {
+            dxgiDevice.As(&m_dxgiDevice); // IDXGIDevice3로 업캐스트
+        }
+    }
+
     if (FAILED(hr))
         return false;
 
@@ -505,6 +514,28 @@ bool MyEngine::MyD3DContext::InitializeScene()
 void MyEngine::MyD3DContext::Update()
 {
     m_pCamera->InputUpdate(TIME_GET_DELTA());
+
+    static Keyboard::State prev;
+    static Keyboard::State curr;
+
+    prev = curr;
+    curr = Keyboard::Get().GetState();
+
+    if (!prev.F && curr.F)
+    {
+        auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
+        auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
+
+        CreateSkinningRenderer(camPos + camFwd * 8.5f);
+    }
+
+    if (!prev.G && curr.G)
+    {
+        if(!m_sceneObjects.empty())
+            m_sceneObjects.pop_back();
+        if (!m_meshRenderers.empty())
+            m_meshRenderers.pop_back();
+    }
 
     for (auto& renderer : m_meshRenderers)
     {
@@ -839,6 +870,18 @@ void MyEngine::MyD3DContext::DrawSkeleton(Transform& t, SkinningMeshRenderer& re
         BoundingOrientedBox obb = { bone_center, bone_extend, bone_rot };
         DX::Draw(m_batch.get(), obb, Colors::Aqua);
     }
+}
+
+void MyEngine::MyD3DContext::CreateSkinningRenderer(const Vector3& pos)
+{
+    m_sceneObjects.push_back(std::make_unique<Transform>());
+    m_sceneObjects.back()->SetWorldPosition(pos);
+
+    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+
+    m_meshRenderers.back()->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+    m_meshRenderers.back()->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 }
 
 void MyEngine::MyD3DContext::Clear()
@@ -1208,6 +1251,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pSamplerPoint = nullptr;
     m_pSamplerLinear = nullptr;
 
+    m_dxgiDevice = nullptr;
     m_pContext = nullptr;
 
     m_pSwapChain1 = nullptr;

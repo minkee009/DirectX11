@@ -11,13 +11,27 @@
 
 namespace MyEngine
 {
+	class AssimpModel : public Resource
+	{
+	public:
+		const aiScene* pScene = nullptr;
+		Assimp::Importer importer;
+
+		bool LoadFromFile(const std::string& path, unsigned int flags)
+		{
+			pScene = importer.ReadFile(path, flags);
+			return pScene != nullptr;
+		}
+	};
+
 	class AssimpConverter
 	{
 	private:
-		static std::unique_ptr<Assimp::Importer> s_pImporter;
 		static uint32_t s_importFlags;
 		static ID3D11Device* s_pDevice;
 		static ID3D11DeviceContext* s_pContext;
+
+		static std::vector<std::shared_ptr<AssimpModel>> s_loadedModels;
 
 		enum class BoneType { None, RigidBone, SkinningBone };
 
