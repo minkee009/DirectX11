@@ -405,6 +405,12 @@ void MyEngine::AssimpConverter::Initialize(ID3D11DeviceContext* context)
     s_pContext = context;
     s_pContext->GetDevice(&s_pDevice);
     s_pImporter = std::make_unique<Assimp::Importer>();
+
+    // 글로벌 스케일 5배
+    s_pImporter->SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 5.0f);
+
+    // _$AssimpFbx$Translation, _$AssimpFbx$_PreRotation, _$AssimpFbx$_Rotation 등의 노드 분기 생성 방지
+    s_pImporter->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 }
 
 void MyEngine::AssimpConverter::Release()
@@ -420,7 +426,9 @@ void MyEngine::AssimpConverter::Release()
 std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadStaticMeshRendererFromFile(std::string filePath)
 {
     //importFlag 세팅
-    s_importFlags = aiProcess_Triangulate |    // vertex 삼각형 으로 출력
+    s_importFlags = 
+        aiProcess_GlobalScale |
+        aiProcess_Triangulate |    // vertex 삼각형 으로 출력
         aiProcess_GenNormals |        // Normal 정보 생성  
         aiProcess_GenUVCoords |      // 텍스처 좌표 생성
         aiProcess_CalcTangentSpace |  // 탄젠트 벡터 생성
@@ -495,6 +503,7 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
 {
     //importFlag 세팅
     s_importFlags =
+        aiProcess_GlobalScale |
         aiProcess_Triangulate |
         aiProcess_GenNormals |
         aiProcess_CalcTangentSpace |
@@ -708,13 +717,11 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 {
     // importFlag 세팅
     s_importFlags =
+        aiProcess_GlobalScale |
         aiProcess_Triangulate |
         aiProcess_GenNormals |
         aiProcess_CalcTangentSpace |
         aiProcess_FlipUVs;
-
-    // _$AssimpFbx$Translation, _$AssimpFbx$_PreRotation, _$AssimpFbx$_Rotation 등의 노드 분기 생성 방지
-    s_pImporter->SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
     const aiScene* pScene = s_pImporter->ReadFile(filePath.c_str(), s_importFlags);
 
@@ -901,6 +908,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         sMesh->CreateBoneOffsetMatrixBuffer(s_pContext);
         sMesh->CalcBBox();
         sMesh->SetMatRefIndices(std::move(matIndices));
+        sMesh->SetInitBonePoses(std::move(initSkinningBonePoses));
         sMesh->SetBoneNameToIdxMap(std::move(nodeNameToIndex));
 
         pSkinningMeshRenderer->SetMesh(sMesh);

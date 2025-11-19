@@ -27,7 +27,7 @@ namespace MyEngine
 		std::unordered_map<UINT, std::unordered_set<UINT>> m_passExcludedMeshes; // < render pass, { dont draw mesh idx } >
 		std::unordered_map<UINT, ID3D11VertexShader*> m_passForceChangeVS;
 		std::unordered_map<UINT, ID3D11PixelShader*> m_passForceChangePS;
-
+		std::unordered_set<std::string> m_passCheckKeywords; // 패스에서 문자열 체크할 수 있는 레이블 모음
 	protected:
 		std::vector<std::shared_ptr<Material>> m_materials;
 
@@ -45,6 +45,7 @@ namespace MyEngine
 
 		inline void AddMaterial(std::shared_ptr<Material> material) { m_materials.push_back(material); }
 		inline void SetRenderPassNum(UINT renderPassNum) { m_renderPassNum = renderPassNum; }
+		inline bool SetPassCheckKeyword(std::string_view keyword) { return m_passCheckKeywords.insert(std::string(keyword)).second; }
 
 		inline void ClearPassExcludedMeshes() { m_passExcludedMeshes.clear(); }
 		inline void ClearPassForceChangeVS() { m_passForceChangeVS.clear(); }
@@ -55,5 +56,7 @@ namespace MyEngine
 
 		inline const bool GetEnabledBindMeshes() const { return m_enabledBindMeshes; }
 		inline const bool GetEnabledBindMaterials() const { return m_enabledBindMaterials; }
+
+		inline bool GetPassCheckKeyword(std::string_view keyword) const { return m_passCheckKeywords.find(std::string(keyword)) != m_passCheckKeywords.end(); }
 	};
 }

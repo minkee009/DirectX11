@@ -252,22 +252,6 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
 
-    static std::vector<Vector3> objDefPoses{};
-    static std::vector<Vector3> objDefRots{};
-    static std::vector<Vector3> objDefScales{};
-    static bool objDefIsLoaded = false;
-
-    if (!objDefIsLoaded)
-    {
-        for (auto& sObj : m_d3dContext->m_sceneObjects)
-        {
-            objDefPoses.push_back(sObj->GetLocalPosition());
-            objDefRots.push_back(sObj->GetLocalEulerRotation());
-            objDefScales.push_back(sObj->GetLocalScale());
-        }
-        objDefIsLoaded = true;
-    }
-
     static int objIdx = 0;
     static bool objIdxChanged = false;
 
@@ -300,8 +284,8 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값")) {
-        obj_pos = objDefPoses[objIdx];
-        obj->SetLocalPosition(objDefPoses[objIdx]);
+        obj_pos = Vector3::Zero;
+        obj->SetLocalPosition(obj_pos);
     }
 
 
@@ -327,8 +311,8 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##2")) {
-        obj_rot = objDefRots[objIdx];
-        obj->SetLocalEulerRotation(objDefRots[objIdx]);
+        obj_rot = Vector3::Zero;
+        obj->SetLocalEulerRotation(obj_rot);
     }
 
 
@@ -355,8 +339,8 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::SameLine();
     if (ImGui::Button(u8"초기값##14")) {
-        obj_scale = objDefScales[objIdx];
-        obj->SetLocalScale(objDefScales[objIdx]);
+        obj_scale = Vector3::One;
+        obj->SetLocalScale(obj_scale);
     }
 
     ImGui::Separator();
@@ -486,7 +470,7 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Begin(u8"애니메이션 상태");
 
-    auto animationMeshRenderer = static_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[0].get());
+    auto animationMeshRenderer = static_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[1].get());
 
     float animTime = static_cast<float>(animationMeshRenderer->GetTime());
     float duration = static_cast<float>(animationMeshRenderer->GetDuration());

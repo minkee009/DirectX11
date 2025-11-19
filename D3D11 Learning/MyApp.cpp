@@ -165,6 +165,7 @@ int MyEngine::MyApp::Run()
 		}
 		else {
 			TimeManager::Get()->Update();
+			m_pD3DContext->Update();
 			m_pD3DContext->Render();
 		}
 	}

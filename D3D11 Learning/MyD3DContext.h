@@ -6,6 +6,8 @@
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
+#include "BVH.h"
+
 #include "Camera.h"
 #include "AssimpConverter.h"
 #include "MeshRenderer.h"
@@ -94,6 +96,8 @@ namespace MyEngine {
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
 		//Scene 관련 변수
+		std::unique_ptr<BVH> m_pBVHTree;
+		std::vector<BoundingBox> m_bboxRegistry;
 
 		ComPtr<ID3D11ShaderResourceView> m_pLUTSRV = nullptr;
 
@@ -171,6 +175,7 @@ namespace MyEngine {
 		//GUI용 코드 (디버깅 용)
 		friend class MyImGui;
 		MyImGui m_imgui;
+
 //#endif //_DEBUG
 
 		bool InitSkyBox();
@@ -178,6 +183,7 @@ namespace MyEngine {
 
 		void DrawSkyBox();
 		void DrawShadowMap();
+		void DrawSkeleton(Transform& t, SkinningMeshRenderer& renderer);
 
 		void Clear();
 		void Present();
@@ -190,6 +196,7 @@ namespace MyEngine {
 		bool InitializeScene();
 		void UninitializeScene();
 
+		void Update();
 		void Render();
 
 		void Resize(UINT width, UINT height);

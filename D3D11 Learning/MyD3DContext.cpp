@@ -362,6 +362,9 @@ bool MyEngine::MyD3DContext::InitializeScene()
     InitSkyBox();
     InitShadowMapTex();
 
+    if (!m_pBVHTree)
+        m_pBVHTree = std::make_unique<BVH>();
+
     //상수 버퍼 생성
     D3D11_BUFFER_DESC cbDesc;
     ZeroMemory(&cbDesc, sizeof(cbDesc));
@@ -422,47 +425,50 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
+    m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
-    obj1->SetWorldPosition(7.500f, 0.250f, -8.450f);
-    obj1->SetLocalScale(0.072f, 0.072f, 0.072f);
+    obj1->SetWorldPosition(0, 0, 0);
 
     auto obj2 = m_sceneObjects[1].get();
     obj2->SetWorldPosition(4.950f, 0.250f, 4.700f);
-    obj2->SetLocalEulerRotation(0.0, 0.0f, 0.0f);
-    obj2->SetLocalScale(5, 5, 5);
 
     auto obj3 = m_sceneObjects[2].get();
-    obj3->SetWorldPosition(0, 0, 0);
-    obj3->SetLocalScale(0.05f, 0.05f, 0.05f);
+    obj3->SetWorldPosition(-3.8f, 0.25f, 4.85f);
 
     auto obj4 = m_sceneObjects[3].get();
-    obj4->SetWorldPosition(0, 0.800f, 0.300f);
-    obj4->SetLocalScale(0.05f, 0.05f, 0.05f);
+    obj4->SetWorldPosition(8.9f, 0.4f, -6.45f);
 
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
-    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
-    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    auto obj5 = m_sceneObjects[4].get();
+    obj5->SetWorldPosition(-6.2f, 0.25f, -6.45f);
+
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
+    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
 
     // renderpass 
     // 0 : shadow map
     // 1 : outline
     // 2 : scene draw
 
+    // Ground.fbx setting
+    m_meshRenderers[0]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
+    m_meshRenderers[0]->SetPassCheckKeyword("IsBlinnPhong");
+
     // skinningTest.fbx setting
-    m_meshRenderers[0]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers[0]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
+    m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+    m_meshRenderers[1]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
+
+    m_meshRenderers[4]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+    m_meshRenderers[4]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 
     // Miyu_Akey_Rigging.obj setting
-    m_meshRenderers[1]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
-    m_meshRenderers[1]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
-    m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
-
-    // Ground.fbx setting
+    m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
+    m_meshRenderers[2]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
     m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // zeldaPosed001.fbx setting
@@ -485,7 +491,29 @@ bool MyEngine::MyD3DContext::InitializeScene()
             m_pDebugDrawIL.ReleaseAndGetAddressOf());
     }
 
+    // BVH build
+    for (size_t i = 0; i < m_sceneObjects.size(); i++)
+    {
+        m_bboxRegistry.push_back(BVH::MakeTransformedBBox(*m_sceneObjects[i].get(), m_meshRenderers[i]->GetBBox()));
+    }
+
+    m_pBVHTree->Build(m_bboxRegistry);
+
     return true;
+}
+
+void MyEngine::MyD3DContext::Update()
+{
+    m_pCamera->InputUpdate(TIME_GET_DELTA());
+
+    for (auto& renderer : m_meshRenderers)
+    {
+        if (auto skinnedMesh = dynamic_cast<SkinningMeshRenderer*>(renderer.get()))
+        {
+            skinnedMesh->AnimationUpdate();
+            skinnedMesh->MatrixUpdate();
+        }
+    }
 }
 
 bool MyEngine::MyD3DContext::InitSkyBox()
@@ -762,6 +790,57 @@ void MyEngine::MyD3DContext::DrawShadowMap()
 
 }
 
+void MyEngine::MyD3DContext::DrawSkeleton(Transform& t, SkinningMeshRenderer& renderer)
+{
+    auto& bones = renderer.GetMesh().GetBones();
+    auto& currentBonePoses = renderer.GetBonePoses();
+
+    // 본 드로우
+    for (auto& sbone : bones)
+    {
+        if (sbone.parentIndex == -1)
+            continue;
+
+        auto& bone_pose = currentBonePoses[sbone.index];
+
+        auto finMat = bone_pose.model.Transpose() * t.GetWorldMatrix();
+        auto startPos = Vector3::Transform(Vector3::Zero, finMat);
+
+        auto finMat2 = t.GetWorldMatrix();
+        auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
+
+        auto& parent_bone_pose = currentBonePoses[bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].index];
+
+        finMat2 = parent_bone_pose.model.Transpose() * t.GetWorldMatrix();
+        endPos = Vector3::Transform(Vector3::Zero, finMat2);
+
+        BoundingSphere sphr{ startPos,0.025f };
+        DX::Draw(m_batch.get(), sphr, Colors::LightGreen);
+        DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
+    }
+
+    // 본 경계박스 드로우
+    for (auto& sbone : bones)
+    {
+        if (sbone.parentIndex == -1 || !sbone.hasVertex)
+            continue;
+
+        auto bone_center = sbone.bbox.Center;
+        auto bone_extend = sbone.bbox.Extents;
+
+        auto& bone_pose = currentBonePoses[sbone.index];
+        bone_center = Vector3::Transform(bone_center, bone_pose.model.Transpose());
+        bone_center = Vector3::Transform(bone_center, t.GetLocalMatrix());
+
+        auto bone_rot = Quaternion::CreateFromRotationMatrix(bone_pose.model.Transpose());
+        bone_rot = bone_rot * t.GetLocalRotation();
+
+        bone_extend = Vector3{ bone_extend.x * t.GetLocalScale().x, bone_extend.y * t.GetLocalScale().y, bone_extend.z * t.GetLocalScale().z };
+        BoundingOrientedBox obb = { bone_center, bone_extend, bone_rot };
+        DX::Draw(m_batch.get(), obb, Colors::Aqua);
+    }
+}
+
 void MyEngine::MyD3DContext::Clear()
 {
     float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
@@ -773,8 +852,6 @@ void MyEngine::MyD3DContext::Clear()
 void MyEngine::MyD3DContext::Render()
 {
     // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
-    m_pCamera->InputUpdate(TIME_GET_DELTA());
-
     m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
     //  <=============== 첫번째 패스(그림자 맵)
@@ -939,6 +1016,7 @@ void MyEngine::MyD3DContext::Render()
     Vector3 debugPos1;
     Vector3 debugPos2;
     Vector3 debugPos3;
+    bool firstDebugDraw = true;
 
     for (size_t i = 0; i < m_sceneObjects.size(); ++i)
     {
@@ -954,7 +1032,7 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        if (i != 2)
+        if (!m_meshRenderers[i]->GetPassCheckKeyword("IsBlinnPhong"))
         {
             auto gradientBBox = meshRenderer->GetBBox();
             BoundingOrientedBox gradientOBB;
@@ -967,13 +1045,13 @@ void MyEngine::MyD3DContext::Render()
 
             float dist = -extents.Length();
 
-            if (i == 0)
+            if (firstDebugDraw)
             {
                 debugPos1 = gradientBBox.Center;
             }
 
             gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
-            if (i == 0)
+            if (firstDebugDraw)
             {
                 debugPos2 = gradientCB.GradientPos;
             }
@@ -988,9 +1066,10 @@ void MyEngine::MyD3DContext::Render()
                 gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
             }
 
-            if (i == 0)
+            if (firstDebugDraw)
             {
                 debugPos3 = gradientCB.GradientPos;
+                firstDebugDraw = false;
             }
         }
         
@@ -1001,10 +1080,6 @@ void MyEngine::MyD3DContext::Render()
         meshRenderer->SetEnabledBindMaterials(true);
         meshRenderer->Draw(m_pContext.Get());
     }
-
-    auto skinnedMesh = static_cast<SkinningMeshRenderer*>(m_meshRenderers[0].get());
-    skinnedMesh->AnimationUpdate();
-    skinnedMesh->MatrixUpdate();
 
     //debug draw
     if (m_enableDebugDraw)
@@ -1025,7 +1100,12 @@ void MyEngine::MyD3DContext::Render()
 
         for (size_t i = 0; i < m_sceneObjects.size(); ++i)
         {
-            if (i == 2) continue;
+            if (auto skinningMeshRenderer = dynamic_cast<SkinningMeshRenderer*>(m_meshRenderers[i].get()))
+            {
+                DrawSkeleton(*m_sceneObjects[i].get(), *skinningMeshRenderer);
+            }
+
+            if (i == 0) continue;
             auto renderer_AABB = m_meshRenderers[i]->GetBBox();
             auto& obj = m_sceneObjects[i];
             BoundingOrientedBox obb;
@@ -1034,66 +1114,19 @@ void MyEngine::MyD3DContext::Render()
             DX::Draw(m_batch.get(), obb, Colors::Aqua);
         }
 
-        auto& bones = skinnedMesh->GetMesh().GetBones();
-        auto& currentBonePoses = skinnedMesh->GetBonePoses();
-
-        // 본 드로우
-        for (auto& sbone : bones)
+        if (!firstDebugDraw)
         {
-            if (sbone.parentIndex == -1)
-                continue;
+            BoundingSphere sphere = { debugPos1, 0.125f };
+            DX::Draw(m_batch.get(), sphere, Colors::Red);
 
+            BoundingSphere sphere2 = { debugPos2, 0.125f };
+            DX::Draw(m_batch.get(), sphere2, Colors::Orange);
 
-            auto& bone_pose = currentBonePoses[sbone.index];
+            BoundingSphere sphere3 = { debugPos3, 0.125f };
+            DX::Draw(m_batch.get(), sphere3, Colors::Magenta);
 
-            auto finMat = bone_pose.model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
-            auto startPos = Vector3::Transform(Vector3::Zero, finMat);
-
-            auto finMat2 = m_sceneObjects[0]->GetWorldMatrix();
-            auto endPos = Vector3::Transform(Vector3::Zero, finMat2);
-
-            auto& parent_bone_pose = currentBonePoses[bones[sbone.parentIndex == 0 ? sbone.index : sbone.parentIndex].index];
-
-            finMat2 = parent_bone_pose.model.Transpose() * m_sceneObjects[0]->GetWorldMatrix();
-            endPos = Vector3::Transform(Vector3::Zero, finMat2);
-
-            BoundingSphere sphr{ startPos,0.025f };
-            DX::Draw(m_batch.get(), sphr, Colors::LightGreen);
-            DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
+            DX::DrawRay(m_batch.get(), debugPos1, debugPos2 - debugPos1, false, Colors::Yellow);
         }
-
-        // 본 경계박스 드로우
-
-        for (auto& sbone : bones)
-        {
-            if (sbone.parentIndex == -1)
-                continue;
-
-            auto bone_center = sbone.bbox.Center;
-            auto bone_extend = sbone.bbox.Extents;
-
-            auto& bone_pose = currentBonePoses[sbone.index];
-            bone_center = Vector3::Transform(bone_center, bone_pose.model.Transpose());
-            bone_center = Vector3::Transform(bone_center, m_sceneObjects[0]->GetWorldMatrix());
-
-            auto bone_rot = Quaternion::CreateFromRotationMatrix(bone_pose.model.Transpose());
-            bone_rot = bone_rot * m_sceneObjects[0]->GetLocalRotation();
-
-            bone_extend = Vector3{ bone_extend.x * m_sceneObjects[0]->GetLocalScale().x, bone_extend.y * m_sceneObjects[0]->GetLocalScale().y, bone_extend.z * m_sceneObjects[0]->GetLocalScale().z };
-            BoundingOrientedBox obb = { bone_center, bone_extend, bone_rot };
-            DX::Draw(m_batch.get(), obb, Colors::Aqua);
-        }
-
-        BoundingSphere sphere = { debugPos1, 0.125f };
-        DX::Draw(m_batch.get(), sphere, Colors::Red);
-
-        BoundingSphere sphere2 = { debugPos2, 0.125f };
-        DX::Draw(m_batch.get(), sphere2, Colors::Orange);
-
-        BoundingSphere sphere3 = { debugPos3, 0.125f };
-        DX::Draw(m_batch.get(), sphere3, Colors::Magenta);
-
-		DX::DrawRay(m_batch.get(), debugPos1, debugPos2 - debugPos1, false, Colors::Yellow);
 
         auto frustum = m_pCamera->GetProjFrustum();
         frustum.Transform(frustum, m_pCamera->GetTransform()->GetWorldMatrix());

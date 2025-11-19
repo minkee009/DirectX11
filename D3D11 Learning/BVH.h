@@ -1,5 +1,6 @@
 #pragma once
 #include <directxtk/SimpleMath.h>
+#include "Transform.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -41,6 +42,17 @@ namespace MyEngine
 		inline const size_t& GetRootIdx() const { return m_rootIdx; }
 
 		inline const size_t& GetMappedIdx(size_t alignedIdx) const { if (alignedIdx > 0 && alignedIdx < m_alignedIndices.size()) return m_alignedIndices[alignedIdx]; return 0; }
+
+		//=== debug ÄÚµå ===//
+		static inline BoundingBox MakeTransformedBBox(const Transform& t, const BoundingBox& bbox)
+		{
+			BoundingBox transformedBBox{};
+
+			bbox.Transform(transformedBBox, t.GetWorldMatrix());
+
+			return transformedBBox;
+		}
+
 	private:
 		size_t m_rootIdx = 0;
 		std::vector<Node> m_nodes;
