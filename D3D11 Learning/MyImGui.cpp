@@ -470,30 +470,37 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Begin(u8"애니메이션 상태");
 
-    auto animationMeshRenderer = static_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[1].get());
+    auto animationMeshRenderer = dynamic_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[objIdx].get());
 
-    float animTime = static_cast<float>(animationMeshRenderer->GetTime());
-    float duration = static_cast<float>(animationMeshRenderer->GetDuration());
-
-    ImGui::Text(u8"애니메이션 시간");
-
-    if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
+    if (animationMeshRenderer)
     {
-        animationMeshRenderer->SetTime(animTime);
-        animationMeshRenderer->Pause();
+        float animTime = static_cast<float>(animationMeshRenderer->GetTime());
+        float duration = static_cast<float>(animationMeshRenderer->GetDuration());
+
+        ImGui::Text(u8"애니메이션 시간");
+
+        if (ImGui::SliderFloat(u8"##애니메이션 시간", &animTime, 0.0f, duration))
+        {
+            animationMeshRenderer->SetTime(animTime);
+            animationMeshRenderer->Pause();
+        }
+        else
+        {
+            animationMeshRenderer->Play();
+        }
+
+        float animSpeed = static_cast<float>(animationMeshRenderer->GetSpeed());
+        ImGui::Text(u8"애니메이션 속도");
+        ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f, 8.0f);
+        animationMeshRenderer->SetSpeed(animSpeed);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"초기값##12")) {
+            animationMeshRenderer->SetSpeed(1.0f);
+        }
     }
     else
     {
-        animationMeshRenderer->Play();
-    }
-
-    float animSpeed = static_cast<float>(animationMeshRenderer->GetSpeed());
-    ImGui::Text(u8"애니메이션 속도");
-    ImGui::DragFloat(u8"##애니메이션 속도", &animSpeed, 0.01f, 0.0f,8.0f);
-    animationMeshRenderer->SetSpeed(animSpeed);
-    ImGui::SameLine();
-    if (ImGui::Button(u8"초기값##12")) {
-        animationMeshRenderer->SetSpeed(1.0f);
+        ImGui::Text(u8"올바른 오브젝트를 선택해주세요!\n스키닝 메쉬렌더러가 아닙니다.\n\n왼쪽 패널에서 오브젝트 \n인덱스를 설정해주세요.");
     }
 
     ImGui::End();
@@ -575,6 +582,38 @@ void MyEngine::MyImGui::Update()
     ImGui::Checkbox(u8"zbuffer 사용", &m_d3dContext->m_enableDebugDrawZbuffer);
 
     ImGui::End();
+
+    if(m_d3dContext->m_enableDebugDraw)
+    for (size_t i = 0; i < m_d3dContext->m_sceneObjects.size(); i++)
+    {
+        auto& pTransform = m_d3dContext->m_sceneObjects[i];
+        auto& cam = m_d3dContext->m_pCamera;
+        auto pos = pTransform->GetWorldPosition();
+
+        // 1. Vector4로 확장
+        DirectX::SimpleMath::Vector4 clipPos(pos.x, pos.y, pos.z, 1.0f);
+
+        // 2. ViewProjection 변환 적용
+        clipPos = Vector4::Transform(clipPos, cam->GetViewMatrix() * cam->GetProjMatrix());
+
+        if (clipPos.w < 0.0f)
+            continue;
+
+        // 3. 원근 나누기
+        clipPos /= clipPos.w;
+
+        // 4. 결과 (NDC space)
+        DirectX::SimpleMath::Vector3 ndcPos(clipPos.x, clipPos.y, clipPos.z);
+
+
+        float screenX = (ndcPos.x * 0.5f + 0.5f) * m_d3dContext->m_width;
+        float screenY = (-ndcPos.y * 0.5f + 0.5f) * m_d3dContext->m_height; // y 뒤집기 주의!
+
+        std::string text = "obj" + std::to_string(i);
+
+        ImVec2 screenPos(screenX, screenY);
+        ImGui::GetBackgroundDrawList()->AddText(screenPos, IM_COL32(255, 255, 255, 255), text.c_str());
+    }
 }
 
 void MyEngine::MyImGui::Render()
