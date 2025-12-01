@@ -455,6 +455,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
@@ -475,14 +476,14 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_meshRenderers[4]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
 
     // Miyu_Akey_Rigging.obj setting
-    m_meshRenderers[2]->SetPassCheckKeyword("IsBRDF");
+    m_meshRenderers[2]->SetPassCheckKeyword("IsToon");
     m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
     m_meshRenderers[2]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
     m_meshRenderers[2]->SetPassExcludedMeshes(2, { 1,5 }); // scene draw pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
     m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // zeldaPosed001.fbx setting
-    m_meshRenderers[3]->SetPassCheckKeyword("IsBRDF");
+    m_meshRenderers[3]->SetPassCheckKeyword("IsToon");
     m_meshRenderers[3]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // DebugDraw

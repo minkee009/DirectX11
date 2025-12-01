@@ -1072,12 +1072,25 @@ float ndfGGX(float3 N, float3 H, float roughness)
     return a2 / denom;
 }
 
-float gaSchlickGGX(float3 N, float3 V, float roughness)
+float geometrySchlickGGX(float NdotV, float roughness)
 {
     float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+
+float geometrySmith(float3 N, float3 V, float3 L, float roughness)
+{
     float NdotV = max(dot(N, V), 0.0);
-    return NdotV / (NdotV * (1.0 - k) + k);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = geometrySchlickGGX(NdotV, roughness);
+    float ggx1  = geometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
 }
 
 float4 PS(PS_INPUT input) : SV_TARGET
@@ -1100,15 +1113,16 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float NdotL = saturate(dot(N, L));
 
     float3 albedo = lerp(baseColor.rgb, txDiffuse.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
+    albedo = pow(albedo, 2.2);   // metadata.format = DirectX::MakeSRGB(metadata.format);
 
     float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, diffuseStr);
     float roughness = ambientStr;
     float metallic = diffuseStr;
 
     // BRDF 계산
-    float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
     float NDF = ndfGGX(N, H, roughness);
-    float G = gaSchlickGGX(N, V, roughness) * gaSchlickGGX(N, L, roughness);
+    float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    float G = geometrySmith(N, V, L, roughness);
 
     float3 numerator = NDF * G * F;
     float denominator = 4.0 * max(dot(N, V), 0.0) * NdotL + 0.001;
@@ -1118,6 +1132,16 @@ float4 PS(PS_INPUT input) : SV_TARGET
     kD *= 1.0 - metallic;
     float3 Lo = (kD * albedo / PI + specular) * vLightColor.rgb * NdotL;
     float3 ambient = float3(0.03, 0.03, 0.03) * albedo * 0.5;
+
+    // Specular IBL
+    //float3 F_env = fresnelSchlick(max(dot(N, V), 0.0), F0);
+    //float3 prefilteredColor = skyBoxTX.Sample(samLinear, R).rgb; // 간단화를 위해 Prefiltered Env Map 생략
+
+    //
+    //float3 specularIBL = prefilteredColor * F_env;
+    //specularIBL = lerp(specularIBL, float3(0.0,0.0,0.0), roughness); 
+    //Lo += specularIBL;
+
     float3 finalColor = ambient + Lo;
 
     //with Gamma correction + HDR tonemapping
