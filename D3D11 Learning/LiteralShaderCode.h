@@ -7,9 +7,9 @@ namespace MyEngine::D3DCTX
     extern const char* g_vscode_outline_rigid;
     extern const char* g_vscode_outline_skinning;
 
-    extern const char* g_vscode_blinnphong;
-    extern const char* g_vscode_blinnphong_rigid;
-    extern const char* g_vscode_blinnphong_skinning;
+    extern const char* g_vscode_common_static;
+    extern const char* g_vscode_common_rigid;
+    extern const char* g_vscode_common_skinning;
 }
 
 namespace MyEngine::D3DCTX
@@ -20,4 +20,8 @@ namespace MyEngine::D3DCTX
     extern const char* g_pscode_blinnphong;
     extern const char* g_pscode_blinnphong_toon;
     extern const char* g_pscode_blinnphong_shadowmap;
+
+    extern const char* g_pscode_BRDF_cook_torrance;
+	
+    //extern const char* g_pscode_skybox;
 }

@@ -37,7 +37,6 @@ namespace MyEngine {
 		FLOAT pad2;
 		XMFLOAT4 vLightDir;
 		XMFLOAT4 vLightColor;
-		XMFLOAT4 vOutputColor;
 		XMFLOAT4 vAmbientColor;
 		FLOAT ambientStr;
 		FLOAT diffuseStr;

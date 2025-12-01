@@ -50,7 +50,7 @@ namespace MyEngine
 		static void ProcessMesh(aiMesh* pMesh, std::shared_ptr<Mesh> resourceMesh, const aiScene* pScene);
 		static void ProcessMaterial(aiMaterial* pMat, std::shared_ptr<Material> resourceMat, const aiScene* pScene, const BoneType& boneType);
 	public:
-		enum class LoadMaterialType { BlinnPhong, BlinnPhongToon };
+		enum class LoadMaterialType { BlinnPhong, BlinnPhongToon, BRDF };
 
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();

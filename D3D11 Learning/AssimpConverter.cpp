@@ -294,6 +294,9 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
     case LoadMaterialType::BlinnPhongToon:
         resourceMat->InitPixelShader(ShaderManager::Get()->GetBlinnPhongToonPixelShader());
         break;
+    case LoadMaterialType::BRDF:
+        resourceMat->InitPixelShader(ShaderManager::Get()->GetBRDFPixelShader());
+        break;
     }
 
     //색상 불러오기

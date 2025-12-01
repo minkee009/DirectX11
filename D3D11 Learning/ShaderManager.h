@@ -33,6 +33,8 @@ namespace MyEngine::D3DCTX
 		ComPtr<ID3D11PixelShader> m_pBlinnPhongToonPixelShader;
 		ComPtr<ID3D11PixelShader> m_pBlinnPhongShadowMapPixelShader;
 
+		ComPtr<ID3D11PixelShader> m_pBRDFPixelShader;
+
 		ComPtr<ID3DBlob> m_pDefaultVSBlob = nullptr;
 		ComPtr<ID3DBlob> m_pBlinnPhongVSBlob = nullptr;
 
@@ -68,6 +70,7 @@ namespace MyEngine::D3DCTX
 		inline ID3D11PixelShader* GetBlinnPhongPixelShader() { return m_pBlinnPhongPixelShader.Get(); }
 		inline ID3D11PixelShader* GetBlinnPhongToonPixelShader() { return m_pBlinnPhongToonPixelShader.Get(); }
 		inline ID3D11PixelShader* GetBlinnPhongShadowMapPixelShader() { return m_pBlinnPhongShadowMapPixelShader.Get(); }
+		inline ID3D11PixelShader* GetBRDFPixelShader() { return m_pBRDFPixelShader.Get(); }
 
 		inline ID3DBlob* GetBlinnPhongVSBlob() { return m_pBlinnPhongVSBlob.Get(); }
 	};

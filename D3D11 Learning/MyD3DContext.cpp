@@ -453,7 +453,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
@@ -469,18 +469,20 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_meshRenderers[0]->SetPassCheckKeyword("IsBlinnPhong");
 
     // skinningTest.fbx setting
+    m_meshRenderers[1]->SetPassCheckKeyword("IsBRDF");
     m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers[1]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
-
+    m_meshRenderers[4]->SetPassCheckKeyword("IsBRDF");
     m_meshRenderers[4]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers[4]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 
     // Miyu_Akey_Rigging.obj setting
+    m_meshRenderers[2]->SetPassCheckKeyword("IsBRDF");
     m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
     m_meshRenderers[2]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
+    m_meshRenderers[2]->SetPassExcludedMeshes(2, { 1,5 }); // scene draw pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
     m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // zeldaPosed001.fbx setting
+    m_meshRenderers[3]->SetPassCheckKeyword("IsBRDF");
     m_meshRenderers[3]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // DebugDraw
@@ -877,11 +879,11 @@ void MyEngine::MyD3DContext::CreateSkinningRenderer(const Vector3& pos)
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.back()->SetWorldPosition(pos);
 
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
 
     m_meshRenderers.back()->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers.back()->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
+    m_meshRenderers.back()->SetPassCheckKeyword("IsBRDF");
 }
 
 void MyEngine::MyD3DContext::Clear()
@@ -983,7 +985,6 @@ void MyEngine::MyD3DContext::Render()
 
     XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), -1.25f));
 
-    cb.vOutputColor = XMFLOAT4(0, 0, 0, 0);
     cb.ambientStr = m_ambientStrength;
     cb.diffuseStr = m_diffuseStrength;
     cb.specularStr = m_specularStrength;
@@ -1027,6 +1028,9 @@ void MyEngine::MyD3DContext::Render()
     {
         auto& meshRenderer = m_meshRenderers[i];
         auto& obj = m_sceneObjects[i];
+
+        if (!meshRenderer->GetPassCheckKeyword("IsToon"))
+            continue;
 
         cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
@@ -1075,7 +1079,7 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        if (!m_meshRenderers[i]->GetPassCheckKeyword("IsBlinnPhong"))
+        if (m_meshRenderers[i]->GetPassCheckKeyword("IsToon"))
         {
             auto gradientBBox = meshRenderer->GetBBox();
             BoundingOrientedBox gradientOBB;

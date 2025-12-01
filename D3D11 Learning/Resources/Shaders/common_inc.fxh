@@ -7,7 +7,6 @@ cbuffer ConstantBuffer : register(b0)
     float3 vLightPos;
     float4 vLightDir;
     float4 vLightColor;
-    float4 vOutputColor;
     float4 vAmbientColor;
     float ambientStr;
     float diffuseStr;
