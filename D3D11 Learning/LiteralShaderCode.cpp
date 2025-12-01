@@ -1061,6 +1061,12 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }  
 
+float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
+{
+    return F0 + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) 
+                * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 float ndfGGX(float3 N, float3 H, float roughness)
 {
     float a = roughness * roughness;
@@ -1111,6 +1117,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     R.x = -R.x;
 
     float NdotL = saturate(dot(N, L));
+    float NdotV = max(dot(N, V), 0.0);
 
     float3 albedo = lerp(baseColor.rgb, txDiffuse.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
     albedo = pow(albedo, 2.2);   // metadata.format = DirectX::MakeSRGB(metadata.format);
@@ -1131,16 +1138,71 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
     float3 Lo = (kD * albedo / PI + specular) * vLightColor.rgb * NdotL;
-    float3 ambient = float3(0.03, 0.03, 0.03) * albedo * 0.5;
 
-    // Specular IBL
-    //float3 F_env = fresnelSchlick(max(dot(N, V), 0.0), F0);
-    //float3 prefilteredColor = skyBoxTX.Sample(samLinear, R).rgb; // 간단화를 위해 Prefiltered Env Map 생략
+    float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, roughness);
+    float3 kS_ibl = F_ibl;
+    float3 kD_ibl = 1.0 - kS_ibl;
+    kD_ibl *= 1.0 - metallic;
 
-    //
-    //float3 specularIBL = prefilteredColor * F_env;
-    //specularIBL = lerp(specularIBL, float3(0.0,0.0,0.0), roughness); 
-    //Lo += specularIBL;
+    float3 irradiance = float3(0.0, 0.0, 0.0);
+
+    float3 up = abs(N.y) < 0.999 ? float3(0, 1, 0) : float3(1, 0, 0);
+    float3 tangent = normalize(cross(up, N));
+    float3 bitangent = cross(N, tangent);
+
+    irradiance += skyBoxTX.SampleLevel(samLinear, N, 0).rgb * 0.4;  // 중앙
+    irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N + tangent * 0.5), 0).rgb * 0.15;
+    irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N - tangent * 0.5), 0).rgb * 0.15;
+    irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N + bitangent * 0.5), 0).rgb * 0.15;
+    irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N - bitangent * 0.5), 0).rgb * 0.15;
+
+    float3 diffuseIBL = kD_ibl * irradiance * albedo;
+
+    float3 specularIBL;
+    
+    if (roughness < 0.1)
+    {
+        // 매끄러운 표면 - 정확한 반사
+        specularIBL = skyBoxTX.SampleLevel(samLinear, R, 0).rgb * F_ibl;
+    }
+    else if (roughness < 0.5)
+    {
+        // 중간 러프니스 - 약간의 블러
+        float3 spec = skyBoxTX.SampleLevel(samLinear, R, 0).rgb;
+        
+        // 주변 샘플 추가 (간단한 블러 근사)
+        float offset = roughness * 0.1;
+        float3 r_up = normalize(R + float3(0, offset, 0));
+        float3 r_down = normalize(R - float3(0, offset, 0));
+        float3 r_right = normalize(R + float3(offset, 0, 0));
+        float3 r_left = normalize(R - float3(offset, 0, 0));
+        
+        spec += skyBoxTX.SampleLevel(samLinear, r_up, 0).rgb * 0.5;
+        spec += skyBoxTX.SampleLevel(samLinear, r_down, 0).rgb * 0.5;
+        spec += skyBoxTX.SampleLevel(samLinear, r_right, 0).rgb * 0.5;
+        spec += skyBoxTX.SampleLevel(samLinear, r_left, 0).rgb * 0.5;
+        spec /= 3.0;
+        
+        specularIBL = spec * F_ibl;
+    }
+    else
+    {
+        // 높은 러프니스 - 많은 블러
+        float3 spec = skyBoxTX.SampleLevel(samLinear, R, 0).rgb * 0.3;
+        
+        // 더 많은 샘플로 블러 근사
+        float offset = roughness * 0.15;
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = i * PI / 4.0;
+            float3 offset_dir = normalize(R + float3(cos(angle) * offset, sin(angle) * offset, 0));
+            spec += skyBoxTX.SampleLevel(samLinear, offset_dir, 0).rgb * 0.0875; // 0.7 / 8
+        }
+        
+        specularIBL = spec * F_ibl * (1.0 - roughness); // 러프니스가 높을수록 specular 감소
+    }
+    
+    float3 ambient = (diffuseIBL + specularIBL) * 0.7; // 강도 조절
 
     float3 finalColor = ambient + Lo;
 
