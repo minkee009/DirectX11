@@ -469,18 +469,18 @@ void MyEngine::MyImGui::Update()
     }
     ImGui::End();
 
-    //ImGui::SetNextWindowPos(ImVec2(1600 - 225, 5), ImGuiCond_Once);
-    //ImGui::SetNextWindowSize(ImVec2(220, 86), ImGuiCond_Once);
+    ImGui::SetNextWindowPos(ImVec2(1600 - 225, 5), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(220, 86), ImGuiCond_Once);
 
-    //ImGui::Begin(u8"렌더러 상태");
-    //ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::MeshRenderer::limitDrawOption);
-    //ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::MeshRenderer::meshNum);
-    //if (ImGui::IsItemActive())
-    //{
-    //    UpdateInfiniteDrag();
-    //}
+    ImGui::Begin(u8"렌더러 상태");
+    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::MeshRenderer::limitDrawOption);
+    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::MeshRenderer::meshNum);
+    if (ImGui::IsItemActive())
+    {
+        UpdateInfiniteDrag();
+    }
 
-    //ImGui::End();
+    ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);
