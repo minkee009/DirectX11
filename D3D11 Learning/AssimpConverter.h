@@ -51,6 +51,7 @@ namespace MyEngine
 		static void ProcessMaterial(aiMaterial* pMat, std::shared_ptr<Material> resourceMat, const aiScene* pScene, const BoneType& boneType);
 	public:
 		enum class LoadMaterialType { BlinnPhong, BlinnPhongToon, BRDF };
+		enum class LoadMaterialProperties { None, All, OnlyBaseColor };
 
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
@@ -58,9 +59,11 @@ namespace MyEngine
 		static std::unique_ptr<RigidMeshRenderer> LoadRigidMeshRendererFromFile(std::string filePath);
 		static std::unique_ptr<SkinningMeshRenderer> LoadSkinningMeshRendererFromFile(std::string filePath);
 		static void SetLoadMaterialType(LoadMaterialType type);
+		static void SetLoadMaterialProperties(LoadMaterialProperties props);
 
 	private:
 		static LoadMaterialType s_materialType;
+		static LoadMaterialProperties s_materialProperties;
 	};
 
 }

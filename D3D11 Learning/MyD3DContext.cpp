@@ -454,12 +454,16 @@ bool MyEngine::MyD3DContext::InitializeScene()
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
+    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::OnlyBaseColor);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::None);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
+    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::All);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/char.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::OnlyBaseColor);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
 
     // renderpass 
@@ -884,6 +888,7 @@ void MyEngine::MyD3DContext::CreateSkinningRenderer(const Vector3& pos)
     m_sceneObjects.back()->SetWorldPosition(pos);
 
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
+    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::OnlyBaseColor);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
 
     m_meshRenderers.back()->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader_SkinningBone());

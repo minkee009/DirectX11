@@ -41,8 +41,6 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 	else if (isTGA)
 	{
 		hr = LoadFromTGAFile(path.c_str(), nullptr, image);
-		Convert(image.GetImages(), image.GetImageCount(), image.GetMetadata(),
-			DXGI_FORMAT_R8G8B8A8_UNORM, TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, image);
 	}
 	else
 	{

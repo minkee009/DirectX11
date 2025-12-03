@@ -54,7 +54,10 @@ void MyEngine::Material::CreateConstantBuffer(ID3D11DeviceContext* context)
 
 	MaterialCB cb;
 	cb.textureFlags = m_textureFlags;
+	cb.propertyFlags = m_propertyFlags;
 	cb.baseColor = m_baseColor;
+	cb.roughness = m_roughness;
+	cb.metallic = m_metallic;
 	context->UpdateSubresource(m_materialCB.Get(), 0, nullptr, &cb, 0, 0);
 }
 
@@ -91,7 +94,7 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context)
 			context->PSSetSamplers(tex.slot, 1, tex.pTexture->GetSamplerStateAddress());
 	}
 
-	if (m_textures.empty() && !m_hasBaseColor)
+	if (m_textures.empty() && (m_propertyFlags & static_cast<UINT>(TextureType::Diffuse)) == 0)
 	{
 		//ShaderManager::Get()->BindDefaultShader();
 	}

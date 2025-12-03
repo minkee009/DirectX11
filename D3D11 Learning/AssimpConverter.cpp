@@ -296,17 +296,6 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
         break;
     }
 
-    //색상 불러오기
-    aiColor4D diffuseColor;
-    if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor))
-    {
-        resourceMat->SetBaseColor({ diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a });
-    }
-    else
-    {
-        resourceMat->SetBaseColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-    }
-
     // ---- Texture 매핑 ---- //
     struct TexTypeMap {
         aiTextureType aiType;
@@ -409,6 +398,33 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
                 }
             }
         }
+    }
+
+    // 프로퍼티 불러오기 (전역 설정에 의해 결정)
+    aiColor4D propertyColor;
+    ai_real propertyKey;
+    switch (s_materialProperties)
+    {
+    case LoadMaterialProperties::All:
+        if (AI_SUCCESS == pMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, propertyKey)
+            && (resourceMat->GetTextureFlags() & static_cast<UINT>(TextureType::Roughness)) == 0)
+        {
+            resourceMat->SetRoughnessKey({ propertyKey });
+        }
+        if (AI_SUCCESS == pMat->Get(AI_MATKEY_REFLECTIVITY, propertyKey)
+            && (resourceMat->GetTextureFlags() & static_cast<UINT>(TextureType::Metalness)) == 0)
+        {
+            resourceMat->SetMetallicKey({ propertyKey });
+        }
+        [[fallthrough]];
+    case LoadMaterialProperties::OnlyBaseColor:
+        if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, propertyColor))
+        {
+            resourceMat->SetBaseColor({ propertyColor.r, propertyColor.g, propertyColor.b, propertyColor.a });
+        }
+        [[fallthrough]];
+    case LoadMaterialProperties::None:
+        break;
     }
 
     resourceMat->CreateConstantBuffer(s_pContext);
@@ -1153,8 +1169,14 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 }
 
 MyEngine::AssimpConverter::LoadMaterialType MyEngine::AssimpConverter::s_materialType = MyEngine::AssimpConverter::LoadMaterialType::BlinnPhong;
+MyEngine::AssimpConverter::LoadMaterialProperties MyEngine::AssimpConverter::s_materialProperties = MyEngine::AssimpConverter::LoadMaterialProperties::None;
 
 void MyEngine::AssimpConverter::SetLoadMaterialType(LoadMaterialType type)
 {
     s_materialType = type;
+}
+
+void MyEngine::AssimpConverter::SetLoadMaterialProperties(LoadMaterialProperties props)
+{
+    s_materialProperties = props;
 }

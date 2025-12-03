@@ -49,8 +49,12 @@ namespace MyEngine
 	struct MaterialCB
 	{
 		UINT textureFlags; // bit0=Diffuse, bit1=Specular, bit2=Normal, ...
-		float padding[3];  // 16byte align
+		UINT propertyFlags; // non-texture, keyFlags -> same TextureFlags
+		float padding[2];
 		Color baseColor;
+		float roughness;
+		float metallic;
+		float padding2[2];
 	};
 
 	class Material : public Resource
@@ -58,6 +62,7 @@ namespace MyEngine
 	private:	
 		std::string m_name = "";
 		UINT m_textureFlags = 0; // 각 TextureType에 해당하는 bitmask
+		UINT m_propertyFlags = 0;
 		ComPtr<ID3D11Buffer> m_materialCB; // 상수버퍼
 
 		ID3D11VertexShader* m_pVertexShader = nullptr;
@@ -65,8 +70,9 @@ namespace MyEngine
 
 		std::vector<TextureBinding> m_textures;
 
-		bool m_hasBaseColor = false;
 		Color m_baseColor = { 1,1,1,1 };
+		float m_roughness = 0.0f;
+		float m_metallic = 0.0f;
 
 		bool m_useZWrite = true;
 		bool m_useAlphaBlend = false;
@@ -83,10 +89,15 @@ namespace MyEngine
 
 		void CreateConstantBuffer(ID3D11DeviceContext* context);
 
+		inline const UINT& GetTextureFlags() const { return m_textureFlags; }
 		inline const std::string& GetName() const { return m_name; }
 		inline const Color& GetBaseColor() const { return m_baseColor; }
+		inline const float& GetRoughnessKey() const { return m_roughness; }
+		inline const float& GetMetallicKey() const { return m_metallic; }
 
 		inline void SetName(std::string&& name) { m_name = name; }
-		inline void SetBaseColor(const Color& baseColor) { m_hasBaseColor = true; m_baseColor = baseColor; }
+		inline void SetBaseColor(const Color& baseColor) { m_propertyFlags |= static_cast<UINT>(TextureType::Diffuse); m_baseColor = baseColor; }
+		inline void SetRoughnessKey(const float& roughness) { m_propertyFlags |= static_cast<UINT>(TextureType::Roughness); m_roughness = m_roughness; }
+		inline void SetMetallicKey(const float& metallic) { m_propertyFlags |= static_cast<UINT>(TextureType::Metalness); m_metallic = metallic; }
 	};
 }

@@ -562,7 +562,10 @@ cbuffer ConstantBuffer : register(b0)
 cbuffer MaterialBuffer : register(b1)
 {
 	uint textureFlags; 
+    uint propertyFlags;
 	float4 baseColor;
+    float metallic;
+    float roughness;
 }
 
 Texture2D txDiffuse : register(t0);
@@ -744,7 +747,10 @@ cbuffer ConstantBuffer : register(b0)
 cbuffer MaterialBuffer : register(b1)
 {
 	uint textureFlags; 
+    uint propertyFlags;
 	float4 baseColor;
+    float metallic;
+    float roughness;
 }
 
 cbuffer GradientBuffer : register(b5)
@@ -967,7 +973,10 @@ cbuffer ConstantBuffer : register(b0)
 cbuffer MaterialBuffer : register(b1)
 {
 	uint textureFlags; 
+    uint propertyFlags;
 	float4 baseColor;
+    float metallic;
+    float roughness;
 }
 
 Texture2D txDiffuse : register(t0);
@@ -1031,7 +1040,10 @@ cbuffer ConstantBuffer : register(b0)
 cbuffer MaterialBuffer : register(b1)
 {
 	uint textureFlags; 
+    uint propertyFlags;
 	float4 baseColor;
+    float metallic;
+    float roughness;
 }
 Texture2D txDiffuse : register(t0);
 TextureCube skyBoxTX : register(t1);
@@ -1039,10 +1051,11 @@ Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
 Texture2D roughnessMap : register(t6); 
-Texture2D metalicMap : register(t7); 
+Texture2D metallicMap : register(t7); 
 Texture2D lutMap : register(t9);
-SamplerState samLinear : register(s0);
 Texture2D shadowMap : register(t10); 
+
+SamplerState samLinear : register(s0);
 SamplerComparisonState samShadow : register(s1);
 
 struct PS_INPUT
@@ -1156,30 +1169,40 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float NdotL = saturate(dot(N, L));
     float NdotV = max(dot(N, V), 0.0);
 
-    float3 albedo = lerp(baseColor.rgb, txDiffuse.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
-    albedo = pow(albedo, 2.2);   // metadata.format = DirectX::MakeSRGB(metadata.format);
+    float4 albedo = lerp(baseColor, txDiffuse.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
+    float3 emissive = lerp(float3(0,0,0), emmisiveMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 8) != 0);
 
-    float metallic = lerp(diffuseStr, metalicMap.Sample(samLinear, input.Tex).r,(textureFlags & 128) != 0);
-    float roughness = lerp(ambientStr, roughnessMap.Sample(samLinear, input.Tex).r,(textureFlags & 64) != 0);
+    const float alphaCutoff = 0.5f;
+    clip(albedo.a - alphaCutoff);
+
+    emissive = pow(emissive, 2.2);
+    albedo = pow(albedo, 2.2);   // metadata.format = DirectX::MakeSRGB(metadata.format);
+    float metallicTex = metallicMap.Sample(samLinear, input.Tex).r;
+    float _metallic = lerp(diffuseStr, metallicTex,(textureFlags & 128) != 0);
+    _metallic = lerp(_metallic, metallic,(propertyFlags & 128) != 0);
+
+    float roughnessTex = roughnessMap.Sample(samLinear, input.Tex).r;
+    float _roughness = lerp(ambientStr,roughnessTex,(textureFlags & 64) != 0);
+    _roughness = lerp(_roughness, roughness,(propertyFlags & 64) != 0);
 
     // BRDF 계산
-    float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
-    float NDF = ndfGGX(N, H, roughness);
+    float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, _metallic);
+    float NDF = ndfGGX(N, H, _roughness);
     float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    float G = geometrySmith(N, V, L, roughness);
+    float G = geometrySmith(N, V, L, _roughness);
 
     float3 numerator = NDF * G * F;
     float denominator = 4.0 * max(dot(N, V), 0.0) * NdotL + 0.001;
     float3 specular = numerator / denominator;
     float3 kS = F;
     float3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;
-    float3 Lo = (kD * albedo / PI + specular) * vLightColor.rgb * NdotL;
+    kD *= 1.0 - _metallic;
+    float3 Lo = (kD * albedo.rgb / PI + specular) * vLightColor.rgb * NdotL;
 
-    //float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, roughness);
+    //float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
     //float3 kS_ibl = F_ibl;
     //float3 kD_ibl = 1.0 - kS_ibl;
-    //kD_ibl *= 1.0 - metallic;
+    //kD_ibl *= 1.0 - _metallic;
 
     //float3 irradiance = float3(0.0, 0.0, 0.0);
 
@@ -1193,22 +1216,22 @@ float4 PS(PS_INPUT input) : SV_TARGET
     //irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N + bitangent * 0.5), 0).rgb * 0.15;
     //irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N - bitangent * 0.5), 0).rgb * 0.15;
 
-    //float3 diffuseIBL = kD_ibl * irradiance * albedo;
+    //float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
 
     //float3 specularIBL;
     //
-    //if (roughness < 0.1)
+    //if (_roughness < 0.1)
     //{
     //    // 매끄러운 표면 - 정확한 반사
     //    specularIBL = skyBoxTX.SampleLevel(samLinear, R, 0).rgb * F_ibl;
     //}
-    //else if (roughness < 0.5)
+    //else if (_roughness < 0.5)
     //{
     //    // 중간 러프니스 - 약간의 블러
     //    float3 spec = skyBoxTX.SampleLevel(samLinear, R, 0).rgb;
     //    
     //    // 주변 샘플 추가 (간단한 블러 근사)
-    //    float offset = roughness * 0.1;
+    //    float offset = _roughness * 0.1;
     //    float3 r_up = normalize(R + float3(0, offset, 0));
     //    float3 r_down = normalize(R - float3(0, offset, 0));
     //    float3 r_right = normalize(R + float3(offset, 0, 0));
@@ -1228,7 +1251,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     //    float3 spec = skyBoxTX.SampleLevel(samLinear, R, 0).rgb * 0.3;
     //    
     //    // 더 많은 샘플로 블러 근사
-    //    float offset = roughness * 0.15;
+    //    float offset = _roughness * 0.15;
     //    for (int i = 0; i < 8; i++)
     //    {
     //        float angle = i * PI / 4.0;
@@ -1236,16 +1259,17 @@ float4 PS(PS_INPUT input) : SV_TARGET
     //        spec += skyBoxTX.SampleLevel(samLinear, offset_dir, 0).rgb * 0.0875; // 0.7 / 8
     //    }
     //    
-    //    specularIBL = spec * F_ibl * (1.0 - roughness); // 러프니스가 높을수록 specular 감소
+    //    specularIBL = spec * F_ibl * (1.0 - _roughness); // 러프니스가 높을수록 specular 감소
     //}
     //
     //float3 ambient = (diffuseIBL + specularIBL) * 0.7; // 강도 조절
    
+    float3 ambient = float3(0.03, 0.03, 0.03) * albedo.rgb * 0.5;
     float shadow = CalculateShadowPCF(input.LightPos);
 
     Lo *= shadow;
     
-    float3 finalColor = Lo;
+    float3 finalColor = Lo + emissive;
 
     //with Gamma correction + HDR tonemapping
     finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));
