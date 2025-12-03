@@ -15,6 +15,9 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 {
 	//dds인지 아닌지 확인
 	bool isDDS = false;
+	
+	//tga인지 아닌지 확인
+	bool isTGA = false;
 
 	size_t extPos = path.rfind(L'.');
 	if (extPos != std::wstring::npos)
@@ -22,6 +25,9 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 		std::wstring ext = path.substr(extPos);
 		if (ext == L".dds" || ext == L".DDS")
 			isDDS = true;
+
+		else if (ext == L".tga" || ext == L".TGA")
+			isTGA = true;
 	}
 
 	//-------- 텍스쳐 로드 --------//
@@ -31,6 +37,12 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 	if (isDDS)
 	{
 		hr = LoadFromDDSFile(path.c_str(), DDS_FLAGS_NONE, nullptr, image);
+	}
+	else if (isTGA)
+	{
+		hr = LoadFromTGAFile(path.c_str(), nullptr, image);
+		Convert(image.GetImages(), image.GetImageCount(), image.GetMetadata(),
+			DXGI_FORMAT_R8G8B8A8_UNORM, TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, image);
 	}
 	else
 	{
@@ -42,6 +54,8 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 
 	ID3D11Device* device = nullptr;
 	context->GetDevice(&device);
+
+
 
 	ComPtr<ID3D11ShaderResourceView> pSRV;
 	hr = CreateShaderResourceView(device, image.GetImages(), image.GetImageCount(), image.GetMetadata(), pSRV.GetAddressOf());

@@ -116,9 +116,9 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	CompileLiteralCodeToPixelShader(pDevice, m_pOutlinePixelShader.GetAddressOf(), g_pscode_outline);
 
 	//ºí¸° Æþ Á¤Á¡ ¼ÎÀÌ´õ
-	CompileLiteralCodeToVertexShader(pDevice, m_pBlinnPhongVertexShader.GetAddressOf(), g_vscode_common_static, m_pBlinnPhongVSBlob.GetAddressOf());
-	CompileLiteralCodeToVertexShader(pDevice, m_pBlinnPhongVertexShader_useRigidBone.GetAddressOf(), g_vscode_common_rigid);
-	CompileLiteralCodeToVertexShader(pDevice, m_pBlinnPhongVertexShader_useSkinningBone.GetAddressOf(), g_vscode_common_skinning);
+	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader.GetAddressOf(), g_vscode_common_static, m_pBlinnPhongVSBlob.GetAddressOf());
+	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useRigidBone.GetAddressOf(), g_vscode_common_rigid);
+	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useSkinningBone.GetAddressOf(), g_vscode_common_skinning);
 
 	//ºí¸° Æþ ÇÈ¼¿ ¼ÎÀÌ´õ
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongPixelShader.GetAddressOf(), g_pscode_blinnphong);
@@ -139,9 +139,9 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 	m_pOutlinePixelShader = nullptr;
 	m_pDefaultVSBlob = nullptr;
 
-	m_pBlinnPhongVertexShader = nullptr;
-	m_pBlinnPhongVertexShader_useRigidBone = nullptr;
-	m_pBlinnPhongVertexShader_useSkinningBone = nullptr;
+	m_pCommonVertexShader = nullptr;
+	m_pCommonVertexShader_useRigidBone = nullptr;
+	m_pCommonVertexShader_useSkinningBone = nullptr;
 	m_pBlinnPhongPixelShader = nullptr;
 	m_pBlinnPhongToonPixelShader = nullptr;
 	m_pBlinnPhongShadowMapPixelShader = nullptr;

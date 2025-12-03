@@ -77,12 +77,11 @@ void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::u
 void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
     //메쉬 정보 처리
-    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         std::shared_ptr<Mesh> mesh = nullptr;
-        std::string meshName = "[SubMesh]-" + sceneName + std::string{ pMesh->mName.C_Str() };
+        std::string meshName = "[SubMesh]-" + std::to_string(meshes.size()) + std::string{pMesh->mName.C_Str()};
         if (ResourceManager::Get()->Containskey(meshName))
         {
             mesh = ResourceManager::Get()->Load<Mesh>(meshName);
@@ -107,12 +106,11 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& 
 void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
 {
     //메쉬 정보 처리
-    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         std::shared_ptr<Mesh> mesh = nullptr;
-        std::string meshName = "[SubMesh]-" + sceneName + std::string{ pMesh->mName.C_Str() };
+        std::string meshName = "[SubMesh]-" + std::to_string(meshes.size()) + std::string{ pMesh->mName.C_Str() };
         if (ResourceManager::Get()->Containskey(meshName))
         {
             mesh = ResourceManager::Get()->Load<Mesh>(meshName);
@@ -184,12 +182,11 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
     }
 
     //메쉬 정보 처리
-    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         std::shared_ptr<Mesh> mesh = nullptr;
-        std::string meshName = "[SubMesh]-" + sceneName + std::string{pMesh->mName.C_Str()};
+        std::string meshName = "[SubMesh]-" + std::to_string(meshes.size()) + std::string{pMesh->mName.C_Str()};
         if (ResourceManager::Get()->Containskey(meshName))
         {
             mesh = ResourceManager::Get()->Load<Mesh>(meshName);
@@ -276,13 +273,13 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
     switch (boneType)
     {
     case BoneType::None:
-        resourceMat->InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader());
+        resourceMat->InitVertexShader(ShaderManager::Get()->GetCommonVertexShader());
         break;
     case BoneType::RigidBone:
-        resourceMat->InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_RigidBone());
+        resourceMat->InitVertexShader(ShaderManager::Get()->GetCommonVertexShader_RigidBone());
         break;
     case BoneType::SkinningBone:
-        resourceMat->InitVertexShader(ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+        resourceMat->InitVertexShader(ShaderManager::Get()->GetCommonVertexShader_SkinningBone());
         break;
     }
 
@@ -324,15 +321,29 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
         { aiTextureType_EMISSIVE, TextureType::Emissive, 4 },
         //{ aiTextureType_HEIGHT, TextureType::Height, 4 },
         //{ aiTextureType_AMBIENT_OCCLUSION, TextureType::AmbientOcclusion, 5 },
-        //{ aiTextureType_METALNESS, TextureType::Metalness, 6 },
-        //{ aiTextureType_DIFFUSE_ROUGHNESS, TextureType::Roughness, 7 },
+        { aiTextureType_SHININESS, TextureType::Roughness, 6 },
+        { aiTextureType_METALNESS, TextureType::Metalness, 7 },
     };
 
     static fs::path base_directory = std::filesystem::current_path() / "Resources/Textures";
 
+	std::vector<aiTextureType> usedTextureTypes;
+
+	for (int i = 0; i < pMat->mNumProperties; ++i)
+	{
+		aiMaterialProperty* prop = pMat->mProperties[i];
+
+        if (prop->mSemantic)
+        {
+            auto semanticType = (aiTextureType)prop->mSemantic;
+			usedTextureTypes.push_back(semanticType);
+        }
+	}
+
     for (const auto& [aiType, myType, slot] : textureTypes)
     {
         const UINT count = pMat->GetTextureCount(aiType);
+
         for (UINT i = 0; i < count; ++i)
         {
             aiString path;
@@ -446,7 +457,6 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         model->importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 5.0f);
         model->importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
         model->LoadFromFile(filePath.c_str(), s_importFlags);
-
     }
 
 
@@ -486,9 +496,23 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         pStaticMeshRenderer->SetMesh(sMesh);
     }
 
+    std::string shaderType = "";
+    switch (s_materialType)
+    {
+    case LoadMaterialType::BlinnPhong:
+        shaderType = "[BlinnPhong] |";
+        break;
+    case LoadMaterialType::BlinnPhongToon:
+        shaderType = "[BlinnPhongToon] |";
+        break;
+    case LoadMaterialType::BRDF:
+        shaderType = "[BRDF] |";
+        break;
+    }
+
     for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = "[Static] | " + shaderType + std::string{model->pScene->mMaterials[i]->GetName().C_Str()};
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -714,9 +738,25 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         pRigidMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
 
+    std::string shaderType = "";
+    switch (s_materialType)
+    {
+    case LoadMaterialType::BlinnPhong:
+        shaderType = "[BlinnPhong] |";
+        break;
+    case LoadMaterialType::BlinnPhongToon:
+        shaderType = "[BlinnPhongToon] |";
+        break;
+    case LoadMaterialType::BRDF:
+        shaderType = "[BRDF] |";
+        break;
+    }
+
     for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
+
+
+        std::string matName = "[RigidBone] | " + shaderType + std::string{model->pScene->mMaterials[i]->GetName().C_Str()};
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -746,7 +786,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         aiProcess_CalcTangentSpace |
         aiProcess_FlipUVs;
 
-    std::string fileName = "[Model]-" + std::string{filePath.c_str()};
+    std::string fileName = "[Model]-" + std::string{ filePath.c_str() };
 
 
     std::shared_ptr<AssimpModel> model = nullptr;
@@ -1076,9 +1116,24 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         pSkinningMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
 
+	std::string shaderType = "";
+    switch (s_materialType)
+    {
+	case LoadMaterialType::BlinnPhong:
+		shaderType = "[BlinnPhong] |";
+		break;
+	case LoadMaterialType::BlinnPhongToon:
+		shaderType = "[BlinnPhongToon] |";
+		break;
+	case LoadMaterialType::BRDF:
+		shaderType = "[BRDF] |";
+		break;
+    }
+
     for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
+
+        std::string matName = "[SkinnningBone] | " + shaderType + std::string{model->pScene->mMaterials[i]->GetName().C_Str()};
 
         std::shared_ptr<Material> mat = nullptr;
 

@@ -22,9 +22,9 @@ namespace MyEngine::D3DCTX
 		ComPtr<ID3D11VertexShader> m_pOutlineVertexShader_useRigidBone;
 		ComPtr<ID3D11VertexShader> m_pOutlineVertexShader_useSkinningBone;
 
-		ComPtr<ID3D11VertexShader> m_pBlinnPhongVertexShader;
-		ComPtr<ID3D11VertexShader> m_pBlinnPhongVertexShader_useRigidBone;
-		ComPtr<ID3D11VertexShader> m_pBlinnPhongVertexShader_useSkinningBone;
+		ComPtr<ID3D11VertexShader> m_pCommonVertexShader;
+		ComPtr<ID3D11VertexShader> m_pCommonVertexShader_useRigidBone;
+		ComPtr<ID3D11VertexShader> m_pCommonVertexShader_useSkinningBone;
 
 		ComPtr<ID3D11PixelShader> m_pDefaultPixelShader;
 		ComPtr<ID3D11PixelShader> m_pOutlinePixelShader;
@@ -63,9 +63,9 @@ namespace MyEngine::D3DCTX
 
 		inline ID3DBlob* GetDefaultVSBlob() { return m_pDefaultVSBlob.Get(); }
 
-		inline ID3D11VertexShader* GetBlinnPhongVertexShader() { return m_pBlinnPhongVertexShader.Get(); }
-		inline ID3D11VertexShader* GetBlinnPhongVertexShader_RigidBone() { return m_pBlinnPhongVertexShader_useRigidBone.Get(); }
-		inline ID3D11VertexShader* GetBlinnPhongVertexShader_SkinningBone() { return m_pBlinnPhongVertexShader_useSkinningBone.Get(); }
+		inline ID3D11VertexShader* GetCommonVertexShader() { return m_pCommonVertexShader.Get(); }
+		inline ID3D11VertexShader* GetCommonVertexShader_RigidBone() { return m_pCommonVertexShader_useRigidBone.Get(); }
+		inline ID3D11VertexShader* GetCommonVertexShader_SkinningBone() { return m_pCommonVertexShader_useSkinningBone.Get(); }
 
 		inline ID3D11PixelShader* GetBlinnPhongPixelShader() { return m_pBlinnPhongPixelShader.Get(); }
 		inline ID3D11PixelShader* GetBlinnPhongToonPixelShader() { return m_pBlinnPhongToonPixelShader.Get(); }

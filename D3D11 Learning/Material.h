@@ -21,16 +21,16 @@ namespace MyEngine
 	enum class TextureType 
 	{
 		None = 0,
-		Diffuse = 1 << 0,
-		Specular = 1 << 1,
-		Normal = 1 << 2,
-		Emissive = 1 << 3,
-		Height = 1 << 4,
-		AmbientOcclusion = 1 << 5,
-		Roughness = 1 << 6,
-		Metalness = 1 << 7,
-		CubeMap = 1 << 8,
-		LookUpTable = 1 << 9
+		Diffuse = 1 << 0,			// 1
+		Specular = 1 << 1,			// 2
+		Normal = 1 << 2,			// 4
+		Emissive = 1 << 3,			// 8
+		Height = 1 << 4,			// 16
+		AmbientOcclusion = 1 << 5,	// 32
+		Roughness = 1 << 6,			// 64
+		Metalness = 1 << 7,			// 128
+		CubeMap = 1 << 8,			// 256
+		LookUpTable = 1 << 9,		// 512
 	}; 
 
 	struct TextureBinding

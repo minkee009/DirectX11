@@ -1038,6 +1038,8 @@ TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
+Texture2D roughnessMap : register(t6); 
+Texture2D metalicMap : register(t7); 
 Texture2D lutMap : register(t9);
 SamplerState samLinear : register(s0);
 Texture2D shadowMap : register(t10); 
@@ -1099,6 +1101,41 @@ float geometrySmith(float3 N, float3 V, float3 L, float roughness)
     return ggx1 * ggx2;
 }
 
+float CalculateShadowPCF(float4 LightPos)
+{
+    float3 projCoords = LightPos.xyz / LightPos.w;
+    float2 texCoords; 
+    texCoords.x = projCoords.x * 0.5f + 0.5f;
+    texCoords.y = -projCoords.y * 0.5f + 0.5f;
+    
+    if (texCoords.x < 0.0f || texCoords.x > 1.0f || 
+        texCoords.y < 0.0f || texCoords.y > 1.0f)
+        return 1.0f;
+    
+    float currentDepth = projCoords.z;
+    if (currentDepth < 0.0f || currentDepth > 1.0f)
+        return 1.0f;
+    
+    float bias = 0.005f;
+    currentDepth -= bias;
+    
+    // 3x3 PCF
+    float shadow = 0.0f;
+    float2 texelSize = 1.0f / 4096.0f; // Shadow Map 크기
+    
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float2 offset = float2(x, y) * texelSize;
+            shadow += shadowMap.SampleCmpLevelZero(samShadow, texCoords + offset, currentDepth);
+        }
+    }
+    shadow /= 9.0f;
+    
+    return shadow;
+}
+
 float4 PS(PS_INPUT input) : SV_TARGET
 {
     // 필요한 변수를 모두 구하기
@@ -1122,11 +1159,11 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 albedo = lerp(baseColor.rgb, txDiffuse.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
     albedo = pow(albedo, 2.2);   // metadata.format = DirectX::MakeSRGB(metadata.format);
 
-    float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, diffuseStr);
-    float roughness = ambientStr;
-    float metallic = diffuseStr;
+    float metallic = lerp(diffuseStr, metalicMap.Sample(samLinear, input.Tex).r,(textureFlags & 128) != 0);
+    float roughness = lerp(ambientStr, roughnessMap.Sample(samLinear, input.Tex).r,(textureFlags & 64) != 0);
 
     // BRDF 계산
+    float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
     float NDF = ndfGGX(N, H, roughness);
     float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
     float G = geometrySmith(N, V, L, roughness);
@@ -1203,9 +1240,12 @@ float4 PS(PS_INPUT input) : SV_TARGET
     //}
     //
     //float3 ambient = (diffuseIBL + specularIBL) * 0.7; // 강도 조절
-    float3 ambient = float3(0.03, 0.03, 0.03) * albedo * 0.5;
+   
+    float shadow = CalculateShadowPCF(input.LightPos);
 
-    float3 finalColor = ambient + Lo;
+    Lo *= shadow;
+    
+    float3 finalColor = Lo;
 
     //with Gamma correction + HDR tonemapping
     finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));
