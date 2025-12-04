@@ -1269,7 +1269,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     Lo *= shadow;
     
-    float3 finalColor = Lo + emissive;
+    float3 finalColor = Lo + emissive + ambient;
 
     //with Gamma correction + HDR tonemapping
     finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));

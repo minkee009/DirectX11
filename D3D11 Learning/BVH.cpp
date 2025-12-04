@@ -137,3 +137,18 @@ size_t MyEngine::BVH::BuildNode(const std::vector<BoundingBox>& registry, size_t
 
     return nodeIdx;
 }
+
+bool MyEngine::BVH::CheckSplitRule(const size_t nodeIdx)
+{
+	// 현재 노드 정보 가져오기
+	const Node& node = m_nodes[nodeIdx];
+
+	if (node.IsLeaf())
+		return false;
+
+    // Parent AABB가 지나치게 커졌는가?
+
+
+
+    return false;
+}

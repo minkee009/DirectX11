@@ -80,6 +80,11 @@ bool MyEngine::Texture::LoadTextureFromMemory(ID3D11DeviceContext* context, cons
 		// DDS 포맷은 LoadFromDDSMemory 사용
 		hr = DirectX::LoadFromDDSMemory(pData, dataSize, DirectX::DDS_FLAGS_NONE, nullptr, image);
 	}
+	else if (formatExt == L".tga" || formatExt == L".TGA")
+	{
+		// TGA 포맷은 LoadFromTGAMemory 사용
+		hr = DirectX::LoadFromTGAMemory(pData, dataSize, nullptr, image);
+	}
 	else // 대부분의 WIC 포맷 (png, jpg, bmp, tiff 등)
 	{
 		// WIC 포맷은 LoadFromWICMemory 사용

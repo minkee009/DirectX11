@@ -59,5 +59,7 @@ namespace MyEngine
 		std::vector<size_t> m_alignedIndices;
 
 		size_t BuildNode(const std::vector<BoundingBox>& registry, size_t startIdx, size_t registrySize);
+
+		bool CheckSplitRule(const size_t nodeIdx);
 	};
 }

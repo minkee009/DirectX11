@@ -464,8 +464,6 @@ void MyEngine::MyImGui::Update()
         ImVec2 pos = ImVec2((260 - textSize.x) * 0.5f - 39, shininessUIPos.y + 3); // 윈도우 안에서의 좌표
         ImGui::SetCursorPos(pos);
         ImGui::Text("%d", m_d3dContext->m_shininess);
-
-        
     }
     ImGui::End();
 
@@ -602,44 +600,44 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
-    ImGui::Begin(u8"메모리 디버그");    
+    //ImGui::Begin(u8"메모리 디버그");    
 
-    ImGui::Text(u8"F키로 카메라 앞에 스키닝 메쉬 생성, G키로 메쉬 순차 삭제");
+    //ImGui::Text(u8"F키로 카메라 앞에 스키닝 메쉬 생성, G키로 메쉬 순차 삭제");
 
-    if (ImGui::Button("D3D-Trim()"))
-    {
-        m_d3dContext->m_dxgiDevice->Trim();
-    }
+    //if (ImGui::Button("D3D-Trim()"))
+    //{
+    //    m_d3dContext->m_dxgiDevice->Trim();
+    //}
 
-    static DebugStatusUI::DRamDebugData data1;
-    static DebugStatusUI::GPURamDebugData data2;
+    //static DebugStatusUI::DRamDebugData data1;
+    //static DebugStatusUI::GPURamDebugData data2;
 
-    auto toMB = [](UINT64 v) { return v / (1024.0 * 1024.0); };
+    //auto toMB = [](UINT64 v) { return v / (1024.0 * 1024.0); };
 
-    static float updateInterval = 0.0f;
-    updateInterval += TIME_GET_DELTA();
+    //static float updateInterval = 0.0f;
+    //updateInterval += TIME_GET_DELTA();
 
-    if (updateInterval > 0.03125f)
-    {
-        updateInterval = 0.0f;
+    //if (updateInterval > 0.03125f)
+    //{
+    //    updateInterval = 0.0f;
 
-        data1 = DebugStatusUI::GetCpuMemoryUsage();
-        data2 = DebugStatusUI::QueryGpuMemory(m_d3dContext->m_pd3dDevice);
-    }
+    //    data1 = DebugStatusUI::GetCpuMemoryUsage();
+    //    data2 = DebugStatusUI::QueryGpuMemory(m_d3dContext->m_pd3dDevice);
+    //}
 
-    if (data1.isValidData)
-    {
-        auto ramUsageMB = toMB(data1.workingSet);
-        auto ramPageMB = toMB(data1.PagefileUsage - data1.workingSet);
-        ImGui::Text(u8"DRAM 사용량 %.1f MB",(float)ramUsageMB);
-        ImGui::Text(u8"메모리 페이지 %.1f MB", (float)ramPageMB);
-    }
-    if (data2.isValidData)
-    {
-        ImGui::Text(u8"비디오 메모리 사용량 %.1f MB", (float)data2.usage);
-    }
-    
-    ImGui::End();
+    //if (data1.isValidData)
+    //{
+    //    auto ramUsageMB = toMB(data1.workingSet);
+    //    auto ramPageMB = toMB(data1.PagefileUsage - data1.workingSet);
+    //    ImGui::Text(u8"DRAM 사용량 %.1f MB",(float)ramUsageMB);
+    //    ImGui::Text(u8"메모리 페이지 %.1f MB", (float)ramPageMB);
+    //}
+    //if (data2.isValidData)
+    //{
+    //    ImGui::Text(u8"비디오 메모리 사용량 %.1f MB", (float)data2.usage);
+    //}
+    //
+    //ImGui::End();
     
 
     if(m_d3dContext->m_enableDebugDraw)
