@@ -370,6 +370,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     InitSkyBox();
     InitShadowMapTex();
+    InitBRDFEnvironment();
 
     if (!m_pBVHTree)
         m_pBVHTree = std::make_unique<BVH>();
@@ -796,6 +797,55 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     return true;
 }
 
+bool MyEngine::MyD3DContext::InitBRDFEnvironment()
+{
+    //텍스쳐 로드
+	HRESULT hr = S_OK;
+    ScratchImage image;
+
+    DirectX::TexMetadata metadata;
+    hr = LoadFromDDSFile(L"Resources/Textures/cubemapBrdf.dds", DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr))
+        return false;
+
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pBRDFLUTSRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+	hr = LoadFromDDSFile(L"Resources/Textures/cubemapDiffuseHDR.dds", DDS_FLAGS_NONE, &metadata, image);
+	if (FAILED(hr))
+		return false;
+    if (!metadata.IsCubemap())
+    {
+        MessageBox(nullptr,
+            L"BRDF Diffuse 텍스쳐가 큐브맵이 아닙니다.", L"오류", MB_OK);
+        return false;
+    }
+	hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pIrradianceSRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+	hr = LoadFromDDSFile(L"Resources/Textures/cubemapSpecularHDR.dds", DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr))
+		return false;
+    if (!metadata.IsCubemap())
+    {
+        MessageBox(nullptr,
+            L"BRDF Specular 텍스쳐가 큐브맵이 아닙니다.", L"오류", MB_OK);
+        return false;
+	}
+	hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pPrefilteredEnvSRV.GetAddressOf());
+    if (FAILED(hr))
+		return false;
+
+    // 바인딩
+	m_pContext->PSSetShaderResources(20, 1, m_pBRDFLUTSRV.GetAddressOf()); 
+	m_pContext->PSSetShaderResources(21, 1, m_pIrradianceSRV.GetAddressOf());
+	m_pContext->PSSetShaderResources(22, 1, m_pPrefilteredEnvSRV.GetAddressOf());
+
+    return true;
+}
+
 void MyEngine::MyD3DContext::DrawSkyBox()
 {
 
@@ -1186,6 +1236,10 @@ void MyEngine::MyD3DContext::UninitializeScene()
 {
     m_meshRenderers.clear();
     AssimpConverter::Release();
+
+	m_pIrradianceSRV = nullptr;
+	m_pPrefilteredEnvSRV = nullptr;
+	m_pBRDFLUTSRV = nullptr;
 
     m_sceneObjects.clear();
     m_pDirectionalLightT.reset();

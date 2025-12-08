@@ -340,6 +340,8 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
             {
                 std::string path_str = path.C_Str();
 
+                bool use_sRGB = false; /*(myType == TextureType::Diffuse || myType == TextureType::Emissive);*/
+
                 if (path_str.length() > 0 && path_str[0] == '*')
                 {
                     size_t textureIndex = std::stoul(path_str.substr(1));
@@ -369,7 +371,7 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
                         else
                         {
                             matTex = ResourceManager::Get()->Load<Texture>(embeddedTexPathStr);
-                            matTex->LoadTextureFromMemory(s_pContext, embeddedTexPathStr, data, size, formatExt);
+                            matTex->LoadTextureFromMemory(s_pContext, embeddedTexPathStr, data, size, formatExt, use_sRGB);
                             resourceMat->InitTexture(myType, slot, matTex);
                         }
                     }
@@ -392,7 +394,8 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
                     else
                     {
                         matTex = ResourceManager::Get()->Load<Texture>(filenameStr);
-                        matTex->LoadTextureFromFile(s_pContext, filenameStr, final_texPath.wstring());
+
+                        matTex->LoadTextureFromFile(s_pContext, filenameStr, final_texPath.wstring(), use_sRGB);
                         resourceMat->InitTexture(myType, slot, matTex);
                     }
                 }
@@ -421,6 +424,11 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
         if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, propertyColor))
         {
             resourceMat->SetBaseColor({ propertyColor.r, propertyColor.g, propertyColor.b, propertyColor.a });
+   //         if(s_materialType == LoadMaterialType::BRDF)
+   //         {
+   //             // BRDF 머티리얼의 경우 알베도 색상도 설정
+   //             resourceMat->SetBaseColor({ std::pow(propertyColor.r,2.2f), std::pow(propertyColor.g,2.2f), std::pow(propertyColor.b,2.2f), propertyColor.a });
+			//}
         }
         [[fallthrough]];
     case LoadMaterialProperties::None:

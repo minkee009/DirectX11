@@ -101,7 +101,6 @@ bool MyEngine::D3DCTX::ShaderManager::CompileLiteralCodeToPixelShader(ID3D11Devi
 	}
 
 	return true;
-
 }
 
 void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)

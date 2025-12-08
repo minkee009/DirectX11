@@ -1055,6 +1055,10 @@ Texture2D metallicMap : register(t7);
 Texture2D lutMap : register(t9);
 Texture2D shadowMap : register(t10); 
 
+Texture2D brdfLUT : register(t20);
+TextureCube irradianceMap : register(t21);
+TextureCube prefilterMap : register(t22);
+
 SamplerState samLinear : register(s0);
 SamplerComparisonState samShadow : register(s1);
 
@@ -1152,6 +1156,9 @@ float CalculateShadowPCF(float4 LightPos)
 float4 PS(PS_INPUT input) : SV_TARGET
 {
     // 필요한 변수를 모두 구하기
+
+    float3 lightColor = vLightColor.rgb * 20.0f;
+
     float3 N = normalize(input.Norm);
     float3 T = normalize(input.Tan);
     T = normalize(T - dot(T, N) * N); // N에 직교하도록 조정
@@ -1175,8 +1182,8 @@ float4 PS(PS_INPUT input) : SV_TARGET
     const float alphaCutoff = 0.5f;
     clip(albedo.a - alphaCutoff);
 
-    emissive = pow(emissive, 2.2);
-    albedo = pow(albedo, 2.2);   // metadata.format = DirectX::MakeSRGB(metadata.format);
+    emissive = pow(emissive, 2.2);  // 감마 보정
+    albedo = pow(albedo, 2.2);      // 감마 보정
     float metallicTex = metallicMap.Sample(samLinear, input.Tex).r;
     float _metallic = lerp(diffuseStr, metallicTex,(textureFlags & 128) != 0);
     _metallic = lerp(_metallic, metallic,(propertyFlags & 128) != 0);
@@ -1186,6 +1193,9 @@ float4 PS(PS_INPUT input) : SV_TARGET
     _roughness = lerp(_roughness, roughness,(propertyFlags & 64) != 0);
 
     // BRDF 계산
+    // Cook-Torrance 모델
+
+    // 직접광
     float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, _metallic);
     float NDF = ndfGGX(N, H, _roughness);
     float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -1197,84 +1207,37 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - _metallic;
-    float3 Lo = (kD * albedo.rgb / PI + specular) * vLightColor.rgb * NdotL;
+    float3 Lo = (kD * albedo.rgb / PI + specular) * lightColor * NdotL;
 
-    //float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
-    //float3 kS_ibl = F_ibl;
-    //float3 kD_ibl = 1.0 - kS_ibl;
-    //kD_ibl *= 1.0 - _metallic;
-
-    //float3 irradiance = float3(0.0, 0.0, 0.0);
-
-    //float3 up = abs(N.y) < 0.999 ? float3(0, 1, 0) : float3(1, 0, 0);
-    //float3 tangent = normalize(cross(up, N));
-    //float3 bitangent = cross(N, tangent);
-
-    //irradiance += skyBoxTX.SampleLevel(samLinear, N, 0).rgb * 0.4;  // 중앙
-    //irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N + tangent * 0.5), 0).rgb * 0.15;
-    //irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N - tangent * 0.5), 0).rgb * 0.15;
-    //irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N + bitangent * 0.5), 0).rgb * 0.15;
-    //irradiance += skyBoxTX.SampleLevel(samLinear, normalize(N - bitangent * 0.5), 0).rgb * 0.15;
-
-    //float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
-
-    //float3 specularIBL;
-    //
-    //if (_roughness < 0.1)
-    //{
-    //    // 매끄러운 표면 - 정확한 반사
-    //    specularIBL = skyBoxTX.SampleLevel(samLinear, R, 0).rgb * F_ibl;
-    //}
-    //else if (_roughness < 0.5)
-    //{
-    //    // 중간 러프니스 - 약간의 블러
-    //    float3 spec = skyBoxTX.SampleLevel(samLinear, R, 0).rgb;
-    //    
-    //    // 주변 샘플 추가 (간단한 블러 근사)
-    //    float offset = _roughness * 0.1;
-    //    float3 r_up = normalize(R + float3(0, offset, 0));
-    //    float3 r_down = normalize(R - float3(0, offset, 0));
-    //    float3 r_right = normalize(R + float3(offset, 0, 0));
-    //    float3 r_left = normalize(R - float3(offset, 0, 0));
-    //    
-    //    spec += skyBoxTX.SampleLevel(samLinear, r_up, 0).rgb * 0.5;
-    //    spec += skyBoxTX.SampleLevel(samLinear, r_down, 0).rgb * 0.5;
-    //    spec += skyBoxTX.SampleLevel(samLinear, r_right, 0).rgb * 0.5;
-    //    spec += skyBoxTX.SampleLevel(samLinear, r_left, 0).rgb * 0.5;
-    //    spec /= 3.0;
-    //    
-    //    specularIBL = spec * F_ibl;
-    //}
-    //else
-    //{
-    //    // 높은 러프니스 - 많은 블러
-    //    float3 spec = skyBoxTX.SampleLevel(samLinear, R, 0).rgb * 0.3;
-    //    
-    //    // 더 많은 샘플로 블러 근사
-    //    float offset = _roughness * 0.15;
-    //    for (int i = 0; i < 8; i++)
-    //    {
-    //        float angle = i * PI / 4.0;
-    //        float3 offset_dir = normalize(R + float3(cos(angle) * offset, sin(angle) * offset, 0));
-    //        spec += skyBoxTX.SampleLevel(samLinear, offset_dir, 0).rgb * 0.0875; // 0.7 / 8
-    //    }
-    //    
-    //    specularIBL = spec * F_ibl * (1.0 - _roughness); // 러프니스가 높을수록 specular 감소
-    //}
-    //
-    //float3 ambient = (diffuseIBL + specularIBL) * 0.7; // 강도 조절
-   
-    float3 ambient = float3(0.03, 0.03, 0.03) * albedo.rgb * 0.5;
     float shadow = CalculateShadowPCF(input.LightPos);
-
     Lo *= shadow;
+
+    // 간접광 (IBL)
+    float3 irradiance = irradianceMap.Sample(samLinear, N).rgb;
+    irradiance = pow(irradiance, 2.2); // 감마 보정
+    float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
+    float3 kD_ibl = (1.0 - F_ibl) * (1.0 - _metallic);
+    float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
     
-    float3 finalColor = Lo + emissive;//+ ambient;
+    uint width, height, numMips;
+    prefilterMap.GetDimensions(0,width, height, numMips);
+
+    float maxMip = float(numMips - 1);
+    float lod = _roughness * maxMip;
+
+    float3 prefilteredColor = prefilterMap.SampleLevel(samLinear, R, lod).rgb;
+    prefilteredColor = pow(prefilteredColor, 2.2); // 감마 보정
+    float2 brdf  = brdfLUT.Sample(samLinear, float2(NdotV, _roughness)).rg;
+    float3 specularIBL = prefilteredColor * (F_ibl * brdf.x + brdf.y);
+
+    float3 ambient = (diffuseIBL + specularIBL);
+    
+    float3 finalColor = Lo + emissive + ambient;
 
     //with Gamma correction + HDR tonemapping
     finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));
-    finalColor = pow(finalColor, float3(1.0f / 2.2f, 1.0f / 2.2f, 1.0f / 2.2f));
-    
+    finalColor = float3(pow(finalColor, 1.0f / 2.2f));
+
     return float4(finalColor,1.0f);
 }
 )";

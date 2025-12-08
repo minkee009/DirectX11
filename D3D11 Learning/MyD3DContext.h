@@ -159,6 +159,13 @@ namespace MyEngine {
 
 		const float SHADOW_MAP_DEPTH = 25.0f;
 
+		// ================ BRDF Environment
+		ComPtr<ID3D11ShaderResourceView> m_pIrradianceSRV;          //IBL Diffuse
+		ComPtr<ID3D11ShaderResourceView> m_pPrefilteredEnvSRV;		//IBL Specular
+		ComPtr<ID3D11ShaderResourceView> m_pBRDFLUTSRV;             //IBL BRDF LUT
+
+		// ================
+
 		// ================ Debug Draw
 		using DefaultVertex = DirectX::VertexPositionColor;
 
@@ -180,6 +187,7 @@ namespace MyEngine {
 
 		bool InitSkyBox();
 		bool InitShadowMapTex();
+		bool InitBRDFEnvironment();
 
 		void DrawSkyBox();
 		void DrawShadowMap();
