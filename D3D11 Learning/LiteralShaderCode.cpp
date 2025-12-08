@@ -1062,6 +1062,9 @@ TextureCube prefilterMap : register(t22);
 SamplerState samLinear : register(s0);
 SamplerComparisonState samShadow : register(s1);
 
+
+static const float EPS = 1e-6;
+
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
@@ -1093,6 +1096,7 @@ float ndfGGX(float3 N, float3 H, float roughness)
     float NdotH = max(dot(N, H), 0.0);
     float NdotH2 = NdotH * NdotH;
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = max(denom, EPS);
     denom = PI * denom * denom;
     return a2 / denom;
 }
@@ -1104,6 +1108,7 @@ float geometrySchlickGGX(float NdotV, float roughness)
 
     float num   = NdotV;
     float denom = NdotV * (1.0 - k) + k;
+    denom = max(denom, EPS);
 	
     return num / denom;
 }
@@ -1174,15 +1179,15 @@ float4 PS(PS_INPUT input) : SV_TARGET
     R.x = -R.x;
 
     float NdotL = saturate(dot(N, L));
-    float NdotV = max(dot(N, V), 0.0);
+    float NdotV = saturate(dot(N, V));
 
     float4 albedo = lerp(baseColor, txDiffuse.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
-    float3 emissive = lerp(float3(0,0,0), emmisiveMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 8) != 0);
+    float3 emmisive = lerp(float3(0,0,0), emmisiveMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 8) != 0);
 
     const float alphaCutoff = 0.5f;
     clip(albedo.a - alphaCutoff);
 
-    emissive = pow(emissive, 2.2);  // 감마 보정
+    emmisive = pow(emmisive, 2.2);  // 감마 보정
     albedo = pow(albedo, 2.2);      // 감마 보정
     float metallicTex = metallicMap.Sample(samLinear, input.Tex).r;
     float _metallic = lerp(diffuseStr, metallicTex,(textureFlags & 128) != 0);
@@ -1191,6 +1196,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float roughnessTex = roughnessMap.Sample(samLinear, input.Tex).r;
     float _roughness = lerp(ambientStr,roughnessTex,(textureFlags & 64) != 0);
     _roughness = lerp(_roughness, roughness,(propertyFlags & 64) != 0);
+    _roughness = max(_roughness, 0.001f);
 
     // BRDF 계산
     // Cook-Torrance 모델
@@ -1202,7 +1208,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float G = geometrySmith(N, V, L, _roughness);
 
     float3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * NdotL + 0.001;
+    float denominator = 4.0 * NdotV * NdotL + 1e-4f;
     float3 specular = numerator / denominator;
     float3 kS = F;
     float3 kD = 1.0 - kS;
@@ -1232,7 +1238,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     float3 ambient = (diffuseIBL + specularIBL);
     
-    float3 finalColor = Lo + emissive + ambient;
+    float3 finalColor = Lo + emmisive + ambient;
 
     //with Gamma correction + HDR tonemapping
     finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));
