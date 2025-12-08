@@ -130,7 +130,7 @@ namespace MyEngine {
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
 		FLOAT m_diffuseGradientStrength = 0.3125f;
-		FLOAT m_specularStrength = 0.228f;
+		FLOAT m_specularStrength = 10.0f;
 		FLOAT m_rimLightStrength = 1.0f;
 		UINT m_shininess = 512;
 

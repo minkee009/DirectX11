@@ -428,6 +428,20 @@ void MyEngine::MyImGui::Update()
             m_d3dContext->m_diffuseStrength = 1.0f;
         }
 
+        ImGui::Text(u8"빛 HDR(Light HDR) : 강도");
+        ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 30.0f);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"초기값##9")) {
+            m_d3dContext->m_specularStrength = 10.0f;
+        }
+
+        ImGui::Text(u8"환경광 (ambient) : 강도");
+        ImGui::SliderFloat("##RimLightStrength", &m_d3dContext->m_rimLightStrength, 0.0f, 1.0f);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"초기값##10")) {
+            m_d3dContext->m_rimLightStrength = 1.0f;
+        }
+
         //ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
         //ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
         //ImGui::SameLine();

@@ -922,7 +922,8 @@ void MyEngine::MyD3DContext::CreateSkinningRenderer(const Vector3& pos)
 
 void MyEngine::MyD3DContext::Clear()
 {
-    float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
+    //float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
+    float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // RGBA
 
     m_pContext->ClearRenderTargetView(m_pRenderTargetView.Get(), ClearColor);
     m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);

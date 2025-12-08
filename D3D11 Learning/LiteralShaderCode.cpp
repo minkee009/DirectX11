@@ -1027,14 +1027,14 @@ cbuffer ConstantBuffer : register(b0)
     float4 vAmbientColor;               // 사용하지 않음
     float ambientStr;    // 현재 코드에서 Roughness로 사용 -> 임시적용 추후에 ConstantBuffer의 부분을 전부 분리해야 함
     float diffuseStr;    // 현재 코드에서 Metalic로 사용 -> 임시적용 추후에 ConstantBuffer의 부분을 전부 분리해야 함
-    float specularStr;   // 사용하지 않음
+    float specularStr;   // 현재 코드에서 lightIntensity로 사용 -> 임시적용 추후에 ConstantBuffer의 부분을 전부 분리해야 함
     uint shininess;      // 사용하지 않음
     float reflectionFactor;    // 사용하지 않음
     matrix LightViewProjection;
     float lowLut;
     float diffGradientDistHalf;
     float diffGradientDepth;
-    float rimLightStr;
+    float rimLightStr;  // 현재 코드에서 ambientIntensity로 사용 -> 임시적용 추후에 ConstantBuffer의 부분을 전부 분리해야 함
 }
 
 cbuffer MaterialBuffer : register(b1)
@@ -1161,8 +1161,9 @@ float CalculateShadowPCF(float4 LightPos)
 float4 PS(PS_INPUT input) : SV_TARGET
 {
     // 필요한 변수를 모두 구하기
-
-    float3 lightColor = vLightColor.rgb * 20.0f;
+    
+    float lightIntensity = specularStr;
+    float3 lightColor = vLightColor.rgb * lightIntensity;
 
     float3 N = normalize(input.Norm);
     float3 T = normalize(input.Tan);
@@ -1182,21 +1183,26 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float NdotV = saturate(dot(N, V));
 
     float4 albedo = lerp(baseColor, txDiffuse.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
+    albedo = pow(albedo, 2.2);      // 감마 보정
     float3 emmisive = lerp(float3(0,0,0), emmisiveMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 8) != 0);
+    emmisive = pow(emmisive, 2.2);  // 감마 보정
 
     const float alphaCutoff = 0.5f;
     clip(albedo.a - alphaCutoff);
 
-    emmisive = pow(emmisive, 2.2);  // 감마 보정
-    albedo = pow(albedo, 2.2);      // 감마 보정
+
     float metallicTex = metallicMap.Sample(samLinear, input.Tex).r;
     float _metallic = lerp(diffuseStr, metallicTex,(textureFlags & 128) != 0);
     _metallic = lerp(_metallic, metallic,(propertyFlags & 128) != 0);
 
     float roughnessTex = roughnessMap.Sample(samLinear, input.Tex).r;
-    float _roughness = lerp(ambientStr,roughnessTex,(textureFlags & 64) != 0);
+    float roughnessClamp = lerp(0.05f, 1.0f, ambientStr);
+    float _roughness = lerp(roughnessClamp, roughnessTex,(textureFlags & 64) != 0);
+    
     _roughness = lerp(_roughness, roughness,(propertyFlags & 64) != 0);
     _roughness = max(_roughness, 0.001f);
+
+    float ambientIntensity = rimLightStr;
 
     // BRDF 계산
     // Cook-Torrance 모델
@@ -1236,7 +1242,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float2 brdf  = brdfLUT.Sample(samLinear, float2(NdotV, _roughness)).rg;
     float3 specularIBL = prefilteredColor * (F_ibl * brdf.x + brdf.y);
 
-    float3 ambient = (diffuseIBL + specularIBL);
+    float3 ambient = (diffuseIBL + specularIBL) * ambientIntensity;
     
     float3 finalColor = Lo + emmisive + ambient;
 
