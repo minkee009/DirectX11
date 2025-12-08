@@ -121,7 +121,7 @@ namespace MyEngine {
 		UINT m_currentRenderPassNum = 0;
 
 		std::unique_ptr<Transform> m_pDirectionalLightT;
-		XMFLOAT4 m_lightColor = { 1, 0.8823529411764706f,0.8352941176470588f,1 };
+		XMFLOAT4 m_lightColor = { 1, 0.9411764705882353f,0.8588235294117647f,1 };
 		FLOAT m_lightDistance = 3.0f;
 		FLOAT m_lightProjectNear = 0.01f;
 		FLOAT m_lightProjectFar = 50.0f;
@@ -130,7 +130,7 @@ namespace MyEngine {
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
 		FLOAT m_diffuseGradientStrength = 0.3125f;
-		FLOAT m_specularStrength = 10.0f;
+		FLOAT m_specularStrength = 15.0f;
 		FLOAT m_rimLightStrength = 1.0f;
 		UINT m_shininess = 512;
 

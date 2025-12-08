@@ -432,7 +432,7 @@ void MyEngine::MyImGui::Update()
         ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 30.0f);
         ImGui::SameLine();
         if (ImGui::Button(u8"초기값##9")) {
-            m_d3dContext->m_specularStrength = 10.0f;
+            m_d3dContext->m_specularStrength = 15.0f;
         }
 
         ImGui::Text(u8"환경광 (ambient) : 강도");

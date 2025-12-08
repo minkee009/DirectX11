@@ -1153,10 +1153,11 @@ void MyEngine::MyD3DContext::Render()
                 debugPos3 = gradientCB.GradientPos;
                 firstDebugDraw = false;
             }
+
         }
-        
-        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
         m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
         meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
         meshRenderer->SetEnabledBindMaterials(true);
@@ -1216,6 +1217,9 @@ void MyEngine::MyD3DContext::Render()
         DX::Draw(m_batch.get(), frustum, Colors::GhostWhite);
 
         m_batch->End();
+
+        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
     }
 
 //#ifdef _DEBUG

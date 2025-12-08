@@ -12,7 +12,8 @@ struct PS_INPUT
 float4 PS(PS_INPUT input) : SV_Target
 {
     float gammaCorrect = pow(rimLightStr, 1.0 / 2.2);
+    float3 skyBoxColor = skyBoxTX.Sample(samLinear, normalize(input.Tex));
     
     // 나중에 햇빛 블루밍 처리를 위해 쉐이더코드를 분리
-    return skyBoxTX.Sample(samLinear, normalize(input.Tex)) * gammaCorrect;
+    return float4(skyBoxColor * gammaCorrect,1.0f);
 }
