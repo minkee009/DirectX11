@@ -249,6 +249,17 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
+	static bool showWindow = true;
+    if (showWindow)
+    {
+        ImGui::Begin("Read Me!!", &showWindow);
+
+        ImGui::Text(u8"SkinningTest.fbx만 BRDF 셰이더 전역설정으로 조절시킬 수 있습니다.\n 나머진 모델파일에 고정된 값을 이용하여 BRDF렌더링을 처리합니다.");
+        ImGui::End();
+    }
+
+
+
     ImGui::SetNextWindowPos(ImVec2(5, 390), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(260, 374), ImGuiCond_Once);
 
@@ -392,93 +403,93 @@ void MyEngine::MyImGui::Update()
             m_d3dContext->m_pDirectionalLightT->SetLocalEulerRotation(light_defEulerRot);
         }
 
-        ImGui::Text(u8"환경광(ambient) : 색");
-        ImGui::ColorEdit3("##AmbientColor", &m_d3dContext->m_ambientColor.x);
-        if (ImGui::IsItemActive())
-        {
-            UpdateInfiniteDrag();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##6")) {
-            m_d3dContext->m_ambientColor = { 0.9255f,0.5059f,0.7490f,1 };
-        }
+        //ImGui::Text(u8"환경광(ambient) : 색");
+        //ImGui::ColorEdit3("##AmbientColor", &m_d3dContext->m_ambientColor.x);
+        //if (ImGui::IsItemActive())
+        //{
+        //    UpdateInfiniteDrag();
+        //}
+        //ImGui::SameLine();
+        //if (ImGui::Button(u8"초기값##6")) {
+        //    m_d3dContext->m_ambientColor = { 0.9255f,0.5059f,0.7490f,1 };
+        //}
 
-        ImGui::Text(u8"환경광(ambient) : 강도");
+        ImGui::Text(u8"거칠기(Roughness) : 강도");
         ImGui::SliderFloat("##AmbientStrength", &m_d3dContext->m_ambientStrength, 0.0f, 1.0f);
         ImGui::SameLine();
         if (ImGui::Button(u8"초기값##7")) {
             m_d3dContext->m_ambientStrength = 0.4f;
         }
 
-        ImGui::Text(u8"확산광(diffuse) : 강도");
+        ImGui::Text(u8"금속성(metallic) : 강도");
         ImGui::SliderFloat("##DiffuseStrength", &m_d3dContext->m_diffuseStrength, 0.0f, 1.0f);
         ImGui::SameLine();
         if (ImGui::Button(u8"초기값##8")) {
             m_d3dContext->m_diffuseStrength = 1.0f;
         }
 
-        ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
-        ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##그라디언트")) {
-            m_d3dContext->m_diffuseGradientStrength = 0.3125f;
-        }
+        //ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
+        //ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
+        //ImGui::SameLine();
+        //if (ImGui::Button(u8"초기값##그라디언트")) {
+        //    m_d3dContext->m_diffuseGradientStrength = 0.3125f;
+        //}
 
-        ImGui::Text(u8"정반사광(specular) : 강도");
-        ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 1.0f);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##9")) {
-            m_d3dContext->m_specularStrength = 0.228f;
-        }
+        //ImGui::Text(u8"정반사광(specular) : 강도");
+        //ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 1.0f);
+        //ImGui::SameLine();
+        //if (ImGui::Button(u8"초기값##9")) {
+        //    m_d3dContext->m_specularStrength = 0.228f;
+        //}
 
-        ImGui::Text(u8"역광(rim light) : 강도");
-        ImGui::SliderFloat("##RimLightStrength", &m_d3dContext->m_rimLightStrength, 0.0f, 1.0f);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##16")) {
-            m_d3dContext->m_rimLightStrength = 1.0f;
-        }
+        //ImGui::Text(u8"역광(rim light) : 강도");
+        //ImGui::SliderFloat("##RimLightStrength", &m_d3dContext->m_rimLightStrength, 0.0f, 1.0f);
+        //ImGui::SameLine();
+        //if (ImGui::Button(u8"초기값##16")) {
+        //    m_d3dContext->m_rimLightStrength = 1.0f;
+        //}
 
-        ImGui::Text(u8"광택지수(shininess)");
-        static int shininessLevel = 9; //1~12
-        ImVec2 shininessUIPos = ImGui::GetCursorPos();
-        ImGui::SliderInt("##shininess", &shininessLevel, 1, 12, "");
-        m_d3dContext->m_shininess = pow(2, shininessLevel);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##10")) {
-            shininessLevel = 9;
-            m_d3dContext->m_shininess = pow(2, shininessLevel);
-        }
+        //ImGui::Text(u8"광택지수(shininess)");
+        //static int shininessLevel = 9; //1~12
+        //ImVec2 shininessUIPos = ImGui::GetCursorPos();
+        //ImGui::SliderInt("##shininess", &shininessLevel, 1, 12, "");
+        //m_d3dContext->m_shininess = pow(2, shininessLevel);
+        //ImGui::SameLine();
+        //if (ImGui::Button(u8"초기값##10")) {
+        //    shininessLevel = 9;
+        //    m_d3dContext->m_shininess = pow(2, shininessLevel);
+        //}
 
-        ImGui::Text(u8"환경반사 강도 (cubemap reflection)");
-        ImGui::SliderFloat("##reflectionFactor", &m_d3dContext->m_reflectionFactor, 0.0f, 1.0f);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##11")) {
-            m_d3dContext->m_reflectionFactor = 0.005f;
-        }
+        //ImGui::Text(u8"환경반사 강도 (cubemap reflection)");
+        //ImGui::SliderFloat("##reflectionFactor", &m_d3dContext->m_reflectionFactor, 0.0f, 1.0f);
+        //ImGui::SameLine();
+        //if (ImGui::Button(u8"초기값##11")) {
+        //    m_d3dContext->m_reflectionFactor = 0.005f;
+        //}
 
-        std::string toStringStext = std::to_string(m_d3dContext->m_shininess);
-        const char* stext = toStringStext.c_str();
-        auto textSize = ImGui::CalcTextSize(stext);
+        //std::string toStringStext = std::to_string(m_d3dContext->m_shininess);
+        //const char* stext = toStringStext.c_str();
+        //auto textSize = ImGui::CalcTextSize(stext);
 
-        // 별도의 숫자 표시 (항상 맨 마지막에)
-        ImVec2 pos = ImVec2((260 - textSize.x) * 0.5f - 39, shininessUIPos.y + 3); // 윈도우 안에서의 좌표
-        ImGui::SetCursorPos(pos);
-        ImGui::Text("%d", m_d3dContext->m_shininess);
+        //// 별도의 숫자 표시 (항상 맨 마지막에)
+        //ImVec2 pos = ImVec2((260 - textSize.x) * 0.5f - 39, shininessUIPos.y + 3); // 윈도우 안에서의 좌표
+        //ImGui::SetCursorPos(pos);
+        //ImGui::Text("%d", m_d3dContext->m_shininess);
     }
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(1600 - 225, 5), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(220, 86), ImGuiCond_Once);
 
-    ImGui::Begin(u8"렌더러 상태");
-    ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::MeshRenderer::limitDrawOption);
-    ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::MeshRenderer::meshNum);
-    if (ImGui::IsItemActive())
-    {
-        UpdateInfiniteDrag();
-    }
+    //ImGui::Begin(u8"렌더러 상태");
+    //ImGui::Checkbox(u8"메쉬 넘버로 그리기", &DebugStatusUI::MeshRenderer::limitDrawOption);
+    //ImGui::DragInt(u8"메쉬 넘버", &DebugStatusUI::MeshRenderer::meshNum);
+    //if (ImGui::IsItemActive())
+    //{
+    //    UpdateInfiniteDrag();
+    //}
 
-    ImGui::End();
+    //ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(1600 - 225, 91 + 5), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(220, 130), ImGuiCond_Once);

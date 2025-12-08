@@ -433,8 +433,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, 0);
@@ -445,26 +443,13 @@ bool MyEngine::MyD3DContext::InitializeScene()
     auto obj3 = m_sceneObjects[2].get();
     obj3->SetWorldPosition(-3.8f, 0.25f, 4.85f);
 
-    auto obj4 = m_sceneObjects[3].get();
-    obj4->SetWorldPosition(8.9f, 0.4f, -6.45f);
-
-    auto obj5 = m_sceneObjects[4].get();
-    obj5->SetWorldPosition(-6.2f, 0.25f, -6.45f);
-
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
-    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
-    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::OnlyBaseColor);
-    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
-    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::None);
-    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
     AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::All);
-    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/char.fbx"));
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::OnlyBaseColor);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::All);
+    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/char.fbx"));
 
     // renderpass 
     // 0 : shadow map
@@ -473,25 +458,15 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     // Ground.fbx setting
     m_meshRenderers[0]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader());
-    m_meshRenderers[0]->SetPassCheckKeyword("IsBlinnPhong");
+    m_meshRenderers[0]->SetPassCheckKeyword("IsBRDF");
 
     // skinningTest.fbx setting
     m_meshRenderers[1]->SetPassCheckKeyword("IsBRDF");
     m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader_SkinningBone());
-    m_meshRenderers[4]->SetPassCheckKeyword("IsToon");
-    m_meshRenderers[4]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader_SkinningBone());
-    m_meshRenderers[4]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 
-    // Miyu_Akey_Rigging.obj setting
-    m_meshRenderers[2]->SetPassCheckKeyword("IsToon");
-    m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
-    m_meshRenderers[2]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
-    m_meshRenderers[2]->SetPassExcludedMeshes(2, { 1,5 }); // scene draw pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
+    // char.fbx setting
+    m_meshRenderers[2]->SetPassCheckKeyword("IsBRDF");
     m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader());
-
-    // zeldaPosed001.fbx setting
-    m_meshRenderers[3]->SetPassCheckKeyword("IsBRDF");
-    m_meshRenderers[3]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader());
 
     // DebugDraw
     m_states = std::make_unique<CommonStates>(m_pd3dDevice.Get());
@@ -525,27 +500,27 @@ void MyEngine::MyD3DContext::Update()
 {
     m_pCamera->InputUpdate(TIME_GET_DELTA());
 
-    static Keyboard::State prev;
-    static Keyboard::State curr;
+    //static Keyboard::State prev;
+    //static Keyboard::State curr;
 
-    prev = curr;
-    curr = Keyboard::Get().GetState();
+    //prev = curr;
+    //curr = Keyboard::Get().GetState();
 
-    if (!prev.F && curr.F)
-    {
-        auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
-        auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
+    //if (!prev.F && curr.F)
+    //{
+    //    auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
+    //    auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
 
-        CreateSkinningRenderer(camPos + camFwd * 8.5f);
-    }
+    //    CreateSkinningRenderer(camPos + camFwd * 8.5f);
+    //}
 
-    if (!prev.G && curr.G)
-    {
-        if(!m_sceneObjects.empty())
-            m_sceneObjects.pop_back();
-        if (!m_meshRenderers.empty())
-            m_meshRenderers.pop_back();
-    }
+    //if (!prev.G && curr.G)
+    //{
+    //    if(!m_sceneObjects.empty())
+    //        m_sceneObjects.pop_back();
+    //    if (!m_meshRenderers.empty())
+    //        m_meshRenderers.pop_back();
+    //}
 
     for (auto& renderer : m_meshRenderers)
     {
