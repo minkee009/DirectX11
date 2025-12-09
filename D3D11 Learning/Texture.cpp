@@ -41,11 +41,11 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 	}
 	else if (isTGA)
 	{
-		hr = LoadFromTGAFile(path.c_str(), &metadata, image);
+		hr = LoadFromTGAFile(path.c_str(), use_sRGB ? TGA_FLAGS_DEFAULT_SRGB : TGA_FLAGS_NONE, &metadata, image);
 	}
 	else
 	{
-		hr = LoadFromWICFile(path.c_str(), WIC_FLAGS_NONE, &metadata, image);
+		hr = LoadFromWICFile(path.c_str(), use_sRGB ? WIC_FLAGS_DEFAULT_SRGB : WIC_FLAGS_NONE, &metadata, image);
 	}
 
 	if (FAILED(hr))
@@ -54,43 +54,14 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 	ID3D11Device* device = nullptr;
 	context->GetDevice(&device);
 
-	if (use_sRGB)
-	{
-		if (!DirectX::IsSRGB(metadata.format))
-		{
-			DirectX::ScratchImage srgb_image;
-
-			// 1. 현재 메타데이터에서 목표 sRGB 포맷을 생성합니다.
-			DXGI_FORMAT srgbFormat = DirectX::MakeSRGB(metadata.format);
-
-			// 2. Convert 함수를 사용하여 텍스처 포맷을 변경합니다.
-			//    (필터링 플래그는 TEX_FILTER_DEFAULT를 사용하거나 필요에 따라 변경)
-			hr = DirectX::Convert(
-				image.GetImages(),
-				image.GetImageCount(),
-				metadata,
-				srgbFormat,
-				DirectX::TEX_FILTER_DEFAULT, // 필터링 옵션 (변환 시 리샘플링을 수행하지 않으므로 기본값 사용)
-				0.0f,
-				srgb_image
-			);
-
-			if (SUCCEEDED(hr))
-			{
-				// 변환에 성공했다면, 원본 image와 metadata를 새로운 srgb_image로 대체합니다.
-				image = std::move(srgb_image);
-				metadata = image.GetMetadata(); // metadata.format은 이제 _SRGB 포맷입니다.
-			}
-			else
-			{
-				// 변환 실패 처리 (디버깅 필요)
-				return false;
-			}
-		}
-	}
-
 	ComPtr<ID3D11ShaderResourceView> pSRV;
 	hr = CreateShaderResourceView(device, image.GetImages(), image.GetImageCount(), metadata, pSRV.GetAddressOf());
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	pSRV->GetDesc(&srvDesc);
+
+	auto descInfo = srvDesc.Format;
+
 	device->Release();
 	if (FAILED(hr))
 		return false;
@@ -118,12 +89,12 @@ bool MyEngine::Texture::LoadTextureFromMemory(ID3D11DeviceContext* context, cons
 	else if (formatExt == L".tga" || formatExt == L".TGA")
 	{
 		// TGA 포맷은 LoadFromTGAMemory 사용
-		hr = DirectX::LoadFromTGAMemory(pData, dataSize, &metadata, image);
+		hr = DirectX::LoadFromTGAMemory(pData, dataSize, use_sRGB ? TGA_FLAGS_DEFAULT_SRGB : TGA_FLAGS_NONE, &metadata, image);
 	}
 	else // 대부분의 WIC 포맷 (png, jpg, bmp, tiff 등)
 	{
 		// WIC 포맷은 LoadFromWICMemory 사용
-		hr = DirectX::LoadFromWICMemory(pData, dataSize, DirectX::WIC_FLAGS_NONE, &metadata, image);
+		hr = DirectX::LoadFromWICMemory(pData, dataSize, use_sRGB ? WIC_FLAGS_DEFAULT_SRGB : WIC_FLAGS_NONE, &metadata, image);
 	}
 
 	if (FAILED(hr))
@@ -135,41 +106,6 @@ bool MyEngine::Texture::LoadTextureFromMemory(ID3D11DeviceContext* context, cons
 	// D3D11 Device 가져오기
 	ComPtr<ID3D11Device> device;
 	context->GetDevice(device.GetAddressOf());
-
-	if (use_sRGB)
-	{
-		if (!DirectX::IsSRGB(metadata.format))
-		{
-			DirectX::ScratchImage srgb_image;
-
-			// 1. 현재 메타데이터에서 목표 sRGB 포맷을 생성합니다.
-			DXGI_FORMAT srgbFormat = DirectX::MakeSRGB(metadata.format);
-
-			// 2. Convert 함수를 사용하여 텍스처 포맷을 변경합니다.
-			//    (필터링 플래그는 TEX_FILTER_DEFAULT를 사용하거나 필요에 따라 변경)
-			hr = DirectX::Convert(
-				image.GetImages(),
-				image.GetImageCount(),
-				metadata,
-				srgbFormat,
-				DirectX::TEX_FILTER_DEFAULT, // 필터링 옵션 (변환 시 리샘플링을 수행하지 않으므로 기본값 사용)
-				0.0f,
-				srgb_image
-			);
-
-			if (SUCCEEDED(hr))
-			{
-				// 변환에 성공했다면, 원본 image와 metadata를 새로운 srgb_image로 대체합니다.
-				image = std::move(srgb_image);
-				metadata = image.GetMetadata(); // metadata.format은 이제 _SRGB 포맷입니다.
-			}
-			else
-			{
-				// 변환 실패 처리 (디버깅 필요)
-				return false;
-			}
-		}
-	}
 
 	// ShaderResourceView 생성
 	ComPtr<ID3D11ShaderResourceView> pSRV;

@@ -1183,9 +1183,9 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float NdotV = saturate(dot(N, V));
 
     float4 albedo = lerp(baseColor, txDiffuse.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
-    albedo = pow(albedo, 2.2);      // 감마 보정
+    //albedo = pow(albedo, 2.2);      // 감마 보정
     float3 emmisive = lerp(float3(0,0,0), emmisiveMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 8) != 0);
-    emmisive = pow(emmisive, 2.2);  // 감마 보정
+    //emmisive = pow(emmisive, 2.2);  // 감마 보정
 
     const float alphaCutoff = 0.5f;
     clip(albedo.a - alphaCutoff);
@@ -1226,7 +1226,6 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     // 간접광 (IBL)
     float3 irradiance = irradianceMap.Sample(samLinear, N).rgb;
-    irradiance = pow(irradiance, 2.2); // 감마 보정
     float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
     float3 kD_ibl = (1.0 - F_ibl) * (1.0 - _metallic);
     float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
@@ -1238,7 +1237,6 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float lod = _roughness * maxMip;
 
     float3 prefilteredColor = prefilterMap.SampleLevel(samLinear, R, lod).rgb;
-    prefilteredColor = pow(prefilteredColor, 2.2); // 감마 보정
     float2 brdf  = brdfLUT.Sample(samLinear, float2(NdotV, _roughness)).rg;
     float3 specularIBL = prefilteredColor * (F_ibl * brdf.x + brdf.y);
 
@@ -1248,7 +1246,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     //with Gamma correction + HDR tonemapping
     finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));
-    finalColor = float3(pow(finalColor, 1.0f / 2.2f));
+    finalColor = float3(pow(finalColor, (1.0f / 2.2f)));
 
     return float4(finalColor,1.0f);
 }
