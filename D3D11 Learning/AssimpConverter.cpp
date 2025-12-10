@@ -340,7 +340,8 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
             {
                 std::string path_str = path.C_Str();
 
-                bool use_sRGB = (myType == TextureType::Diffuse || myType == TextureType::Emissive);
+                bool use_sRGB = (myType & TextureType::Diffuse) != TextureType::None ||
+                    (myType & TextureType::Emissive) != TextureType::None;
 
                 if (path_str.length() > 0 && path_str[0] == '*')
                 {

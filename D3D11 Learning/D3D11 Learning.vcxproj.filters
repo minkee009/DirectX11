@@ -66,7 +66,7 @@
     <ClCompile Include="DebugDraw.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="BVH.cpp">
+    <ClCompile Include="StaticBVH.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="MeshRenderer.cpp">
@@ -140,7 +140,7 @@
     <ClInclude Include="DebugDraw.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="BVH.h">
+    <ClInclude Include="StaticBVH.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="IRenderable.h">

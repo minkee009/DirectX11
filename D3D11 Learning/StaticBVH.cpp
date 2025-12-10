@@ -1,8 +1,8 @@
-#include "BVH.h"
+#include "StaticBVH.h"
 #include <algorithm>
 #include <numeric>
 
-void MyEngine::BVH::Build(const std::vector<BoundingBox>& registry)
+void MyEngine::StaticBVH::Build(const std::vector<BoundingBox>& registry)
 {
     if (registry.empty())
         return;
@@ -17,14 +17,14 @@ void MyEngine::BVH::Build(const std::vector<BoundingBox>& registry)
     m_rootIdx = BuildNode(registry, 0, registry.size());
 }
 
-void MyEngine::BVH::Clear()
+void MyEngine::StaticBVH::Clear()
 {
     m_nodes.clear();
     m_alignedIndices.clear();
     m_rootIdx = 0;
 }
 
-void MyEngine::BVH::Search(size_t nodeIdx, const std::vector<BoundingBox>& registry, const BoundingBox& query, std::vector<size_t>& out)
+void MyEngine::StaticBVH::Search(size_t nodeIdx, const std::vector<BoundingBox>& registry, const BoundingBox& query, std::vector<size_t>& out)
 {
     if (m_nodes.empty() || nodeIdx >= m_nodes.size()) return;
 
@@ -50,7 +50,7 @@ void MyEngine::BVH::Search(size_t nodeIdx, const std::vector<BoundingBox>& regis
     }
 }
 
-void MyEngine::BVH::Search(size_t nodeIdx, const std::vector<BoundingBox>& registry, const BoundingFrustum& query, std::vector<size_t>& out)
+void MyEngine::StaticBVH::Search(size_t nodeIdx, const std::vector<BoundingBox>& registry, const BoundingFrustum& query, std::vector<size_t>& out)
 {
     if (m_nodes.empty() || nodeIdx >= m_nodes.size()) return;
 
@@ -76,7 +76,7 @@ void MyEngine::BVH::Search(size_t nodeIdx, const std::vector<BoundingBox>& regis
     }
 }
 
-size_t MyEngine::BVH::BuildNode(const std::vector<BoundingBox>& registry, size_t startIdx, size_t registrySize)
+size_t MyEngine::StaticBVH::BuildNode(const std::vector<BoundingBox>& registry, size_t startIdx, size_t registrySize)
 {
     size_t nodeIdx = m_nodes.size();
     m_nodes.emplace_back();
@@ -136,19 +136,4 @@ size_t MyEngine::BVH::BuildNode(const std::vector<BoundingBox>& registry, size_t
     m_nodes[nodeIdx].objCount = 0;
 
     return nodeIdx;
-}
-
-bool MyEngine::BVH::CheckSplitRule(const size_t nodeIdx)
-{
-	// 현재 노드 정보 가져오기
-	const Node& node = m_nodes[nodeIdx];
-
-	if (node.IsLeaf())
-		return false;
-
-    // Parent AABB가 지나치게 커졌는가?
-
-
-
-    return false;
 }

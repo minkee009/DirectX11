@@ -1226,6 +1226,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     // °£Á¢±¤ (IBL)
     float3 irradiance = irradianceMap.Sample(samLinear, N).rgb;
+    irradiance = pow(irradiance, 2.2);
     float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
     float3 kD_ibl = (1.0 - F_ibl) * (1.0 - _metallic);
     float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
@@ -1237,6 +1238,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float lod = _roughness * maxMip;
 
     float3 prefilteredColor = prefilterMap.SampleLevel(samLinear, R, lod).rgb;
+    prefilteredColor = pow(prefilteredColor, 2.2);
     float2 brdf  = brdfLUT.Sample(samLinear, float2(NdotV, _roughness)).rg;
     float3 specularIBL = prefilteredColor * (F_ibl * brdf.x + brdf.y);
 

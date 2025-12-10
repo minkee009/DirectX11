@@ -7,7 +7,7 @@ using namespace DirectX::SimpleMath;
 
 namespace MyEngine
 {
-	class BVH
+	class StaticBVH
 	{
 	public:
 		struct Node
@@ -44,14 +44,14 @@ namespace MyEngine
 		inline const size_t& GetMappedIdx(size_t alignedIdx) const { if (alignedIdx > 0 && alignedIdx < m_alignedIndices.size()) return m_alignedIndices[alignedIdx]; return 0; }
 
 		//=== debug ÄÚµå ===//
-		static inline BoundingBox MakeTransformedBBox(const Transform& t, const BoundingBox& bbox)
-		{
-			BoundingBox transformedBBox{};
+		//static inline BoundingBox MakeTransformedBBox(const Transform& t, const BoundingBox& bbox)
+		//{
+		//	BoundingBox transformedBBox{};
 
-			bbox.Transform(transformedBBox, t.GetWorldMatrix());
+		//	bbox.Transform(transformedBBox, t.GetWorldMatrix());
 
-			return transformedBBox;
-		}
+		//	return transformedBBox;
+		//}
 
 	private:
 		size_t m_rootIdx = 0;
@@ -59,7 +59,5 @@ namespace MyEngine
 		std::vector<size_t> m_alignedIndices;
 
 		size_t BuildNode(const std::vector<BoundingBox>& registry, size_t startIdx, size_t registrySize);
-
-		bool CheckSplitRule(const size_t nodeIdx);
 	};
 }

@@ -33,6 +33,24 @@ namespace MyEngine
 		LookUpTable = 1 << 9,		// 512
 	}; 
 
+	inline TextureType operator|(TextureType a, TextureType b)
+	{
+		return static_cast<TextureType>(
+			static_cast<int>(a) | static_cast<int>(b));
+	}
+
+	inline TextureType operator&(TextureType a, TextureType b)
+	{
+		return static_cast<TextureType>(
+			static_cast<int>(a) & static_cast<int>(b));
+	}
+
+	inline TextureType& operator|=(TextureType& a, TextureType b)
+	{
+		a = a | b;
+		return a;
+	}
+
 	struct TextureBinding
 	{
 		TextureType type; 
