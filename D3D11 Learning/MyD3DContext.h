@@ -6,7 +6,7 @@
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
-#include "BVH.h"
+#include "StaticBVH.h"
 
 #include "Camera.h"
 #include "AssimpConverter.h"
@@ -96,7 +96,7 @@ namespace MyEngine {
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
 		//Scene 관련 변수
-		std::unique_ptr<BVH> m_pBVHTree;
+		std::unique_ptr<StaticBVH> m_pBVHTree;
 		std::vector<BoundingBox> m_bboxRegistry;
 
 		ComPtr<ID3D11ShaderResourceView> m_pLUTSRV = nullptr;
