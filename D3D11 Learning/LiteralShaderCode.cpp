@@ -1219,7 +1219,8 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - _metallic;
-    float3 Lo = (kD * albedo.rgb / PI + specular) * lightColor * NdotL;
+    float3 diffuse = (kD * albedo.rgb / PI);
+    float3 Lo = (diffuse + specular) * lightColor * NdotL;
 
     float shadow = CalculateShadowPCF(input.LightPos);
     Lo *= shadow;
