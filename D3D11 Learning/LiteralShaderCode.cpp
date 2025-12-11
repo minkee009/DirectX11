@@ -1215,12 +1215,12 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     float3 numerator = NDF * G * F;
     float denominator = 4.0 * NdotV * NdotL + 1e-4f;
-    float3 specular = numerator / denominator;
+    float3 specularBRDF = numerator / denominator;
     float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - _metallic;
-    float3 diffuse = (kD * albedo.rgb / PI);
-    float3 Lo = (diffuse + specular) * lightColor * NdotL;
+    float3 diffuseBRDF = (kD * albedo.rgb / PI);
+    float3 Lo = (diffuseBRDF + specularBRDF) * lightColor * NdotL;
 
     float shadow = CalculateShadowPCF(input.LightPos);
     Lo *= shadow;
