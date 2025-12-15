@@ -607,6 +607,7 @@ void MyEngine::MyImGui::Update()
 
     ImGui::DragFloat(u8"RandomIntensity", &m_d3dContext->m_randomIntensity, 0.001f);
     ImGui::DragFloat(u8"CellSize", &m_d3dContext->m_cellscale);
+    ImGui::DragFloat(u8"WarpStrength", &m_d3dContext->m_warpStrength, 0.001f);
 
     ImGui::End();
     

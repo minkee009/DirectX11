@@ -1043,6 +1043,7 @@ cbuffer ShaderBuffer_Smoke : register(b13)
     float RandomIntensity;
     float CellScale;
     float SystemTime;
+    float WarpStrength;
 }
 
 Texture2D txDiffuse : register(t0);
@@ -1085,7 +1086,7 @@ float noise(float2 cID, float2 fUV)
     float top = lerp(a, b, u.x); // x축보간(a↔b)
     float bottom = lerp(c, d, u.x); // x축보간(c↔d)
     float value = lerp(top, bottom, u.y); // y축보간으로두줄결합
-    return value;
+    return value; 
 }
 
 float fbm(float2 uv)
@@ -1106,15 +1107,26 @@ float4 PS(PS_INPUT input) : SV_TARGET
 {
     float2 uv = input.Tex * CellScale;
 
-    float smalltime = SystemTime;
-    float randVal =  fbm(uv + smalltime);
+    // Domain Warping
+    float warp = fbm(uv * 0.5 + SystemTime * 0.4 * WarpStrength);
+    float2 warpUV = uv + float2(0.0, 1.0) * warp * 0.65 * WarpStrength;
 
-    float4 sampleColor = txDiffuse.Sample(samLinear, input.Tex);
+    warpUV += float2(
+        fbm(uv + SystemTime),
+        fbm(uv + SystemTime + 10.0)
+    ) * 0.2;
 
-    sampleColor.a = randVal;
+    // Final FBM
+    float smoke = fbm(warpUV + SystemTime * 0.5);
 
+    float4 col = txDiffuse.Sample(samLinear, input.Tex);
 
-    return sampleColor;
+    smoke = saturate(smoke);
+    smoke = pow(smoke, 1.4);
+    
+    col *= smoke;
+
+    return float4(col.rgb, 1.0f);
 }
 )";
 }

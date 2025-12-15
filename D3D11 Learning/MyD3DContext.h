@@ -69,7 +69,7 @@ namespace MyEngine {
 		FLOAT RandomIntensity;
 		FLOAT CellScale;
 		FLOAT SystemTime;
-		FLOAT pad;
+		FLOAT WarpStrength;
 	};
 
 	class MyD3DContext {
@@ -173,6 +173,7 @@ namespace MyEngine {
 		// ================ smoke shader
 		FLOAT m_cellscale = 10.0f;
 		FLOAT m_randomIntensity = 325.22f;
+		FLOAT m_warpStrength = 2.0f;
 		// ================
 
 		// ================ Debug Draw

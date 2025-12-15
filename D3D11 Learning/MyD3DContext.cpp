@@ -419,6 +419,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     SmokeShaderCB smokeCB;
     smokeCB.CellScale = 1.0f;
     smokeCB.RandomIntensity = 325.225f;
+    smokeCB.WarpStrength = m_warpStrength;
     m_pContext->UpdateSubresource(m_pSmokeShaderCB.Get(), 0, nullptr, &smokeCB, 0, 0);
     m_pContext->PSSetConstantBuffers(13, 1, m_pSmokeShaderCB.GetAddressOf());
 
@@ -519,49 +520,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pBVHTree->Build(m_bboxRegistry);
 
     return true;
-}
-
-void MyEngine::MyD3DContext::Update()
-{
-    m_pCamera->InputUpdate(TIME_GET_DELTA());
-
-    //static Keyboard::State prev;
-    //static Keyboard::State curr;
-
-    //prev = curr;
-    //curr = Keyboard::Get().GetState();
-
-    //if (!prev.F && curr.F)
-    //{
-    //    auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
-    //    auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
-
-    //    CreateSkinningRenderer(camPos + camFwd * 8.5f);
-    //}
-
-    //if (!prev.G && curr.G)
-    //{
-    //    if(!m_sceneObjects.empty())
-    //        m_sceneObjects.pop_back();
-    //    if (!m_meshRenderers.empty())
-    //        m_meshRenderers.pop_back();
-    //}
-
-
-    SmokeShaderCB smokeCB;
-    smokeCB.CellScale = m_cellscale;
-    smokeCB.RandomIntensity = m_randomIntensity;
-    smokeCB.SystemTime = TimeManager::Get()->GetTime();
-    m_pContext->UpdateSubresource(m_pSmokeShaderCB.Get(), 0, nullptr, &smokeCB, 0, 0);
-
-    for (auto& renderer : m_meshRenderers)
-    {
-        if (auto skinnedMesh = dynamic_cast<SkinningMeshRenderer*>(renderer.get()))
-        {
-            skinnedMesh->AnimationUpdate();
-            skinnedMesh->MatrixUpdate();
-        }
-    }
 }
 
 bool MyEngine::MyD3DContext::InitSkyBox()
@@ -908,6 +866,28 @@ void MyEngine::MyD3DContext::Clear()
     m_pContext->ClearRenderTargetView(m_pRenderTargetView.Get(), ClearColor);
     m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
+
+void MyEngine::MyD3DContext::Update()
+{
+    m_pCamera->InputUpdate(TIME_GET_DELTA());
+
+    SmokeShaderCB smokeCB;
+    smokeCB.CellScale = m_cellscale;
+    smokeCB.RandomIntensity = m_randomIntensity;
+    smokeCB.SystemTime = TimeManager::Get()->GetTime();
+    smokeCB.WarpStrength = m_warpStrength;
+    m_pContext->UpdateSubresource(m_pSmokeShaderCB.Get(), 0, nullptr, &smokeCB, 0, 0);
+
+    for (auto& renderer : m_meshRenderers)
+    {
+        if (auto skinnedMesh = dynamic_cast<SkinningMeshRenderer*>(renderer.get()))
+        {
+            skinnedMesh->AnimationUpdate();
+            skinnedMesh->MatrixUpdate();
+        }
+    }
+}
+
 
 void MyEngine::MyD3DContext::Render()
 {
