@@ -124,6 +124,9 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongPixelShader.GetAddressOf(), g_pscode_blinnphong);
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongToonPixelShader.GetAddressOf(), g_pscode_blinnphong_toon);
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongShadowMapPixelShader.GetAddressOf(), g_pscode_blinnphong_shadowmap);
+	
+	//√ﬂ∞° «»ºø ºŒ¿Ã¥ı
+	CompileLiteralCodeToPixelShader(pDevice, m_pSmokePS.GetAddressOf(), g_pscode_smoke);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
@@ -142,6 +145,7 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 	m_pBlinnPhongPixelShader = nullptr;
 	m_pBlinnPhongToonPixelShader = nullptr;
 	m_pBlinnPhongShadowMapPixelShader = nullptr;
+	m_pSmokePS = nullptr;
 	m_pBlinnPhongVSBlob = nullptr;
 }
 

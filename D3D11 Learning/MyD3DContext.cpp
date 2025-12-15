@@ -406,6 +406,22 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
+    cbDesc = {};
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.ByteWidth = sizeof(SmokeShaderCB);
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = 0;
+
+    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pSmokeShaderCB.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    SmokeShaderCB smokeCB;
+    smokeCB.CellScale = 1.0f;
+    smokeCB.RandomIntensity = 325.225f;
+    m_pContext->UpdateSubresource(m_pSmokeShaderCB.Get(), 0, nullptr, &smokeCB, 0, 0);
+    m_pContext->PSSetConstantBuffers(13, 1, m_pSmokeShaderCB.GetAddressOf());
+
     //LUT 텍스쳐 생성 (Todo: Texture Manager에게 위임시키기)
     ScratchImage image;
 
@@ -434,7 +450,6 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, 0);
@@ -448,16 +463,12 @@ bool MyEngine::MyD3DContext::InitializeScene()
     auto obj4 = m_sceneObjects[3].get();
     obj4->SetWorldPosition(8.9f, 0.4f, -6.45f);
 
-    auto obj5 = m_sceneObjects[4].get();
-    obj5->SetWorldPosition(-6.2f, 0.25f, -6.45f);
-
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
     m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
-    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
 
     // renderpass 
     // 0 : shadow map
@@ -466,14 +477,12 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     // Ground.fbx setting
     m_meshRenderers[0]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
+    m_meshRenderers[0]->SetPassForceChangePS(2, D3DCTX::ShaderManager::Get()->GetSmokePixelShader());
     m_meshRenderers[0]->SetPassCheckKeyword("IsBlinnPhong");
 
     // skinningTest.fbx setting
     m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
     m_meshRenderers[1]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
-
-    m_meshRenderers[4]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers[4]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 
     // Miyu_Akey_Rigging.obj setting
     m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
@@ -516,27 +525,34 @@ void MyEngine::MyD3DContext::Update()
 {
     m_pCamera->InputUpdate(TIME_GET_DELTA());
 
-    static Keyboard::State prev;
-    static Keyboard::State curr;
+    //static Keyboard::State prev;
+    //static Keyboard::State curr;
 
-    prev = curr;
-    curr = Keyboard::Get().GetState();
+    //prev = curr;
+    //curr = Keyboard::Get().GetState();
 
-    if (!prev.F && curr.F)
-    {
-        auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
-        auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
+    //if (!prev.F && curr.F)
+    //{
+    //    auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
+    //    auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
 
-        CreateSkinningRenderer(camPos + camFwd * 8.5f);
-    }
+    //    CreateSkinningRenderer(camPos + camFwd * 8.5f);
+    //}
 
-    if (!prev.G && curr.G)
-    {
-        if(!m_sceneObjects.empty())
-            m_sceneObjects.pop_back();
-        if (!m_meshRenderers.empty())
-            m_meshRenderers.pop_back();
-    }
+    //if (!prev.G && curr.G)
+    //{
+    //    if(!m_sceneObjects.empty())
+    //        m_sceneObjects.pop_back();
+    //    if (!m_meshRenderers.empty())
+    //        m_meshRenderers.pop_back();
+    //}
+
+
+    SmokeShaderCB smokeCB;
+    smokeCB.CellScale = m_cellscale;
+    smokeCB.RandomIntensity = m_randomIntensity;
+    smokeCB.SystemTime = TimeManager::Get()->GetTime();
+    m_pContext->UpdateSubresource(m_pSmokeShaderCB.Get(), 0, nullptr, &smokeCB, 0, 0);
 
     for (auto& renderer : m_meshRenderers)
     {

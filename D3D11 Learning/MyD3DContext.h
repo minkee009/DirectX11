@@ -64,6 +64,14 @@ namespace MyEngine {
 		FLOAT intensity;
 	};
 
+	struct SmokeShaderCB
+	{
+		FLOAT RandomIntensity;
+		FLOAT CellScale;
+		FLOAT SystemTime;
+		FLOAT pad;
+	};
+
 	class MyD3DContext {
 	private:
 		//윈도우 관리 변수
@@ -112,6 +120,7 @@ namespace MyEngine {
 		ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;
 		ComPtr<ID3D11Buffer> m_pOutlineCB = nullptr;
 		ComPtr<ID3D11Buffer> m_pGradientCB = nullptr;
+		ComPtr<ID3D11Buffer> m_pSmokeShaderCB = nullptr;
 
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
@@ -159,6 +168,12 @@ namespace MyEngine {
 		ComPtr<ID3D11SamplerState> m_pShadowSampler;
 
 		const float SHADOW_MAP_DEPTH = 25.0f;
+
+
+		// ================ smoke shader
+		FLOAT m_cellscale = 10.0f;
+		FLOAT m_randomIntensity = 325.22f;
+		// ================
 
 		// ================ Debug Draw
 		using DefaultVertex = DirectX::VertexPositionColor;

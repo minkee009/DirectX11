@@ -1013,4 +1013,108 @@ float4 PS(PS_INPUT input) : SV_TARGET
     return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 )";
+
+    const char* g_pscode_smoke = R"(
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+    float3 vLightPos;
+    float4 vLightDir;
+    float4 vLightColor;
+    float4 vOutputColor;
+    float4 vAmbientColor;
+    float ambientStr;
+    float diffuseStr;
+    float specularStr;
+    uint shininess;
+    float reflectionFactor;
+    matrix LightViewProjection;
+    float lowLut;
+    float diffGradientDistHalf;
+    float diffGradientDepth;
+    float rimLightStr;
+}
+
+cbuffer ShaderBuffer_Smoke : register(b13)
+{
+    float RandomIntensity;
+    float CellScale;
+    float SystemTime;
+}
+
+Texture2D txDiffuse : register(t0);
+SamplerState samLinear : register(s0);
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
+    float4 LightPos : TEXCOORD4;
+    uint IsFrontFace : SV_IsFrontFace;
+};
+
+float random(float2 uv)
+{
+    float value = sin(dot(uv, float2(22.8897, 98.537))) * RandomIntensity;
+    return frac(value);
+}
+
+// Perlin Fade Function (6차 곡선)
+float2 perlinFade(float2 t)
+{
+    return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+float noise(float2 cID, float2 fUV)
+{
+    // 셀의네코너랜덤값생성---
+    float a = random(cID); // (0,0)
+    float b = random(cID + float2(1.0, 0.0)); // (1,0)
+    float c = random(cID + float2(0.0, 1.0)); // (0,1)
+    float d = random(cID + float2(1.0, 1.0)); // (1,1)
+    // Perlin Fade function (더자연스럽게부드러운보간)
+    float2 u = perlinFade(fUV);
+    // 2D Value Noise 보간(Bilinear Interpolation)
+    // x축보간(a↔b), (c↔d) 후y축보간으로두줄을합쳐최종noise 생성
+    float top = lerp(a, b, u.x); // x축보간(a↔b)
+    float bottom = lerp(c, d, u.x); // x축보간(c↔d)
+    float value = lerp(top, bottom, u.y); // y축보간으로두줄결합
+    return value;
+}
+
+float fbm(float2 uv)
+{
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < 5; i++)
+    {
+        value += amplitude * noise(floor(uv), frac(uv));
+        uv *= 2.0;
+        // frequency 증가 (더 촘촘한 noise)
+        amplitude *= 0.5; // amplitude 감소 (기여도 낮아짐)
+    }
+    return value;
+}
+
+float4 PS(PS_INPUT input) : SV_TARGET
+{
+    float2 uv = input.Tex * CellScale;
+
+    float smalltime = SystemTime;
+    float randVal =  fbm(uv + smalltime);
+
+    float4 sampleColor = txDiffuse.Sample(samLinear, input.Tex);
+
+    sampleColor.a = randVal;
+
+
+    return sampleColor;
+}
+)";
 }

@@ -602,43 +602,12 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
-    ImGui::Begin(u8"메모리 디버그");    
 
-    ImGui::Text(u8"F키로 카메라 앞에 스키닝 메쉬 생성, G키로 메쉬 순차 삭제");
+    ImGui::Begin(u8"스모크 쉐이더 프로그램");
 
-    if (ImGui::Button("D3D-Trim()"))
-    {
-        m_d3dContext->m_dxgiDevice->Trim();
-    }
+    ImGui::DragFloat(u8"RandomIntensity", &m_d3dContext->m_randomIntensity, 0.001f);
+    ImGui::DragFloat(u8"CellSize", &m_d3dContext->m_cellscale);
 
-    static DebugStatusUI::DRamDebugData data1;
-    static DebugStatusUI::GPURamDebugData data2;
-
-    auto toMB = [](UINT64 v) { return v / (1024.0 * 1024.0); };
-
-    static float updateInterval = 0.0f;
-    updateInterval += TIME_GET_DELTA();
-
-    if (updateInterval > 0.03125f)
-    {
-        updateInterval = 0.0f;
-
-        data1 = DebugStatusUI::GetCpuMemoryUsage();
-        data2 = DebugStatusUI::QueryGpuMemory(m_d3dContext->m_pd3dDevice);
-    }
-
-    if (data1.isValidData)
-    {
-        auto ramUsageMB = toMB(data1.workingSet);
-        auto ramPageMB = toMB(data1.PagefileUsage - data1.workingSet);
-        ImGui::Text(u8"DRAM 사용량 %.1f MB",(float)ramUsageMB);
-        ImGui::Text(u8"메모리 페이지 %.1f MB", (float)ramPageMB);
-    }
-    if (data2.isValidData)
-    {
-        ImGui::Text(u8"비디오 메모리 사용량 %.1f MB", (float)data2.usage);
-    }
-    
     ImGui::End();
     
 
