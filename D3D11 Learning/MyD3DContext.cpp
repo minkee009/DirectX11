@@ -154,7 +154,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         DXGI_SWAP_CHAIN_DESC1 sd = {};
         sd.Width = width;
         sd.Height = height;
-        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -176,7 +176,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
-        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
         sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -186,6 +186,14 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.Windowed = TRUE;
 
         hr = dxgiFactory->CreateSwapChain(m_pd3dDevice.Get(), &sd, m_pSwapChain.GetAddressOf());
+    }
+
+    ComPtr<IDXGISwapChain3> spSwapChain3;
+    m_pSwapChain.As<IDXGISwapChain3>(&spSwapChain3);
+
+    if (FAILED(spSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
+    {
+		throw std::runtime_error("Failed to set swap chain color space.");
     }
 
     // 이 튜토리얼 코드는 풀스크린 스왑체인을 관리하지 않음, 따라서 ALT+ENTER 단축키를 제외시킴
@@ -215,6 +223,45 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     pBackBuffer->Release();
     if (FAILED(hr))
         return false;
+
+    // 포스트 프로세스 텍스쳐 생성
+	D3D11_TEXTURE2D_DESC descTex;
+	ZeroMemory(&descTex, sizeof(descTex));
+	descTex.Width = width;
+	descTex.Height = height;
+	descTex.MipLevels = 1;
+	descTex.ArraySize = 1;
+	descTex.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+	descTex.SampleDesc.Count = 1;
+	descTex.SampleDesc.Quality = 0;
+	descTex.Usage = D3D11_USAGE_DEFAULT;
+	descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	descTex.CPUAccessFlags = 0;
+	descTex.MiscFlags = 0;
+	hr = m_pd3dDevice->CreateTexture2D(&descTex, NULL, m_pPostProcessTex.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+
+	// 포스트 프로세스 렌더 타겟 뷰 생성
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pPostProcessTex.Get(), NULL, m_pPostProcessRTV.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+
+	// 포스트 프로세스 쉐이더 리소스 뷰 생성
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pPostProcessTex.Get(), NULL, m_pPostProcessSRV.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+
+    // 포스트 프로세스 상수 버퍼 생성
+	D3D11_BUFFER_DESC bd = {};
+	ZeroMemory(&bd, sizeof(bd));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(PostProcessCB);
+	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	hr = m_pd3dDevice->CreateBuffer(&bd, NULL, m_pPostProcessCB.GetAddressOf());
+	if (FAILED(hr))
+		return false;
+
 
     // 뎁스 스텐실 텍스쳐 생성
     D3D11_TEXTURE2D_DESC descDepth;
@@ -1232,6 +1279,8 @@ void MyEngine::MyD3DContext::Render()
     m_imgui.Render();
 //#endif //_DEBUG
 
+    // tone mapping
+
     Present();
 }
 
@@ -1425,6 +1474,45 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
         OutputDebugStringA("렌더 타겟 뷰를 생성을 실패했습니다.\n");
         return;
     }
+
+    // 포스트 프로세스 텍스쳐 및 뷰 재생성
+    m_pPostProcessTex = nullptr;
+	m_pPostProcessRTV = nullptr;
+	D3D11_TEXTURE2D_DESC postProcessTexDesc = {};
+	postProcessTexDesc.Width = width;
+	postProcessTexDesc.Height = height;
+	postProcessTexDesc.MipLevels = 1;
+	postProcessTexDesc.ArraySize = 1;
+	postProcessTexDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+	postProcessTexDesc.SampleDesc.Count = 1;
+	postProcessTexDesc.SampleDesc.Quality = 0;
+	postProcessTexDesc.Usage = D3D11_USAGE_DEFAULT;
+	postProcessTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	postProcessTexDesc.CPUAccessFlags = 0;
+	postProcessTexDesc.MiscFlags = 0;
+	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pPostProcessTex.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("포스트 프로세스 텍스쳐를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pPostProcessTex.Get(), nullptr, m_pPostProcessRTV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("포스트 프로세스 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+
+    // 리소스 뷰 재생성
+	m_pPostProcessSRV = nullptr;
+	D3D11_SHADER_RESOURCE_VIEW_DESC postProcessSRVDesc = {};
+	postProcessSRVDesc.Format = postProcessTexDesc.Format;
+	postProcessSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	postProcessSRVDesc.Texture2D.MostDetailedMip = 0;
+	postProcessSRVDesc.Texture2D.MipLevels = 1;
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pPostProcessTex.Get(), &postProcessSRVDesc, m_pPostProcessSRV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("포스트 프로세스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+		return;
+	}
 
     // 새로운 뎁스 스텐실 버퍼 및 뷰 생성
     D3D11_TEXTURE2D_DESC descDepth = {};

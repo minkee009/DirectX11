@@ -95,6 +95,18 @@ namespace MyEngine {
 		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
+		ComPtr<ID3D11Texture2D> m_pPostProcessTex = nullptr;
+		ComPtr<ID3D11RenderTargetView> m_pPostProcessRTV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pPostProcessSRV = nullptr;
+
+		struct PostProcessCB
+		{
+			FLOAT exposure;
+			XMFLOAT3 pad;
+		};
+
+		ComPtr<ID3D11Buffer> m_pPostProcessCB = nullptr;
+
 		//Scene 관련 변수
 		std::unique_ptr<StaticBVH> m_pBVHTree;
 		std::vector<BoundingBox> m_bboxRegistry;

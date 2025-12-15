@@ -25,3 +25,9 @@ namespace MyEngine::D3DCTX
 	
     //extern const char* g_pscode_skybox;
 }
+
+
+namespace MyEngine::D3DCTX
+{
+    extern const char* g_postprocess_pscode_ACES_toneMapping;
+}

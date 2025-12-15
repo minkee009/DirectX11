@@ -1064,6 +1064,7 @@ SamplerComparisonState samShadow : register(s1);
 
 
 static const float EPS = 1e-6;
+static const float PI = 3.14159265f;
 
 struct PS_INPUT
 {
@@ -1075,8 +1076,6 @@ struct PS_INPUT
     float4 LightPos : TEXCOORD4; 
     uint  IsFrontFace : SV_IsFrontFace; 
 };
-
-static const float PI = 3.14159265f;
 
 float3 fresnelSchlick(float cosTheta, float3 F0)
 {
@@ -1227,7 +1226,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     // °£Á¢±¤ (IBL)
     float3 irradiance = irradianceMap.Sample(samLinear, N).rgb;
-    irradiance = pow(irradiance, 2.2);
+    //irradiance = pow(irradiance, 2.2);
     float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
     float3 kD_ibl = (1.0 - F_ibl) * (1.0 - _metallic);
     float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
@@ -1239,7 +1238,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     float lod = _roughness * maxMip;
 
     float3 prefilteredColor = prefilterMap.SampleLevel(samLinear, R, lod).rgb;
-    prefilteredColor = pow(prefilteredColor, 2.2);
+    //prefilteredColor = pow(prefilteredColor, 2.2);
     float2 brdf  = brdfLUT.Sample(samLinear, float2(NdotV, _roughness)).rg;
     float3 specularIBL = prefilteredColor * (F_ibl * brdf.x + brdf.y);
 
@@ -1254,4 +1253,28 @@ float4 PS(PS_INPUT input) : SV_TARGET
     return float4(finalColor,1.0f);
 }
 )";
+    const char* g_postprocess_pscode_ACES_toneMapping = R"(
+cbuffer PostProcessBuffer : register(b0)
+{
+    float exposure;
+}
+texture2D txInput : register(t0);
+SamplerState samLinear : register(s0);
+
+float4 PS(uint2 DTid : SV_DispatchThreadID) : SV_Target
+{
+    float4 color = txInput.Load(int3(DTid,0));
+    // ACES Åæ ¸ÅÇÎ
+    const float a = 2.51f;
+    const float b = 0.03f;
+    const float c = 2.43f;
+    const float d = 0.59f;
+    const float e = 0.14f;
+    color.rgb *= exposure;
+    color.rgb = (color.rgb * (a * color.rgb + b)) / (color.rgb * (c * color.rgb + d) + e);
+    color.rgb = saturate(color.rgb);
+    return color;
+}
+)";
+
 }
