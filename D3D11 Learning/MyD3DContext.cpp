@@ -1346,6 +1346,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
 	m_pIrradianceSRV = nullptr;
 	m_pPrefilteredEnvSRV = nullptr;
 	m_pBRDFLUTSRV = nullptr;
+    m_pEnvSRV = nullptr;
 
     m_sceneObjects.clear();
     m_pDirectionalLightT.reset();
@@ -1534,7 +1535,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 	postProcessTexDesc.Height = height;
 	postProcessTexDesc.MipLevels = 1;
 	postProcessTexDesc.ArraySize = 1;
-	postProcessTexDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+	postProcessTexDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	postProcessTexDesc.SampleDesc.Count = 1;
 	postProcessTexDesc.SampleDesc.Quality = 0;
 	postProcessTexDesc.Usage = D3D11_USAGE_DEFAULT;

@@ -61,6 +61,9 @@ namespace MyEngine
 		static void SetLoadMaterialType(LoadMaterialType type);
 		static void SetLoadMaterialProperties(LoadMaterialProperties props);
 
+		static Color SRGBtoLinear(float r, float g, float b, float a);
+		static Color SRGBtoLinear(const Color& col);
+
 	private:
 		static LoadMaterialType s_materialType;
 		static LoadMaterialProperties s_materialProperties;

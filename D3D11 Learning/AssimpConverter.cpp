@@ -424,11 +424,12 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
     case LoadMaterialProperties::OnlyBaseColor:
         if (AI_SUCCESS == pMat->Get(AI_MATKEY_COLOR_DIFFUSE, propertyColor))
         {
-            resourceMat->SetBaseColor({ propertyColor.r, propertyColor.g, propertyColor.b, propertyColor.a });
+            Color baseCol = { propertyColor.r, propertyColor.g, propertyColor.b, propertyColor.a };
+            resourceMat->SetBaseColor(baseCol);
             if(s_materialType == LoadMaterialType::BRDF)
             {
                 // BRDF 머티리얼의 경우 알베도 색상도 설정
-                resourceMat->SetBaseColor({ std::pow(propertyColor.r,2.2f), std::pow(propertyColor.g,2.2f), std::pow(propertyColor.b,2.2f), propertyColor.a });
+                resourceMat->SetBaseColor(SRGBtoLinear(baseCol));
 			}
         }
         [[fallthrough]];
@@ -1188,4 +1189,30 @@ void MyEngine::AssimpConverter::SetLoadMaterialType(LoadMaterialType type)
 void MyEngine::AssimpConverter::SetLoadMaterialProperties(LoadMaterialProperties props)
 {
     s_materialProperties = props;
+}
+
+Color MyEngine::AssimpConverter::SRGBtoLinear(float r, float g, float b, float a)
+{
+    float baseCol[4] = { r,g,b,a };
+
+    // lerp -> (b - a) * t + a
+    // step -> y = (value >= threshold) ? 1.0f : 0.0f;
+
+    // alpha 빼고 처리해야 함
+    for (int i = 0; i < 3; ++i)
+    {
+        float& col = baseCol[i];
+        float colA = col / 12.92;
+        float colB = std::pow((col + 0.055) / 1.055, 2.4);
+        float t = (col >= 0.04045) ? 1.0f : 0.0f;
+
+        col = (colB - colA) * t + colA;
+    }
+
+    return Color(baseCol[0], baseCol[1], baseCol[2], baseCol[3]);
+}
+
+Color MyEngine::AssimpConverter::SRGBtoLinear(const Color& col)
+{
+    return SRGBtoLinear(col.R(), col.G(), col.B(), col.A());
 }
