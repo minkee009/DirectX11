@@ -127,7 +127,7 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	//BRDF «»ºø ºŒ¿Ã¥ı
 	CompileLiteralCodeToPixelShader(pDevice, m_pBRDFPixelShader.GetAddressOf(), g_pscode_BRDF_cook_torrance);
 
-	CompileLiteralCodeToVertexShader(pDevice, m_pPostProcessingVertexShader.GetAddressOf(), g_postprocess_vscode_ACES_toneMapping);
+	CompileLiteralCodeToVertexShader(pDevice, m_pPostProcessingVertexShader.GetAddressOf(), g_postprocess_vscode_quad);
 	CompileLiteralCodeToPixelShader(pDevice, m_pPostProcessingPixelShader.GetAddressOf(), g_postprocess_pscode_ACES_toneMapping);
 }
 

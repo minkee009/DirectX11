@@ -1249,7 +1249,7 @@ float4 PS(PS_INPUT input) : SV_TARGET
     return float4(finalColor,1.0f);
 }
 )";
-    const char* g_postprocess_vscode_ACES_toneMapping = R"(
+    const char* g_postprocess_vscode_quad = R"(
 struct VS_Output
 {
     float4 Pos : SV_POSITION;
@@ -1278,6 +1278,31 @@ float3 LinearToSRGB(float3 linearColor)
     return pow(linearColor, 1.0f / 2.2f);
 }
 
+static const float MaxNits = 1000.0;   // HDR10 기준
+
+float3 LinearToPQ(float3 nits)
+{
+    const float m1 = 0.1593017578125;
+    const float m2 = 78.84375;
+    const float c1 = 0.8359375;
+    const float c2 = 18.8515625;
+    const float c3 = 18.6875;
+
+    float3 L = saturate(nits / MaxNits);
+    float3 Lm1 = pow(L, m1);
+    return pow((c1 + c2 * Lm1) / (1 + c3 * Lm1), m2);
+}
+
+float3 ACESFilmic(float3 Color)
+{
+    const float a = 2.51f;
+    const float b = 0.03f;
+    const float c = 2.43f;
+    const float d = 0.59f;
+    const float e = 0.14f;
+    return (Color * (a * Color + b)) / (Color * (c * Color + d) + e);
+}
+
 struct PSIn
 {
     float4 pos : SV_POSITION;
@@ -1287,14 +1312,13 @@ struct PSIn
 float4 PS(PSIn input) : SV_Target
 {
     float4 color = txInput.Sample(samLinear, input.uv);
-    // ACES 톤 매핑
-    const float a = 2.51f;
-    const float b = 0.03f;
-    const float c = 2.43f;
-    const float d = 0.59f;
-    const float e = 0.14f;
-    color.rgb *= exposure;
-    color.rgb = (color.rgb * (a * color.rgb + b)) / (color.rgb * (c * color.rgb + d) + e);
+    // Linear HDR 밝기 조절 (nits 스케일)
+    color *= exposure;
+
+    // PQ 인코딩
+    //float3 pq = LinearToPQ(color);
+
+    color.rgb = ACESFilmic(color.rgb);
     color.rgb = saturate(color.rgb);
 
     float3 finalColor = LinearToSRGB(color.rgb);

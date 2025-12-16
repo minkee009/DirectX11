@@ -154,7 +154,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         DXGI_SWAP_CHAIN_DESC1 sd = {};
         sd.Width = width;
         sd.Height = height;
-        sd.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -176,7 +176,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
-        sd.BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -1229,6 +1229,41 @@ void MyEngine::MyD3DContext::Render()
         meshRenderer->Draw(m_pContext.Get());
     }
 
+    // tone mapping
+    ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+
+    ID3D11ShaderResourceView* nullSRVs2[19] = { nullptr };
+    m_pContext->PSSetShaderResources(1, 19, nullSRVs2);
+
+    ID3D11VertexShader* postProcessingVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+    ID3D11PixelShader* postProcessingPS = D3DCTX::ShaderManager::Get()->GetPostProcessingPixelShader();
+
+    m_pContext->OMSetDepthStencilState(nullptr, 0);
+    m_pContext->IASetInputLayout(nullptr);
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
+    m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
+
+    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+
+    PostProcessCB pp_cb = {};
+    pp_cb.exposure = m_exposure;
+    m_pContext->UpdateSubresource(m_pPostProcessCB.Get(), 0, nullptr, &pp_cb, 0, 0);
+    m_pContext->PSSetConstantBuffers(0, 1, m_pPostProcessCB.GetAddressOf());
+
+    m_pContext->RSSetViewports(1, &m_vp);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get());
+    m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), nullptr);
+    m_pContext->Draw(3, 0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+    ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, nullSRV3);
+
     //debug draw
     if (m_enableDebugDraw)
     {
@@ -1286,41 +1321,6 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
     }
-
-    // tone mapping
-    ID3D11RenderTargetView* nullRTV[1] = { nullptr };
-    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
-
-    ID3D11ShaderResourceView* nullSRVs2[19] = { nullptr };
-    m_pContext->PSSetShaderResources(1, 19, nullSRVs2);
-
-    ID3D11VertexShader* postProcessingVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
-    ID3D11PixelShader* postProcessingPS = D3DCTX::ShaderManager::Get()->GetPostProcessingPixelShader();
-    
-    m_pContext->OMSetDepthStencilState(nullptr, 0);
-    m_pContext->IASetInputLayout(nullptr);
-    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
-    m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
-    m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
-
-    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
-
-    PostProcessCB pp_cb = {};
-    pp_cb.exposure = m_exposure;
-    m_pContext->UpdateSubresource(m_pPostProcessCB.Get(), 0, nullptr, &pp_cb, 0, 0);
-    m_pContext->PSSetConstantBuffers(0, 1, m_pPostProcessCB.GetAddressOf());
-
-    m_pContext->RSSetViewports(1, &m_vp);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get());
-
-    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get());
-    m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), nullptr);
-    m_pContext->Draw(3,0);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get());
-    ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
-    m_pContext->PSSetShaderResources(0, 1, nullSRV3);
 
 
     //#ifdef _DEBUG
