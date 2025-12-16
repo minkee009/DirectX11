@@ -63,6 +63,13 @@ namespace MyEngine {
 		FLOAT intensity;
 	};
 
+	struct PostProcessCB
+	{
+		FLOAT exposure;
+		XMFLOAT3 pad;
+	};
+
+
 	class MyD3DContext {
 	private:
 		//윈도우 관리 변수
@@ -77,7 +84,7 @@ namespace MyEngine {
 		ComPtr<IDXGIDevice3> m_dxgiDevice;
 		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
 		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
-		ComPtr<ID3D11RenderTargetView> m_pRenderTargetView = nullptr;
+		ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV = nullptr;
 		ComPtr<ID3D11Texture2D> m_pDepthStencil = nullptr;
 		ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr;
 
@@ -95,17 +102,15 @@ namespace MyEngine {
 		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
-		ComPtr<ID3D11Texture2D> m_pPostProcessTex = nullptr;
-		ComPtr<ID3D11RenderTargetView> m_pPostProcessRTV = nullptr;
-		ComPtr<ID3D11ShaderResourceView> m_pPostProcessSRV = nullptr;
+		ComPtr<ID3D11Texture2D> m_pSceneColorTex = nullptr;
+		ComPtr<ID3D11RenderTargetView> m_pSceneColorRTV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pSceneColorSRV = nullptr;
 
-		struct PostProcessCB
-		{
-			FLOAT exposure;
-			XMFLOAT3 pad;
-		};
 
 		ComPtr<ID3D11Buffer> m_pPostProcessCB = nullptr;
+
+		// post processing
+		FLOAT m_exposure = 1.0f;
 
 		//Scene 관련 변수
 		std::unique_ptr<StaticBVH> m_pBVHTree;
@@ -174,6 +179,7 @@ namespace MyEngine {
 		// ================ BRDF Environment
 		ComPtr<ID3D11ShaderResourceView> m_pIrradianceSRV;          //IBL Diffuse
 		ComPtr<ID3D11ShaderResourceView> m_pPrefilteredEnvSRV;		//IBL Specular
+		ComPtr<ID3D11ShaderResourceView> m_pEnvSRV;					//IBL Env
 		ComPtr<ID3D11ShaderResourceView> m_pBRDFLUTSRV;             //IBL BRDF LUT
 
 		// ================

@@ -624,6 +624,12 @@ void MyEngine::MyImGui::Update()
 
     ImGui::End();
 
+    ImGui::Begin(u8"HDR - 색상 공간 설정");
+
+    ImGui::DragFloat(u8"노출 값", &m_d3dContext->m_exposure, 0.001f);
+
+    ImGui::End();
+
     //ImGui::Begin(u8"메모리 디버그");    
 
     //ImGui::Text(u8"F키로 카메라 앞에 스키닝 메쉬 생성, G키로 메쉬 순차 삭제");

@@ -126,6 +126,9 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 
 	//BRDF «»ºø ºŒ¿Ã¥ı
 	CompileLiteralCodeToPixelShader(pDevice, m_pBRDFPixelShader.GetAddressOf(), g_pscode_BRDF_cook_torrance);
+
+	CompileLiteralCodeToVertexShader(pDevice, m_pPostProcessingVertexShader.GetAddressOf(), g_postprocess_vscode_ACES_toneMapping);
+	CompileLiteralCodeToPixelShader(pDevice, m_pPostProcessingPixelShader.GetAddressOf(), g_postprocess_pscode_ACES_toneMapping);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
@@ -146,6 +149,9 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 	m_pBlinnPhongShadowMapPixelShader = nullptr;
 	m_pBRDFPixelShader = nullptr;
 	m_pBlinnPhongVSBlob = nullptr;
+
+	m_pPostProcessingVertexShader = nullptr;
+	m_pPostProcessingPixelShader = nullptr;
 }
 
 void MyEngine::D3DCTX::ShaderManager::BindDefaultShaders(ID3D11DeviceContext* context)

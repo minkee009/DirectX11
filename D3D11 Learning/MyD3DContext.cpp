@@ -154,7 +154,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         DXGI_SWAP_CHAIN_DESC1 sd = {};
         sd.Width = width;
         sd.Height = height;
-        sd.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -176,7 +176,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
-        sd.BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -191,10 +191,10 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     ComPtr<IDXGISwapChain3> spSwapChain3;
     m_pSwapChain.As<IDXGISwapChain3>(&spSwapChain3);
 
-    if (FAILED(spSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
-    {
-		throw std::runtime_error("Failed to set swap chain color space.");
-    }
+  //  if (FAILED(spSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
+  //  {
+		//throw std::runtime_error("Failed to set swap chain color space.");
+  //  }
 
     // 이 튜토리얼 코드는 풀스크린 스왑체인을 관리하지 않음, 따라서 ALT+ENTER 단축키를 제외시킴
     dxgiFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
@@ -219,36 +219,36 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, m_pRenderTargetView.GetAddressOf());
+    hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, m_pBackBufferRTV.GetAddressOf());
     pBackBuffer->Release();
     if (FAILED(hr))
         return false;
 
-    // 포스트 프로세스 텍스쳐 생성
+    // 씬 컬러 텍스쳐 생성
 	D3D11_TEXTURE2D_DESC descTex;
 	ZeroMemory(&descTex, sizeof(descTex));
 	descTex.Width = width;
 	descTex.Height = height;
 	descTex.MipLevels = 1;
 	descTex.ArraySize = 1;
-	descTex.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
+	descTex.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 	descTex.SampleDesc.Count = 1;
 	descTex.SampleDesc.Quality = 0;
 	descTex.Usage = D3D11_USAGE_DEFAULT;
 	descTex.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	descTex.CPUAccessFlags = 0;
 	descTex.MiscFlags = 0;
-	hr = m_pd3dDevice->CreateTexture2D(&descTex, NULL, m_pPostProcessTex.GetAddressOf());
+	hr = m_pd3dDevice->CreateTexture2D(&descTex, NULL, m_pSceneColorTex.GetAddressOf());
 	if (FAILED(hr))
 		return false;
 
 	// 포스트 프로세스 렌더 타겟 뷰 생성
-	hr = m_pd3dDevice->CreateRenderTargetView(m_pPostProcessTex.Get(), NULL, m_pPostProcessRTV.GetAddressOf());
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColorTex.Get(), NULL, m_pSceneColorRTV.GetAddressOf());
 	if (FAILED(hr))
 		return false;
 
 	// 포스트 프로세스 쉐이더 리소스 뷰 생성
-	hr = m_pd3dDevice->CreateShaderResourceView(m_pPostProcessTex.Get(), NULL, m_pPostProcessSRV.GetAddressOf());
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pSceneColorTex.Get(), NULL, m_pSceneColorSRV.GetAddressOf());
 	if (FAILED(hr))
 		return false;
 
@@ -261,7 +261,6 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 	hr = m_pd3dDevice->CreateBuffer(&bd, NULL, m_pPostProcessCB.GetAddressOf());
 	if (FAILED(hr))
 		return false;
-
 
     // 뎁스 스텐실 텍스쳐 생성
     D3D11_TEXTURE2D_DESC descDepth;
@@ -292,7 +291,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
 
-    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
 
     // 뷰포트 설정
     m_vp.Width = (FLOAT)width;
@@ -863,6 +862,19 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (FAILED(hr))
         return false;
 
+    hr = LoadFromDDSFile(L"Resources/Textures/cubemapEnvHDR.dds", DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr))
+        return false;
+    if (!metadata.IsCubemap())
+    {
+        MessageBox(nullptr,
+            L"BRDF Diffuse 텍스쳐가 큐브맵이 아닙니다.", L"오류", MB_OK);
+        return false;
+    }
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pEnvSRV.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
 	hr = LoadFromDDSFile(L"Resources/Textures/cubemapDiffuseHDR.dds", DDS_FLAGS_NONE, &metadata, image);
 	if (FAILED(hr))
 		return false;
@@ -976,12 +988,14 @@ void MyEngine::MyD3DContext::Clear()
     //float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
     float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // RGBA
 
-    m_pContext->ClearRenderTargetView(m_pRenderTargetView.Get(), ClearColor);
+    m_pContext->ClearRenderTargetView(m_pSceneColorRTV.Get(), ClearColor);
     m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void MyEngine::MyD3DContext::Render()
 {
+    m_pContext->OMSetRenderTargets(1,m_pSceneColorRTV.GetAddressOf(),m_pDepthStencilView.Get());
+
     // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
     m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
@@ -1001,7 +1015,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
 
-
+    m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
     m_pContext->RSSetState(m_pShadowMapRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
     // 뷰포트 세팅(텍스쳐 사이즈로)
@@ -1058,7 +1072,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->PSSetShaderResources(9, 1, nullSRVs);  // 그림자맵 언바인딩
 
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
-    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->RSSetViewports(1, &m_vp);
     m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
     m_pContext->PSSetShaderResources(10, 1, m_pShadowSRV.GetAddressOf());
@@ -1273,13 +1287,47 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
     }
 
-//#ifdef _DEBUG
+    // tone mapping
+    ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+
+    ID3D11ShaderResourceView* nullSRVs2[19] = { nullptr };
+    m_pContext->PSSetShaderResources(1, 19, nullSRVs2);
+
+    ID3D11VertexShader* postProcessingVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+    ID3D11PixelShader* postProcessingPS = D3DCTX::ShaderManager::Get()->GetPostProcessingPixelShader();
+    
+    m_pContext->OMSetDepthStencilState(nullptr, 0);
+    m_pContext->IASetInputLayout(nullptr);
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
+    m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
+
+    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+
+    PostProcessCB pp_cb = {};
+    pp_cb.exposure = m_exposure;
+    m_pContext->UpdateSubresource(m_pPostProcessCB.Get(), 0, nullptr, &pp_cb, 0, 0);
+    m_pContext->PSSetConstantBuffers(0, 1, m_pPostProcessCB.GetAddressOf());
+
+    m_pContext->RSSetViewports(1, &m_vp);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get());
+    m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), nullptr);
+    m_pContext->Draw(3,0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+    ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, nullSRV3);
+
+
+    //#ifdef _DEBUG
     m_imgui.BeginFrame();
     m_imgui.Update();
     m_imgui.Render();
-//#endif //_DEBUG
-
-    // tone mapping
+    //#endif //_DEBUG
 
     Present();
 }
@@ -1339,9 +1387,12 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_imgui.Uninitialize();
 
 #endif //_DEBUG
-    m_pRenderTargetView = nullptr;
+    m_pBackBufferRTV = nullptr;
     m_pDepthStencilView = nullptr;
     m_pDepthStencil = nullptr;
+    m_pSceneColorRTV = nullptr;
+    m_pSceneColorSRV = nullptr;
+    m_pSceneColorTex = nullptr;
 
     m_pDefRasterizerState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
@@ -1441,7 +1492,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
     // 기존 화면 렌더타겟뷰를 모두 해제
-    m_pRenderTargetView.Reset();
+    m_pBackBufferRTV.Reset();
     m_pDepthStencilView.Reset();
     m_pDepthStencil.Reset();
 
@@ -1468,7 +1519,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
         return;
     }
 
-    hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf());
+    hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pBackBufferRTV.GetAddressOf());
     if (FAILED(hr)) {
         pBackBuffer.Reset();
         OutputDebugStringA("렌더 타겟 뷰를 생성을 실패했습니다.\n");
@@ -1476,8 +1527,8 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     }
 
     // 포스트 프로세스 텍스쳐 및 뷰 재생성
-    m_pPostProcessTex = nullptr;
-	m_pPostProcessRTV = nullptr;
+    m_pSceneColorTex = nullptr;
+	m_pSceneColorRTV = nullptr;
 	D3D11_TEXTURE2D_DESC postProcessTexDesc = {};
 	postProcessTexDesc.Width = width;
 	postProcessTexDesc.Height = height;
@@ -1490,25 +1541,25 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 	postProcessTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	postProcessTexDesc.CPUAccessFlags = 0;
 	postProcessTexDesc.MiscFlags = 0;
-	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pPostProcessTex.GetAddressOf());
+	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pSceneColorTex.GetAddressOf());
 	if (FAILED(hr)) {
 		OutputDebugStringA("포스트 프로세스 텍스쳐를 생성하는 데 실패했습니다.\n");
 		return;
 	}
-	hr = m_pd3dDevice->CreateRenderTargetView(m_pPostProcessTex.Get(), nullptr, m_pPostProcessRTV.GetAddressOf());
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColorTex.Get(), nullptr, m_pSceneColorRTV.GetAddressOf());
 	if (FAILED(hr)) {
 		OutputDebugStringA("포스트 프로세스 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
 		return;
 	}
 
     // 리소스 뷰 재생성
-	m_pPostProcessSRV = nullptr;
+	m_pSceneColorSRV = nullptr;
 	D3D11_SHADER_RESOURCE_VIEW_DESC postProcessSRVDesc = {};
 	postProcessSRVDesc.Format = postProcessTexDesc.Format;
 	postProcessSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	postProcessSRVDesc.Texture2D.MostDetailedMip = 0;
 	postProcessSRVDesc.Texture2D.MipLevels = 1;
-	hr = m_pd3dDevice->CreateShaderResourceView(m_pPostProcessTex.Get(), &postProcessSRVDesc, m_pPostProcessSRV.GetAddressOf());
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pSceneColorTex.Get(), &postProcessSRVDesc, m_pSceneColorSRV.GetAddressOf());
 	if (FAILED(hr)) {
 		OutputDebugStringA("포스트 프로세스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
 		return;
@@ -1544,7 +1595,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     }
 
     // 렌더 타겟 다시 설정
-    m_pContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
 
     // 뷰포트 업데이트
     m_vp.Width = (FLOAT)width;

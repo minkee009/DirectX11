@@ -1246,24 +1246,47 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float3 finalColor = Lo + emmisive + ambient;
 
-    //with Gamma correction + HDR tonemapping
-    finalColor = finalColor / (finalColor + float3(1.0f, 1.0f, 1.0f));
-    finalColor = float3(pow(finalColor, (1.0f / 2.2f)));
-
     return float4(finalColor,1.0f);
 }
 )";
+    const char* g_postprocess_vscode_ACES_toneMapping = R"(
+struct VS_Output
+{
+    float4 Pos : SV_POSITION;
+    float2 Tex : TEXCOORD0;
+};
+
+VS_Output VS(uint id : SV_VertexID)
+{
+    VS_Output Output;
+    Output.Tex = float2((id << 1) & 2, id & 2);
+    Output.Pos = float4(Output.Tex * float2(2, -2) + float2(-1,1), 0, 1);
+    return Output;
+}
+)";
+
     const char* g_postprocess_pscode_ACES_toneMapping = R"(
 cbuffer PostProcessBuffer : register(b0)
 {
     float exposure;
 }
-texture2D txInput : register(t0);
+Texture2D txInput : register(t0);
 SamplerState samLinear : register(s0);
 
-float4 PS(uint2 DTid : SV_DispatchThreadID) : SV_Target
+float3 LinearToSRGB(float3 linearColor)
 {
-    float4 color = txInput.Load(int3(DTid,0));
+    return pow(linearColor, 1.0f / 2.2f);
+}
+
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+float4 PS(PSIn input) : SV_Target
+{
+    float4 color = txInput.Sample(samLinear, input.uv);
     // ACES Åæ ¸ÅÇÎ
     const float a = 2.51f;
     const float b = 0.03f;
@@ -1273,7 +1296,9 @@ float4 PS(uint2 DTid : SV_DispatchThreadID) : SV_Target
     color.rgb *= exposure;
     color.rgb = (color.rgb * (a * color.rgb + b)) / (color.rgb * (c * color.rgb + d) + e);
     color.rgb = saturate(color.rgb);
-    return color;
+
+    float3 finalColor = LinearToSRGB(color.rgb);
+    return float4(finalColor, 1.0f);
 }
 )";
 
