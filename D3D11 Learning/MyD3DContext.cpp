@@ -154,7 +154,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         DXGI_SWAP_CHAIN_DESC1 sd = {};
         sd.Width = width;
         sd.Height = height;
-        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -176,7 +176,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
-        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.BufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
         sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -231,7 +231,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 	descTex.Height = height;
 	descTex.MipLevels = 1;
 	descTex.ArraySize = 1;
-	descTex.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	descTex.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	descTex.SampleDesc.Count = 1;
 	descTex.SampleDesc.Quality = 0;
 	descTex.Usage = D3D11_USAGE_DEFAULT;

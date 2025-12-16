@@ -429,7 +429,7 @@ void MyEngine::MyImGui::Update()
         }
 
         ImGui::Text(u8"빛 HDR(Light HDR) : 강도");
-        ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 0.0f, 30.0f);
+        ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 1.0f, 30.0f);
         ImGui::SameLine();
         if (ImGui::Button(u8"초기값##9")) {
             m_d3dContext->m_specularStrength = 15.0f;

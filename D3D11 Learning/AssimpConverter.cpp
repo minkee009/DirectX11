@@ -429,7 +429,8 @@ void MyEngine::AssimpConverter::ProcessMaterial(aiMaterial* pMat, std::shared_pt
             if(s_materialType == LoadMaterialType::BRDF)
             {
                 // BRDF 머티리얼의 경우 알베도 색상도 설정
-                resourceMat->SetBaseColor(SRGBtoLinear(baseCol));
+                XMVECTOR vecCol = XMLoadFloat4(&baseCol);
+                resourceMat->SetBaseColor(DirectX::XMColorSRGBToRGB(vecCol));
 			}
         }
         [[fallthrough]];
