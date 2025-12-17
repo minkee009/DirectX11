@@ -1124,9 +1124,13 @@ float4 PS(PS_INPUT input) : SV_TARGET
     smoke = saturate(smoke);
     smoke = pow(smoke, 1.4);
     
+    float alpha = 1.0f;
+    
+    alpha = lerp(0.0f,1.0f, smoke / 0.25f);
+
     col *= smoke;
 
-    return float4(col.rgb, 1.0f);
+    return float4(col.rgb, alpha);
 }
 )";
 }
