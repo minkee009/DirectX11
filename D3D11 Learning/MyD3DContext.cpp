@@ -396,15 +396,15 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (FAILED(hr))
         return false;
 
-    cbDesc = {};
-    cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    cbDesc.ByteWidth = sizeof(GradientCB);
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.CPUAccessFlags = 0;
+    //cbDesc = {};
+    //cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    //cbDesc.ByteWidth = sizeof(GradientCB);
+    //cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //cbDesc.CPUAccessFlags = 0;
 
-    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pGradientCB.GetAddressOf());
-    if (FAILED(hr))
-        return false;
+    //hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pGradientCB.GetAddressOf());
+    //if (FAILED(hr))
+    //    return false;
 
     //LUT 텍스쳐 생성 (Todo: Texture Manager에게 위임시키기)
     ScratchImage image;
@@ -1047,12 +1047,12 @@ void MyEngine::MyD3DContext::Render()
     }
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
     
-    GradientCB gradientCB = {};
-    gradientCB.intensity = m_gradientIntensity;
+    //GradientCB gradientCB = {};
+    //gradientCB.intensity = m_gradientIntensity;
     //gradientCB.minY = 0;
     //gradientCB.maxY = 10.0f;
-    m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-    m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
+    //m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+    //m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
 
     // <<======= 세번째 렌더패스 (씬 드로우)
     m_currentRenderPassNum = 2;
@@ -1076,49 +1076,49 @@ void MyEngine::MyD3DContext::Render()
         m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
         m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 
-        if (!m_meshRenderers[i]->GetPassCheckKeyword("IsBlinnPhong"))
-        {
-            auto gradientBBox = meshRenderer->GetBBox();
-            BoundingOrientedBox gradientOBB;
-            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
+        //if (!m_meshRenderers[i]->GetPassCheckKeyword("IsBlinnPhong"))
+        //{
+        //    auto gradientBBox = meshRenderer->GetBBox();
+        //    BoundingOrientedBox gradientOBB;
+        //    BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
 
-            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
-            gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
+        //    gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
+        //    gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
 
-            Vector3 extents = gradientBBox.Extents;
+        //    Vector3 extents = gradientBBox.Extents;
 
-            float dist = -extents.Length();
+        //    float dist = -extents.Length();
 
-            if (firstDebugDraw)
-            {
-                debugPos1 = gradientBBox.Center;
-            }
+        //    if (firstDebugDraw)
+        //    {
+        //        debugPos1 = gradientBBox.Center;
+        //    }
 
-            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
-            if (firstDebugDraw)
-            {
-                debugPos2 = gradientCB.GradientPos;
-            }
+        //    gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
+        //    if (firstDebugDraw)
+        //    {
+        //        debugPos2 = gradientCB.GradientPos;
+        //    }
 
-            dist = -dist;
+        //    dist = -dist;
 
-            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
-            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
+        //    XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
+        //    XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
 
-            if (gradientOBB.Intersects(simdOrigin, simdDirection, dist))
-            {
-                gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
-            }
+        //    if (gradientOBB.Intersects(simdOrigin, simdDirection, dist))
+        //    {
+        //        gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
+        //    }
 
-            if (firstDebugDraw)
-            {
-                debugPos3 = gradientCB.GradientPos;
-                firstDebugDraw = false;
-            }
-        }
+        //    if (firstDebugDraw)
+        //    {
+        //        debugPos3 = gradientCB.GradientPos;
+        //        firstDebugDraw = false;
+        //    }
+        //}
         
         m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-        m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+        //m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
         meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
         meshRenderer->SetEnabledBindMaterials(true);
@@ -1218,7 +1218,7 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pShadowSampler = nullptr;
     m_pShadowMapRasterizerState = nullptr;
     m_pOutlineCB = nullptr;
-    m_pGradientCB = nullptr;
+    //m_pGradientCB = nullptr;
     if (m_pContext)
     {
         m_pContext->ClearState();

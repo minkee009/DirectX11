@@ -756,11 +756,11 @@ cbuffer MaterialBuffer : register(b1)
 	float4 baseColor;
 }
 
-cbuffer GradientBuffer : register(b5)
-{
-	float3 gradientPos;
-	float gradientIntensity;
-}
+//cbuffer GradientBuffer : register(b5)
+//{
+//	float3 gradientPos;
+//	float gradientIntensity;
+//}
 
 Texture2D txDiffuse : register(t0);
 Texture2D normalMap : register(t2);
@@ -937,15 +937,15 @@ float4 PS(PS_INPUT input) : SV_TARGET
     
     float3 baseRGB = (specular + diffuse + ambient + rim + minusRim).rgb * baseTex.rgb + emmisive.rgb ;
 
-	float3 toGradientPos = gradientPos - input.WorldPos;
-	float GradientDistance = length(toGradientPos);
-	GradientDistance = max(GradientDistance, 0.0001f);
-	float GradientAttenuation = 1.0f / (GradientDistance);
-	
-	GradientAttenuation *= 3.5f * gradientIntensity; 
-	GradientAttenuation = saturate(GradientAttenuation);
-	
-	baseRGB = baseRGB * GradientAttenuation;
+	//float3 toGradientPos = gradientPos - input.WorldPos;
+	//float GradientDistance = length(toGradientPos);
+	//GradientDistance = max(GradientDistance, 0.0001f);
+	//float GradientAttenuation = 1.0f / (GradientDistance);
+	//
+	//GradientAttenuation *= 3.5f * gradientIntensity; 
+	//GradientAttenuation = saturate(GradientAttenuation);
+	//
+	//baseRGB = baseRGB * GradientAttenuation;
 
     return float4(baseRGB, baseTex.a);
 }
