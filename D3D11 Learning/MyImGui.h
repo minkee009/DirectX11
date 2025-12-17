@@ -34,6 +34,7 @@ namespace DebugStatusUI
 	GPURamDebugData QueryGpuMemory(ComPtr<ID3D11Device> d3dDevice);
 }
 
+struct ImFont;
 namespace MyEngine 
 {
 	class MyD3DContext;
@@ -49,6 +50,9 @@ namespace MyEngine
 		bool m_isWin32BackendInit = false;
 		bool m_isD3D11BackendInit = false;
 		void UpdateInfiniteDrag();
+
+		ImFont* m_bigFont;
+		ImFont* m_defaultFont;
 	public:
 		bool Initialize(MyD3DContext* myContext);
 		void BeginFrame();

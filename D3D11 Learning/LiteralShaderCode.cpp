@@ -1269,6 +1269,7 @@ VS_Output VS(uint id : SV_VertexID)
 cbuffer PostProcessBuffer : register(b0)
 {
     float exposure;
+    float supportHDR;
 }
 Texture2D txInput : register(t0);
 SamplerState samLinear : register(s0);
@@ -1316,12 +1317,15 @@ float4 PS(PSIn input) : SV_Target
     color *= exposure;
 
     // PQ ÀÎÄÚµù
-    //float3 pq = LinearToPQ(color);
+    float3 pq = LinearToPQ(color);
+   
+    // ACES Filmic
+    float3 aces = ACESFilmic(color.rgb);
+    aces = saturate(aces);
+    aces = LinearToSRGB(aces);
 
-    color.rgb = ACESFilmic(color.rgb);
-    color.rgb = saturate(color.rgb);
+    float3 finalColor = lerp(aces,pq,supportHDR);
 
-    float3 finalColor = LinearToSRGB(color.rgb);
     return float4(finalColor, 1.0f);
 }
 )";

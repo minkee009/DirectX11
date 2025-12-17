@@ -135,7 +135,8 @@ bool MyEngine::MyImGui::Initialize(MyD3DContext* myContext)
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 키보드 내비게이션 활성화
-    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/malgun.ttf", 16.0f, NULL, io.Fonts->GetGlyphRangesKorean()); // 한글 폰트 설정
+    m_defaultFont = io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/malgun.ttf", 16.0f, NULL, io.Fonts->GetGlyphRangesKorean()); // 한글 폰트 설정
+    m_bigFont = io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/malgun.ttf", 36.0f, NULL, io.Fonts->GetGlyphRangesKorean());
 
     // 스타일 설정
     ImGui::StyleColorsDark();
@@ -252,10 +253,11 @@ void MyEngine::MyImGui::Update()
 	static bool showWindow = true;
     if (showWindow)
     {
+        ImGui::PushFont(m_bigFont);
         ImGui::Begin("Read Me!!", &showWindow);
-
-        ImGui::Text(u8"SkinningTest.fbx만 BRDF 셰이더 전역설정으로 조절시킬 수 있습니다.\n 나머진 모델파일에 고정된 값을 이용하여 BRDF렌더링을 처리합니다.");
+        ImGui::Text(u8"모니터 출력이 HDR을 지원하고 \nOS 설정에서 HDR모드를 켠상태인 경우 \nHDR모드가 자동으로 켜집니다 (백버퍼 설정 변경됨)");
         ImGui::End();
+        ImGui::PopFont();
     }
 
 
@@ -625,6 +627,12 @@ void MyEngine::MyImGui::Update()
     ImGui::End();
 
     ImGui::Begin(u8"HDR - 색상 공간 설정");
+
+
+    if (m_d3dContext->m_supportHDR)
+        ImGui::Text(u8"HDR 지원함 -> PQ 공식 적용");
+    else
+        ImGui::Text(u8"HDR 지원하지 않음 -> ACES 필름효과 적용");
 
     ImGui::DragFloat(u8"노출 값", &m_d3dContext->m_exposure, 0.001f);
 

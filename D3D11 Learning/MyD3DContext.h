@@ -66,7 +66,8 @@ namespace MyEngine {
 	struct PostProcessCB
 	{
 		FLOAT exposure;
-		XMFLOAT3 pad;
+		FLOAT supportHDR;
+		XMFLOAT2 pad;
 	};
 
 
@@ -174,6 +175,8 @@ namespace MyEngine {
 		ComPtr<ID3D11VertexShader> m_pShadowMapVS;
 		ComPtr<ID3D11SamplerState> m_pShadowSampler;
 
+
+
 		const float SHADOW_MAP_DEPTH = 25.0f;
 
 		// ================ BRDF Environment
@@ -183,6 +186,8 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pBRDFLUTSRV;             //IBL BRDF LUT
 
 		// ================
+
+		bool m_supportHDR = false;
 
 		// ================ Debug Draw
 		using DefaultVertex = DirectX::VertexPositionColor;
@@ -217,6 +222,8 @@ namespace MyEngine {
 		void Present();
 
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
+
+		bool CheckHDRSupport();
 
 	public:
 		bool Initialize(HWND hWnd, int width, int height);

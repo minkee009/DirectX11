@@ -366,12 +366,6 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\..\D3D11_Tutorial\Documents\참고용\Resource\DB2X2_L01_Nor.png">
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
     <CopyFileToFolders Include="Resources\Textures\Lut.png">
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
@@ -473,6 +467,224 @@
     <CopyFileToFolders Include="Resources\Textures\floor_tile_s.png">
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Textures\cubemapBrdf.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapDiffuseHDR.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapDiffuseMDR.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapEnvHDR.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapEnvMDR.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapSpecularHDR.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapSpecularMDR.dds">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\DB2X2_L01_Nor.png">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Textures\Base_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_Emissive.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_basecolor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_opacity.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_Specular.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_BaseColor.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_Metallic.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_Normal.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_Roughness.tga">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Resources\Textures</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

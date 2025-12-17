@@ -271,9 +271,6 @@
     <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="..\..\D3D11_Tutorial\Documents\참고용\Resource\DB2X2_L01_Nor.png">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Lut.png">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
@@ -323,6 +320,165 @@
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\floor_tile_a.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapBrdf.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapDiffuseHDR.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapDiffuseMDR.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapEnvHDR.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapEnvMDR.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapSpecularHDR.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\cubemapSpecularMDR.dds">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\DB2X2_L01_Nor.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Base_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Arms_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Chest_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Legs_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Armor_Skirt_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Body_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_Emissive.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Eyes_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_basecolor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_opacity.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Hair_Specular.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Head_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Headress_Roughness.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_BaseColor.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_Metallic.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_Normal.tga">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\Primrose_Weapon_Roughness.tga">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
   </ItemGroup>

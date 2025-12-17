@@ -7,6 +7,7 @@
 #include <directxcolors.h>
 #include <d3dcompiler.h>
 #include <wincodec.h>
+#include <dxgi1_6.h>
 
 #ifdef _DEBUG
 #include <dxgidebug.h>
@@ -134,6 +135,8 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
+    m_supportHDR = CheckHDRSupport();
+
     // 스왑체인 생성
     IDXGIFactory2* dxgiFactory2 = nullptr;
     hr = dxgiFactory->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2));
@@ -154,7 +157,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         DXGI_SWAP_CHAIN_DESC1 sd = {};
         sd.Width = width;
         sd.Height = height;
-        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.Format = m_supportHDR ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.SampleDesc.Count = 1;
         sd.SampleDesc.Quality = 0;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -176,7 +179,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
         sd.BufferDesc.Height = height;
-        sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.BufferDesc.Format = m_supportHDR ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.BufferDesc.RefreshRate.Numerator = 60;
         sd.BufferDesc.RefreshRate.Denominator = 1;
         sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -191,10 +194,14 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     ComPtr<IDXGISwapChain3> spSwapChain3;
     m_pSwapChain.As<IDXGISwapChain3>(&spSwapChain3);
 
-  //  if (FAILED(spSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
-  //  {
-		//throw std::runtime_error("Failed to set swap chain color space.");
-  //  }
+    // hdr 지원인 경우 설정할 것들
+    if (m_supportHDR &&
+        FAILED(spSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
+    {
+		throw std::runtime_error("Failed to set swap chain color space.");
+    }
+
+    m_exposure = m_supportHDR ? 45.0f : 0.53f;
 
     // 이 튜토리얼 코드는 풀스크린 스왑체인을 관리하지 않음, 따라서 ALT+ENTER 단축키를 제외시킴
     dxgiFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
@@ -1250,6 +1257,7 @@ void MyEngine::MyD3DContext::Render()
 
     PostProcessCB pp_cb = {};
     pp_cb.exposure = m_exposure;
+    pp_cb.supportHDR = m_supportHDR ? 1.0f : 0.0f;
     m_pContext->UpdateSubresource(m_pPostProcessCB.Get(), 0, nullptr, &pp_cb, 0, 0);
     m_pContext->PSSetConstantBuffers(0, 1, m_pPostProcessCB.GetAddressOf());
 
@@ -1272,6 +1280,10 @@ void MyEngine::MyD3DContext::Render()
             m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
             m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
             m_pContext->RSSetState(m_states->CullNone());
+        }
+        else
+        {
+            m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), m_pDepthStencilView.Get());
         }
 
         m_effect->SetView(m_pCamera->GetViewMatrix());
@@ -1476,6 +1488,47 @@ HRESULT MyEngine::MyD3DContext::CompileShaderFromFile(const WCHAR* szFileName, L
     if (pErrorBlob) pErrorBlob->Release();
 
     return S_OK;
+}
+
+bool MyEngine::MyD3DContext::CheckHDRSupport()
+{
+    if (!m_pd3dDevice)
+        throw std::runtime_error("failed to get d3dDevice, check d3dDevice initalize");
+
+    ComPtr<IDXGIFactory6> factory;
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))))
+        return false;
+
+    UINT i = 0;
+    ComPtr<IDXGIOutput> output;
+
+    ComPtr<IDXGIDevice> dxgiDevice;
+    if (FAILED(m_pd3dDevice->QueryInterface(IID_PPV_ARGS(&dxgiDevice))))
+        return false;
+
+    ComPtr<IDXGIAdapter> adapter;
+    if (FAILED(dxgiDevice->GetAdapter(&adapter)))
+        return false;
+
+    while (adapter->EnumOutputs(i++, &output) != DXGI_ERROR_NOT_FOUND)
+    {
+        ComPtr<IDXGIOutput6> output6;
+        if (SUCCEEDED(output.As(&output6)))
+        {
+            DXGI_OUTPUT_DESC1 desc = {};
+            if (SUCCEEDED(output6->GetDesc1(&desc)))
+            {
+                // HDR10-like color space 체크 예시
+                if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)
+                {
+                    //std::wcout << L"HDR10-capable output found\n";
+                    return true;
+                }
+            }
+        }
+        output.Reset();
+    }
+    return false;
 }
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
