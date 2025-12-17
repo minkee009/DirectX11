@@ -448,28 +448,28 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     //오브젝트 생성
     m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
-    m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
+    //m_sceneObjects.push_back(std::make_unique<Transform>());
 
     auto obj1 = m_sceneObjects[0].get();
     obj1->SetWorldPosition(0, 0, 0);
 
-    auto obj2 = m_sceneObjects[1].get();
-    obj2->SetWorldPosition(4.950f, 0.250f, 4.700f);
+    //auto obj2 = m_sceneObjects[1].get();
+    //obj2->SetWorldPosition(4.950f, 0.250f, 4.700f);
 
-    auto obj3 = m_sceneObjects[2].get();
-    obj3->SetWorldPosition(-3.8f, 0.25f, 4.85f);
+    //auto obj3 = m_sceneObjects[2].get();
+    //obj3->SetWorldPosition(-3.8f, 0.25f, 4.85f);
 
-    auto obj4 = m_sceneObjects[3].get();
-    obj4->SetWorldPosition(8.9f, 0.4f, -6.45f);
+    //auto obj4 = m_sceneObjects[3].get();
+    //obj4->SetWorldPosition(8.9f, 0.4f, -6.45f);
 
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhong);
     m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Ground.fbx"));
-    AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
-    m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
-    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
-    m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
+    //AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BlinnPhongToon);
+    //m_meshRenderers.push_back(AssimpConverter::LoadSkinningMeshRendererFromFile("Resources/Models/SkinningTest.fbx"));
+    //m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/Miyu_Akey_Rigging.obj"));
+    //m_meshRenderers.push_back(AssimpConverter::LoadStaticMeshRendererFromFile("Resources/Models/zeldaPosed001.fbx"));
 
     // renderpass 
     // 0 : shadow map
@@ -481,18 +481,18 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_meshRenderers[0]->SetPassForceChangePS(2, D3DCTX::ShaderManager::Get()->GetSmokePixelShader());
     m_meshRenderers[0]->SetPassCheckKeyword("IsBlinnPhong");
 
-    // skinningTest.fbx setting
-    m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
-    m_meshRenderers[1]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
+    //// skinningTest.fbx setting
+    //m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader_SkinningBone());
+    //m_meshRenderers[1]->SetPassForceChangeVS(1, D3DCTX::ShaderManager::Get()->GetOutlineVertexShader_SkinningBone());
 
-    // Miyu_Akey_Rigging.obj setting
-    m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
-    m_meshRenderers[2]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
-    m_meshRenderers[2]->SetPassExcludedMeshes(2, { 1,5 }); // scene draw pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
-    m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
+    //// Miyu_Akey_Rigging.obj setting
+    //m_meshRenderers[2]->SetPassExcludedMeshes(0, { 1,5 }); // shadow pass -> { 1, 5 } exclude :: built-in ModelFile outline meshes
+    //m_meshRenderers[2]->SetPassExcludedMeshes(1, { 1,5 }); // outline pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
+    //m_meshRenderers[2]->SetPassExcludedMeshes(2, { 1,5 }); // scene draw pass -> { 1, 5 } exclude  :: built-in ModelFile outline meshes
+    //m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
-    // zeldaPosed001.fbx setting
-    m_meshRenderers[3]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
+    //// zeldaPosed001.fbx setting
+    //m_meshRenderers[3]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetBlinnPhongVertexShader());
 
     // DebugDraw
     m_states = std::make_unique<CommonStates>(m_pd3dDevice.Get());
