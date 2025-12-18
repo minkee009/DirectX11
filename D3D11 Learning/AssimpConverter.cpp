@@ -77,12 +77,11 @@ void MyEngine::AssimpConverter::CollectBoneHierarchy(aiNode* pNode, const std::u
 void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, aiNode* pNode, const aiScene* pScene)
 {
     //메쉬 정보 처리
-    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         std::shared_ptr<Mesh> mesh = nullptr;
-        std::string meshName = "[SubMesh]-" + sceneName + std::string{ pMesh->mName.C_Str() };
+        std::string meshName = "[SubMesh]-" + std::to_string(meshes.size()) + std::string{ pMesh->mName.C_Str() };
         if (ResourceManager::Get()->Containskey(meshName))
         {
             mesh = ResourceManager::Get()->Load<Mesh>(meshName);
@@ -107,12 +106,11 @@ void MyEngine::AssimpConverter::ProcessNode(std::vector<std::shared_ptr<Mesh>>& 
 void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBone>& bones, std::vector<RigidBonePose>& bonePoses, std::vector<std::shared_ptr<Mesh>>& meshes, std::vector<UINT>& matIDX, std::vector<UINT>& boneIDX, aiNode* pNode, const aiScene* pScene, std::unordered_map<std::string, UINT>& nodeNameToIndexMap)
 {
     //메쉬 정보 처리
-    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         std::shared_ptr<Mesh> mesh = nullptr;
-        std::string meshName = "[SubMesh]-" + sceneName + std::string{ pMesh->mName.C_Str() };
+        std::string meshName = "[SubMesh]-" + std::to_string(meshes.size()) + std::string{ pMesh->mName.C_Str() };
         if (ResourceManager::Get()->Containskey(meshName))
         {
             mesh = ResourceManager::Get()->Load<Mesh>(meshName);
@@ -142,7 +140,7 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<RigidBo
         matrix.c1, matrix.c2, matrix.c3, matrix.c4,
         matrix.d1, matrix.d2, matrix.d3, matrix.d4
     );
-    
+
     bonePoses.emplace_back(bonePose);
     bones.emplace_back(bone);
     nodeNameToIndexMap.insert({ pNode->mName.C_Str(),bone.index });
@@ -184,12 +182,11 @@ void MyEngine::AssimpConverter::ProcessNode(int parentIndex, std::vector<Skinnin
     }
 
     //메쉬 정보 처리
-    auto sceneName = std::string{ pScene->mName.C_Str() };
     for (UINT i = 0; i < pNode->mNumMeshes; i++)
     {
         aiMesh* pMesh = pScene->mMeshes[pNode->mMeshes[i]];
         std::shared_ptr<Mesh> mesh = nullptr;
-        std::string meshName = "[SubMesh]-" + sceneName + std::string{pMesh->mName.C_Str()};
+        std::string meshName = "[SubMesh]-" + std::to_string(meshes.size()) + std::string{ pMesh->mName.C_Str() };
         if (ResourceManager::Get()->Containskey(meshName))
         {
             mesh = ResourceManager::Get()->Load<Mesh>(meshName);
@@ -483,9 +480,20 @@ std::unique_ptr<MyEngine::StaticMeshRenderer> MyEngine::AssimpConverter::LoadSta
         pStaticMeshRenderer->SetMesh(sMesh);
     }
 
+    std::string shaderType = "";
+    switch (s_materialType)
+    {
+    case LoadMaterialType::BlinnPhong:
+        shaderType = "[BlinnPhong] |";
+        break;
+    case LoadMaterialType::BlinnPhongToon:
+        shaderType = "[BlinnPhongToon] |";
+        break;
+    }
+
     for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = "[Static] | " + shaderType + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -711,9 +719,21 @@ std::unique_ptr<MyEngine::RigidMeshRenderer> MyEngine::AssimpConverter::LoadRigi
         pRigidMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
 
+    std::string shaderType = "";
+    switch (s_materialType)
+    {
+    case LoadMaterialType::BlinnPhong:
+        shaderType = "[BlinnPhong] |";
+        break;
+    case LoadMaterialType::BlinnPhongToon:
+        shaderType = "[BlinnPhongToon] |";
+        break;
+    }
+
+
     for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = "[RigidBone] | " + shaderType + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
 
         std::shared_ptr<Material> mat = nullptr;
 
@@ -1073,9 +1093,21 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
         pSkinningMeshRenderer->SetAnimations(std::move(boneAnimations));
     }
 
+    std::string shaderType = "";
+    switch (s_materialType)
+    {
+    case LoadMaterialType::BlinnPhong:
+        shaderType = "[BlinnPhong] |";
+        break;
+    case LoadMaterialType::BlinnPhongToon:
+        shaderType = "[BlinnPhongToon] |";
+        break;
+    }
+
+
     for (UINT i = 0; i < model->pScene->mNumMaterials; i++)
     {
-        std::string matName = sceneName + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
+        std::string matName = "[SkinnningBone] | " + shaderType + std::string{ model->pScene->mMaterials[i]->GetName().C_Str() };
 
         std::shared_ptr<Material> mat = nullptr;
 
