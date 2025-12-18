@@ -372,7 +372,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     InitShadowMapTex();
 
     if (!m_pBVHTree)
-        m_pBVHTree = std::make_unique<BVH>();
+        m_pBVHTree = std::make_unique<StaticBVH>();
 
     //상수 버퍼 생성
     D3D11_BUFFER_DESC cbDesc;
@@ -501,10 +501,10 @@ bool MyEngine::MyD3DContext::InitializeScene()
             m_pDebugDrawIL.ReleaseAndGetAddressOf());
     }
 
-    // BVH build
+    // StaticBVH build
     for (size_t i = 0; i < m_sceneObjects.size(); i++)
     {
-        m_bboxRegistry.push_back(BVH::MakeTransformedBBox(*m_sceneObjects[i].get(), m_meshRenderers[i]->GetBBox()));
+        m_bboxRegistry.push_back(StaticBVH::MakeTransformedBBox(*m_sceneObjects[i].get(), m_meshRenderers[i]->GetBBox()));
     }
 
     m_pBVHTree->Build(m_bboxRegistry);

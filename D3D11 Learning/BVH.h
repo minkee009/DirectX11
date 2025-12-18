@@ -7,7 +7,7 @@ using namespace DirectX::SimpleMath;
 
 namespace MyEngine
 {
-	class BVH
+	class StaticBVH
 	{
 	public:
 		struct Node
@@ -28,8 +28,8 @@ namespace MyEngine
 		void Clear();
 
 		/// <summary>
-		/// BVH 트리 내부의 노드를 순회해 겹치는 오브젝트를 반환합니다.
-		/// BVH 트리 빌드 시 사용하였던 BoundingBox배열 레지스트리가 필요합니다.
+		/// StaticBVH 트리 내부의 노드를 순회해 겹치는 오브젝트를 반환합니다.
+		/// StaticBVH 트리 빌드 시 사용하였던 BoundingBox배열 레지스트리가 필요합니다.
 		/// </summary>
 		/// <param name="nodeIdx"> - 순회를 시작할 노드의 위치입니다. 특별한 경우가 아니면 최상단 노드를 넣는 것을 추천합니다.</param>
 		/// <param name="registry"> - 트리가 참조중인 BoundingBox배열입니다. 빌드함수를 호출할 때 사용했던 배열을 넣어야합니다.</param>
@@ -59,5 +59,33 @@ namespace MyEngine
 		std::vector<size_t> m_alignedIndices;
 
 		size_t BuildNode(const std::vector<BoundingBox>& registry, size_t startIdx, size_t registrySize);
+	};
+
+	class DynamicBVH
+	{
+	private:
+		static constexpr size_t INVALID_IDX = size_t(-1);
+
+		// 포인터 형식의 노드
+		struct Node
+		{
+			BoundingBox bound;
+			size_t parent = INVALID_IDX;
+			size_t left = INVALID_IDX;
+			size_t right = INVALID_IDX;
+			size_t objectIdx = INVALID_IDX;
+
+			bool IsLeaf() const { return objectIdx != INVALID_IDX; }
+		};
+
+		std::vector<Node> m_nodes;
+
+		float m_bboxMargin = 0.1f;
+
+		void Rotate(size_t idx);
+
+	public:
+		// 최초 빌드용
+		void Build(const std::vector<BoundingBox>& registry);
 	};
 }
