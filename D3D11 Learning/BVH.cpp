@@ -139,6 +139,32 @@ size_t MyEngine::StaticBVH::BuildNode(const std::vector<BoundingBox>& registry, 
 }
 
 
+bool MyEngine::DynamicBVH::CheckSplitRule()
+{
+}
+
+void MyEngine::DynamicBVH::Refit()
+{
+}
+
+void MyEngine::DynamicBVH::PartialRebuild(size_t parent_idx)
+{
+}
+
+void MyEngine::DynamicBVH::Rotate(size_t idx)
+{
+    auto& nodeA = m_nodes[idx];
+}
+
+void MyEngine::DynamicBVH::Remove(size_t idx)
+{
+}
+
+size_t MyEngine::DynamicBVH::Insert()
+{
+    return size_t();
+}
+
 void MyEngine::DynamicBVH::Build(const std::vector<BoundingBox>& registry)
 {
 

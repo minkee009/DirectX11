@@ -70,19 +70,24 @@ namespace MyEngine
 		struct Node
 		{
 			BoundingBox bound;
-			size_t parent = INVALID_IDX;
-			size_t left = INVALID_IDX;
-			size_t right = INVALID_IDX;
-			size_t objectIdx = INVALID_IDX;
+			size_t parent		= INVALID_IDX;
+			size_t left			= INVALID_IDX;
+			size_t right		= INVALID_IDX;
+			size_t objectIdx	= INVALID_IDX;
 
 			bool IsLeaf() const { return objectIdx != INVALID_IDX; }
 		};
 
-		std::vector<Node> m_nodes;
+		std::vector<Node>	m_nodes;
 
-		float m_bboxMargin = 0.1f;
+		float	m_bboxMargin = 0.1f;
 
-		void Rotate(size_t idx);
+		bool	CheckSplitRule();
+		void	Refit();
+		void	PartialRebuild(size_t parent_idx);
+		void	Rotate(size_t idx);
+		void	Remove(size_t idx);
+		size_t	Insert();
 
 	public:
 		// √÷√  ∫ÙµÂøÎ
