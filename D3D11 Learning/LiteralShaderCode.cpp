@@ -1312,7 +1312,19 @@ struct PSIn
 
 float4 PS(PSIn input) : SV_Target
 {
-    float4 color = txInput.Sample(samLinear, input.uv);
+    uint width, height;
+
+    txInput.GetDimensions(width, height);
+
+    float2 pixel = input.uv * float2(width, height);    
+    float pixelScale = 4.0f;
+
+    pixel = floor(pixel / pixelScale) * pixelScale;
+
+    float4 color = float4(0,0,0,0);
+
+    color = txInput.Sample(samLinear, pixel / float2(width, height));
+
     // Linear HDR 밝기 조절 (nits 스케일)
     color *= exposure;
 
