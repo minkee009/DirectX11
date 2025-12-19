@@ -141,6 +141,7 @@ size_t MyEngine::StaticBVH::BuildNode(const std::vector<BoundingBox>& registry, 
 
 bool MyEngine::DynamicBVH::CheckSplitRule()
 {
+    return false;
 }
 
 void MyEngine::DynamicBVH::Refit()
