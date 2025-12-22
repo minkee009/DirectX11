@@ -1482,6 +1482,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pSceneColorRTV = nullptr;
     m_pSceneColorSRV = nullptr;
     m_pSceneColorTex = nullptr;
+    m_pPostProcessCB = nullptr;
 
     UninitGBufferTex();
 
