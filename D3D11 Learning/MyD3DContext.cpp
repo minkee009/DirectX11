@@ -1604,7 +1604,7 @@ bool MyEngine::MyD3DContext::CheckHDRSupport()
                 }
             }
         }
-        output.Reset();
+        output = nullptr;
     }
     return false;
 }
@@ -1613,9 +1613,9 @@ void MyEngine::MyD3DContext::ResizeGBufferTex(UINT width, UINT height)
 {
     for (size_t i = 0; i < GBUFFER_TEX_SIZE; i++)
     {
-        m_pGBufferTextures[i].Reset();
-        m_pGBufferRTV[i].Reset();
-        m_pGBufferSRV[i].Reset();
+        m_pGBufferTextures[i] = nullptr;
+        m_pGBufferRTV[i] = nullptr;
+        m_pGBufferSRV[i] = nullptr;
 
         // 텍스처 2D 디스크립션 설정
         D3D11_TEXTURE2D_DESC texDesc = {};
@@ -1665,9 +1665,9 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
     // 기존 화면 렌더타겟뷰를 모두 해제
-    m_pBackBufferRTV.Reset();
-    m_pDepthStencilView.Reset();
-    m_pDepthStencilTex.Reset();
+    m_pBackBufferRTV = nullptr;
+    m_pDepthStencilView = nullptr;
+    m_pDepthStencilTex = nullptr;
 
     // 스왑 체인 버퍼 크기 재조정
     HRESULT hr = m_pSwapChain->ResizeBuffers(
@@ -1694,7 +1694,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 
     hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pBackBufferRTV.GetAddressOf());
     if (FAILED(hr)) {
-        pBackBuffer.Reset();
+        pBackBuffer = nullptr;
         OutputDebugStringA("렌더 타겟 뷰를 생성을 실패했습니다.\n");
         return;
     }
@@ -1767,7 +1767,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
         return;
     }
 
-    m_pDepthStencilSRV.Reset(); // 멤버 변수 선언 가정
+    m_pDepthStencilSRV = nullptr; // 멤버 변수 선언 가정
     D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
     depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV로 사용할 포맷
     depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
