@@ -439,49 +439,49 @@ bool MyEngine::MyD3DContext::InitializeScene()
         m_pBVHTree = std::make_unique<StaticBVH>();
 
     //상수 버퍼 생성
-    D3D11_BUFFER_DESC cbDesc;
-    ZeroMemory(&cbDesc, sizeof(cbDesc));
-    cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    cbDesc.ByteWidth = sizeof(MyConstantBuffer);
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.CPUAccessFlags = 0;
+    //D3D11_BUFFER_DESC cbDesc;
+    //ZeroMemory(&cbDesc, sizeof(cbDesc));
+    //cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    //cbDesc.ByteWidth = sizeof(MyConstantBuffer);
+    //cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //cbDesc.CPUAccessFlags = 0;
 
-    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return false;
+    //hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf());
+    //if (FAILED(hr))
+    //    return false;
 
-    cbDesc = {};
-    cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    cbDesc.ByteWidth = sizeof(OutlineCB);
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.CPUAccessFlags = 0;
+    //cbDesc = {};
+    //cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    //cbDesc.ByteWidth = sizeof(OutlineCB);
+    //cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //cbDesc.CPUAccessFlags = 0;
 
-    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pOutlineCB.GetAddressOf());
-    if (FAILED(hr))
-        return false;
+    //hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pOutlineCB.GetAddressOf());
+    //if (FAILED(hr))
+    //    return false;
 
-    cbDesc = {};
-    cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    cbDesc.ByteWidth = sizeof(GradientCB);
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbDesc.CPUAccessFlags = 0;
+    //cbDesc = {};
+    //cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    //cbDesc.ByteWidth = sizeof(GradientCB);
+    //cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //cbDesc.CPUAccessFlags = 0;
 
-    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pGradientCB.GetAddressOf());
-    if (FAILED(hr))
-        return false;
+    //hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pGradientCB.GetAddressOf());
+    //if (FAILED(hr))
+    //    return false;
 
     //LUT 텍스쳐 생성 (Todo: Texture Manager에게 위임시키기)
     ScratchImage image;
 
     //텍스쳐 로드
     //hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
-    hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
-    if (FAILED(hr))
-        return false;
+    //hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
+    //if (FAILED(hr))
+    //    return false;
 
-    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pLUTSRV.GetAddressOf());
-    if (FAILED(hr))
-        return false;
+    //hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), m_pLUTSRV.GetAddressOf());
+    //if (FAILED(hr))
+    //    return false;
 
     //카메라 생성
     m_pCamera = std::make_unique<Camera>();
@@ -1074,242 +1074,14 @@ void MyEngine::MyD3DContext::Clear()
     //}
 }
 
+
 void MyEngine::MyD3DContext::Render()
 {
-    m_pContext->OMSetRenderTargets(1,m_pSceneColorRTV.GetAddressOf(),m_pDepthStencilView.Get());
-
-    // 추후에 변경할 예정이지만 일단 씬 내용을 업데이트
-    m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
-
-    //  <=============== 첫번째 패스(그림자 맵)
+    // pass - 0 : Geometry
     m_currentRenderPassNum = 0;
 
-    MyConstantBuffer cb;
-    cb.mWorld = XMMatrixIdentity();
-
-    ID3D11ShaderResourceView* firstPassnullSRVs[12] = { nullptr };
-    m_pContext->PSSetShaderResources(0, 12, firstPassnullSRVs);
-
-    // 컬러 렌더타겟은 사용 안 함
-    m_pContext->PSSetShader(nullptr, nullptr, 0);
-    m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
-    // 깊이 초기화
-    m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-    m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
-
-    m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-    m_pContext->RSSetState(m_pShadowMapRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
-
-    // 뷰포트 세팅(텍스쳐 사이즈로)
-    m_pContext->RSSetViewports(1, &m_shadowViewport);
-    cb.vLightColor = m_lightColor;
-    auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
-    m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
-    auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
-    cb.vLightDir = xmLightDir;
-
-    // 뷰, 프로젝션 행렬 생성
-    Matrix lightViewMat = m_pDirectionalLightT->GetWorldMatrix().Invert();
-    Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, m_lightProjectNear, m_lightProjectFar);
-
-    // 최종 LightViewProjection 행렬
-    Matrix lightViewProj = lightViewMat * lightProj;
-
-    // 쉐이더 상수 버퍼에 세팅
-    cb.mlightViewProj = lightViewProj.Transpose();
-    cb.mView = lightViewMat.Transpose();
-    cb.mProjection = lightProj.Transpose();
-
-    cb.rimLightStr = m_rimLightStrength;
-
-    static BYTE lowlutPixel = MyEngine::GlobalLogic::ToonShader::GetLutOnePixelR(L"Resources/Textures/Lut.png");
-    cb.lowLut = pow((float)lowlutPixel / 255.0f, 2.2f); // 정규화 후 감마 색상표로 전환 
-
-    float colorMapA = cb.lowLut - m_diffuseGradientStrength;
-    float colorMapB = cb.lowLut;
-    cb.diffGradientDistHalf = abs(colorMapB - colorMapA) * 0.5f;
-    cb.diffGradientDepth = colorMapB - cb.diffGradientDistHalf;
-
-    m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-
-    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
-    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
-    {
-        auto& meshRenderer = m_meshRenderers[i];
-        auto& obj = m_sceneObjects[i];
-
-        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-        meshRenderer->SetEnabledBindMeshes(true);
-        meshRenderer->SetEnabledBindMaterials(false);
-        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
-        meshRenderer->Draw(m_pContext.Get());
-    }
-
-    Clear();
-
-    ID3D11ShaderResourceView* nullSRVs[2] = { nullptr, nullptr };
-    m_pContext->PSSetShaderResources(9, 1, nullSRVs);  // 그림자맵 언바인딩
-
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
-    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
-    m_pContext->RSSetViewports(1, &m_vp);
-    m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
-    m_pContext->PSSetShaderResources(10, 1, m_pShadowSRV.GetAddressOf());
-    m_pContext->PSSetShaderResources(9, 1, m_pLUTSRV.GetAddressOf());
-
-    cb.mWorld = XMMatrixIdentity();
-    cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
-    cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
-    cb.CameraPos = m_pCamera->GetTransform()->GetLocalPosition();
-
-    XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), -1.25f));
-
-    cb.ambientStr = m_ambientStrength;
-    cb.diffuseStr = m_diffuseStrength;
-    cb.specularStr = m_specularStrength;
-    cb.shininess = m_shininess;
-    cb.vAmbientColor = m_ambientColor;
-    cb.reflectionFactor = m_reflectionFactor;
-
-
-    //스카이박스 드로우
-    m_pContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-    m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
-    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
-    m_pContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
-    m_pContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-    m_pContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
-    m_pContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
-    m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
-    m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
-
-    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-    m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 초기화
-
-    int modelIdx = 0;
-
-    OutlineCB olCB = {};
-    olCB.Thickness = m_outlineThickness;
-    m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &olCB, 0, 0);
-    m_pContext->VSSetConstantBuffers(4, 1, m_pOutlineCB.GetAddressOf());
-
-    // <<======= 두번째 패스(아웃라인)
+    // pass - 1 : Light
     m_currentRenderPassNum = 1;
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
-    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
-    {
-        auto& meshRenderer = m_meshRenderers[i];
-        auto& obj = m_sceneObjects[i];
-
-        if (!meshRenderer->GetPassCheckKeyword("IsToon"))
-            continue;
-
-        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
-
-        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-
-        D3DCTX::ShaderManager::Get()->BindOutlineShaders(m_pContext.Get());
-
-        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
-        meshRenderer->SetEnabledBindMeshes(true);
-        meshRenderer->SetEnabledBindMaterials(false);
-        meshRenderer->Draw(m_pContext.Get());
-    }
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
-    
-    GradientCB gradientCB = {};
-    gradientCB.intensity = m_gradientIntensity;
-    //gradientCB.minY = 0;
-    //gradientCB.maxY = 10.0f;
-    m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-    m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
-
-    // <<======= 세번째 렌더패스 (씬 드로우)
-    m_currentRenderPassNum = 2;
-
-    Vector3 debugPos1;
-    Vector3 debugPos2;
-    Vector3 debugPos3;
-    bool firstDebugDraw = true;
-
-    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
-    {
-        auto& meshRenderer = m_meshRenderers[i];
-        auto& obj = m_sceneObjects[i];
-
-        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
-        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
-
-        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-
-        if (m_meshRenderers[i]->GetPassCheckKeyword("IsToon"))
-        {
-            auto gradientBBox = meshRenderer->GetBBox();
-            BoundingOrientedBox gradientOBB;
-            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
-
-            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
-            gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
-
-            Vector3 extents = gradientBBox.Extents;
-
-            float dist = -extents.Length();
-
-            if (firstDebugDraw)
-            {
-                debugPos1 = gradientBBox.Center;
-            }
-
-            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
-            if (firstDebugDraw)
-            {
-                debugPos2 = gradientCB.GradientPos;
-            }
-
-            dist = -dist;
-
-            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
-            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
-
-            if (gradientOBB.Intersects(simdOrigin, simdDirection, dist))
-            {
-                gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
-            }
-
-            if (firstDebugDraw)
-            {
-                debugPos3 = gradientCB.GradientPos;
-                firstDebugDraw = false;
-            }
-
-        }
-
-        m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
-        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
-        meshRenderer->SetEnabledBindMeshes(true);
-        meshRenderer->SetEnabledBindMaterials(true);
-        meshRenderer->Draw(m_pContext.Get());
-    }
 
     // tone mapping
     ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -1347,7 +1119,7 @@ void MyEngine::MyD3DContext::Render()
     ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
     m_pContext->PSSetShaderResources(0, 1, nullSRV3);
 
-    //debug draw
+    // debug draw
     if (m_enableDebugDraw)
     {
         if (!m_enableDebugDrawZbuffer)
@@ -1382,20 +1154,6 @@ void MyEngine::MyD3DContext::Render()
             obb.CreateFromBoundingBox(obb, renderer_AABB);
             obb.Transform(obb, obj->GetWorldMatrix());
             DX::Draw(m_batch.get(), obb, Colors::Aqua);
-        }
-
-        if (!firstDebugDraw)
-        {
-            BoundingSphere sphere = { debugPos1, 0.125f };
-            DX::Draw(m_batch.get(), sphere, Colors::Red);
-
-            BoundingSphere sphere2 = { debugPos2, 0.125f };
-            DX::Draw(m_batch.get(), sphere2, Colors::Orange);
-
-            BoundingSphere sphere3 = { debugPos3, 0.125f };
-            DX::Draw(m_batch.get(), sphere3, Colors::Magenta);
-
-            DX::DrawRay(m_batch.get(), debugPos1, debugPos2 - debugPos1, false, Colors::Yellow);
         }
 
         auto frustum = m_pCamera->GetProjFrustum();
@@ -1648,6 +1406,242 @@ void MyEngine::MyD3DContext::ResizeGBufferTex(UINT width, UINT height)
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
         m_pd3dDevice->CreateShaderResourceView(m_pGBufferTextures[i].Get(), &srvDesc, m_pGBufferSRV[i].GetAddressOf());
+    }
+}
+
+void MyEngine::MyD3DContext::ForwardRenderPass()
+{
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
+
+    //  <=============== 첫번째 패스(그림자 맵)
+    m_currentRenderPassNum = 0;
+
+    MyConstantBuffer cb;
+    cb.mWorld = XMMatrixIdentity();
+
+    ID3D11ShaderResourceView* firstPassnullSRVs[12] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 12, firstPassnullSRVs);
+
+    // 컬러 렌더타겟은 사용 안 함
+    m_pContext->PSSetShader(nullptr, nullptr, 0);
+    m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
+    // 깊이 초기화
+    m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
+
+    m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+    m_pContext->RSSetState(m_pShadowMapRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
+    // 뷰포트 세팅(텍스쳐 사이즈로)
+    m_pContext->RSSetViewports(1, &m_shadowViewport);
+    cb.vLightColor = m_lightColor;
+    auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
+    m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
+    auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
+    cb.vLightDir = xmLightDir;
+
+    // 뷰, 프로젝션 행렬 생성
+    Matrix lightViewMat = m_pDirectionalLightT->GetWorldMatrix().Invert();
+    Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, m_lightProjectNear, m_lightProjectFar);
+
+    // 최종 LightViewProjection 행렬
+    Matrix lightViewProj = lightViewMat * lightProj;
+
+    // 쉐이더 상수 버퍼에 세팅
+    cb.mlightViewProj = lightViewProj.Transpose();
+    cb.mView = lightViewMat.Transpose();
+    cb.mProjection = lightProj.Transpose();
+
+    cb.rimLightStr = m_rimLightStrength;
+
+    static BYTE lowlutPixel = MyEngine::GlobalLogic::ToonShader::GetLutOnePixelR(L"Resources/Textures/Lut.png");
+    cb.lowLut = pow((float)lowlutPixel / 255.0f, 2.2f); // 정규화 후 감마 색상표로 전환 
+
+    float colorMapA = cb.lowLut - m_diffuseGradientStrength;
+    float colorMapB = cb.lowLut;
+    cb.diffGradientDistHalf = abs(colorMapB - colorMapA) * 0.5f;
+    cb.diffGradientDepth = colorMapB - cb.diffGradientDistHalf;
+
+    m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+    {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(false);
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->Draw(m_pContext.Get());
+    }
+
+    Clear();
+
+    ID3D11ShaderResourceView* nullSRVs[2] = { nullptr, nullptr };
+    m_pContext->PSSetShaderResources(9, 1, nullSRVs);  // 그림자맵 언바인딩
+
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->RSSetViewports(1, &m_vp);
+    m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
+    m_pContext->PSSetShaderResources(10, 1, m_pShadowSRV.GetAddressOf());
+    m_pContext->PSSetShaderResources(9, 1, m_pLUTSRV.GetAddressOf());
+
+    cb.mWorld = XMMatrixIdentity();
+    cb.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
+    cb.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
+    cb.CameraPos = m_pCamera->GetTransform()->GetLocalPosition();
+
+    XMStoreFloat3(&cb.vLightPos, XMVectorScale(XMLoadFloat4(&xmLightDir), -1.25f));
+
+    cb.ambientStr = m_ambientStrength;
+    cb.diffuseStr = m_diffuseStrength;
+    cb.specularStr = m_specularStrength;
+    cb.shininess = m_shininess;
+    cb.vAmbientColor = m_ambientColor;
+    cb.reflectionFactor = m_reflectionFactor;
+
+
+    //스카이박스 드로우
+    m_pContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
+    m_pContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
+    m_pContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+    m_pContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    m_pContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
+    m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
+    m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 초기화
+
+    int modelIdx = 0;
+
+    OutlineCB olCB = {};
+    olCB.Thickness = m_outlineThickness;
+    m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &olCB, 0, 0);
+    m_pContext->VSSetConstantBuffers(4, 1, m_pOutlineCB.GetAddressOf());
+
+    // <<======= 두번째 패스(아웃라인)
+    m_currentRenderPassNum = 1;
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+    {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
+        if (!meshRenderer->GetPassCheckKeyword("IsToon"))
+            continue;
+
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
+
+        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+        D3DCTX::ShaderManager::Get()->BindOutlineShaders(m_pContext.Get());
+
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(false);
+        meshRenderer->Draw(m_pContext.Get());
+    }
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
+    GradientCB gradientCB = {};
+    gradientCB.intensity = m_gradientIntensity;
+    //gradientCB.minY = 0;
+    //gradientCB.maxY = 10.0f;
+    m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+    m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
+
+    // <<======= 세번째 렌더패스 (씬 드로우)
+    m_currentRenderPassNum = 2;
+
+    Vector3 debugPos1;
+    Vector3 debugPos2;
+    Vector3 debugPos3;
+    bool firstDebugDraw = true;
+
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+    {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
+        cb.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+        m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
+
+        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+
+        if (m_meshRenderers[i]->GetPassCheckKeyword("IsToon"))
+        {
+            auto gradientBBox = meshRenderer->GetBBox();
+            BoundingOrientedBox gradientOBB;
+            BoundingOrientedBox::CreateFromBoundingBox(gradientOBB, gradientBBox);
+
+            gradientBBox.Transform(gradientBBox, obj->GetWorldMatrix());
+            gradientOBB.Transform(gradientOBB, obj->GetWorldMatrix());
+
+            Vector3 extents = gradientBBox.Extents;
+
+            float dist = -extents.Length();
+
+            if (firstDebugDraw)
+            {
+                debugPos1 = gradientBBox.Center;
+            }
+
+            gradientCB.GradientPos = gradientBBox.Center + (lightFwd * dist);
+            if (firstDebugDraw)
+            {
+                debugPos2 = gradientCB.GradientPos;
+            }
+
+            dist = -dist;
+
+            XMVECTOR simdOrigin = XMLoadFloat3(&gradientCB.GradientPos);
+            XMVECTOR simdDirection = XMLoadFloat3(&lightFwd);
+
+            if (gradientOBB.Intersects(simdOrigin, simdDirection, dist))
+            {
+                gradientCB.GradientPos = gradientCB.GradientPos + (lightFwd * dist);
+            }
+
+            if (firstDebugDraw)
+            {
+                debugPos3 = gradientCB.GradientPos;
+                firstDebugDraw = false;
+            }
+
+        }
+
+        m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
+        m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(true);
+        meshRenderer->Draw(m_pContext.Get());
     }
 }
 
