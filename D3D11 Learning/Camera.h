@@ -61,6 +61,8 @@ namespace MyEngine
 		void MarkViewMatrixDirty();
 		void MarkProjectionMatrixDirty();
 
+		inline const bool IsDirtyMatrix() { return m_isProjMatrixDirty || m_isViewMatrixDirty; }
+
 		void InputUpdate(float deltaTime); // WASD QE for move, mouse for rotate
 	};
 }

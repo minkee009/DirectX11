@@ -51,6 +51,42 @@ namespace MyEngine {
 		FLOAT rimLightStr;
 	};
 
+	struct PBRDebugCB
+	{
+		FLOAT RoughnessOverride;
+		FLOAT MetallicOverride;
+	};
+
+	struct ObjectMatCB
+	{
+		XMMATRIX mWorld;
+	};
+
+	struct CameraCB
+	{
+		XMMATRIX mView;
+		XMMATRIX mProjection;
+		XMFLOAT3 CameraPos;
+		FLOAT pad;
+	};
+
+	struct DirectionalLightCB
+	{
+		XMFLOAT3 Position;
+		FLOAT pad;
+		XMFLOAT4 Direction;
+		XMFLOAT3 Color;
+		FLOAT Intensity;
+	};
+
+	struct PointLightCB
+	{
+		XMFLOAT3 Color;
+		FLOAT Intensity;
+		XMFLOAT3 Position;
+		FLOAT Range;
+	};
+
 	struct OutlineCB
 	{
 		FLOAT Thickness;
@@ -86,8 +122,9 @@ namespace MyEngine {
 		ComPtr<IDXGISwapChain1> m_pSwapChain1 = nullptr;
 		ComPtr<IDXGISwapChain> m_pSwapChain = nullptr;
 		ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV = nullptr;
-		ComPtr<ID3D11Texture2D> m_pDepthStencil = nullptr;
+		ComPtr<ID3D11Texture2D> m_pDepthStencilTex = nullptr;
 		ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pDepthStencilSRV = nullptr;
 
 		D3D11_VIEWPORT m_vp;
 
@@ -112,6 +149,48 @@ namespace MyEngine {
 
 		// post processing
 		FLOAT m_exposure = 1.0f;
+
+#define GBUFFER_TEX_SIZE 5
+
+		// Deffered Rendering
+		//
+		// ** Texture Data **
+		// 
+		//  G-Buffer #1 -> Position
+		//  G-Buffer #2 -> Normal
+		//  G-Buffer #3 -> Albedo
+		//  G-Buffer #4 -> Metallic
+		//  G-Buffer #5 -> Roughness
+		//
+		// -------------------------
+
+		// G-Buffer 포맷 배열
+		const DXGI_FORMAT m_GBufferFormats[GBUFFER_TEX_SIZE] =
+		{
+			DXGI_FORMAT_R16G16B16A16_FLOAT, // #1 Position (FP16: 메모리 절약과 정밀도의 균형)
+			DXGI_FORMAT_R8G8B8A8_SNORM,     // #2 Normal (R8G8B8A8_SNORM: 법선 벡터를 위한 메모리 효율적인 형식)
+			DXGI_FORMAT_R8G8B8A8_UNORM,     // #3 Albedo (R8G8B8A8_UNORM: 표준 색상)
+			DXGI_FORMAT_R8_UNORM,           // #4 Metallic (R8_UNORM: 단일 채널)
+			DXGI_FORMAT_R8_UNORM            // #5 Roughness (R8_UNORM: 단일 채널)
+		};
+
+		ComPtr<ID3D11Texture2D> m_pGBufferTextures[GBUFFER_TEX_SIZE] = { nullptr, };
+		ComPtr<ID3D11RenderTargetView> m_pGBufferRTV[GBUFFER_TEX_SIZE] = { nullptr, };
+		ComPtr<ID3D11ShaderResourceView> m_pGBufferSRV[GBUFFER_TEX_SIZE] = { nullptr, };
+
+		// Point Light Buffer -> For Deffered Rendering
+
+		struct PointLight
+		{
+			Vector3 Position;
+			Color Color;
+			FLOAT LightRange;
+			FLOAT Intensity;
+		};
+
+		ComPtr<ID3D11Buffer> m_pPointLightCB;
+		
+		std::vector<PointLight> m_pointLights;
 
 		//Scene 관련 변수
 		std::unique_ptr<StaticBVH> m_pBVHTree;
@@ -212,6 +291,10 @@ namespace MyEngine {
 		bool InitShadowMapTex();
 		bool InitBRDFEnvironment();
 
+		bool InitGBufferTex();
+
+		void UninitGBufferTex();
+
 		void DrawSkyBox();
 		void DrawShadowMap();
 		void DrawSkeleton(Transform& t, SkinningMeshRenderer& renderer);
@@ -224,6 +307,8 @@ namespace MyEngine {
 		HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 
 		bool CheckHDRSupport();
+
+		void ResizeGBufferTex(UINT width, UINT height);
 
 	public:
 		bool Initialize(HWND hWnd, int width, int height);

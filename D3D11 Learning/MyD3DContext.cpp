@@ -276,27 +276,36 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     descDepth.Height = height;
     descDepth.MipLevels = 1;
     descDepth.ArraySize = 1;
-    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    descDepth.Format = DXGI_FORMAT_R24G8_TYPELESS;
     descDepth.SampleDesc.Count = 1;
     descDepth.SampleDesc.Quality = 0;
     descDepth.Usage = D3D11_USAGE_DEFAULT;
-    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
     descDepth.CPUAccessFlags = 0;
     descDepth.MiscFlags = 0;
-    hr = m_pd3dDevice->CreateTexture2D(&descDepth, NULL, m_pDepthStencil.GetAddressOf());
+    hr = m_pd3dDevice->CreateTexture2D(&descDepth, NULL, m_pDepthStencilTex.GetAddressOf());
     if (FAILED(hr))
         return false;
 
     // 뎁스 스텐실 뷰 생성
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
     ZeroMemory(&descDSV, sizeof(descDSV));
-    descDSV.Format = descDepth.Format;
+    descDSV.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
-    hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
+    hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencilTex.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
     if (FAILED(hr))
         return false;
 
+    D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
+    depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV로 사용할 포맷
+    depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    depthSrvDesc.Texture2D.MipLevels = 1;
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthStencilSRV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("뎁스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+        return false;
+    }
 
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
 
@@ -401,6 +410,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
 
+    //InitGBufferTex();
 
     D3DCTX::TextureManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
     D3DCTX::ShaderManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
@@ -916,6 +926,63 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     return true;
 }
 
+bool MyEngine::MyD3DContext::InitGBufferTex()
+{
+    HRESULT hr = S_OK;
+
+    UINT width = m_width;
+    UINT height = m_height;
+
+    for (size_t i = 0; i < GBUFFER_TEX_SIZE; i++)
+    {
+        // 텍스처 2D 디스크립션 설정
+        D3D11_TEXTURE2D_DESC texDesc = {};
+        texDesc.Width = width;
+        texDesc.Height = height;
+        texDesc.MipLevels = 1;
+        texDesc.ArraySize = 1;
+        texDesc.Format = m_GBufferFormats[i];
+        texDesc.SampleDesc.Count = 1;
+        texDesc.SampleDesc.Quality = 0;
+        texDesc.Usage = D3D11_USAGE_DEFAULT;
+        // Geometry Pass의 출력(RTV)과 Lighting Pass의 입력(SRV)으로 사용
+        texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        texDesc.CPUAccessFlags = 0;
+        texDesc.MiscFlags = 0;
+
+        // 텍스처 생성
+        hr = m_pd3dDevice->CreateTexture2D(&texDesc, nullptr, m_pGBufferTextures[i].GetAddressOf());
+        if (FAILED(hr)) return false;
+
+        // 렌더 타겟 뷰 (RTV) 생성
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+        rtvDesc.Format = texDesc.Format;
+        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        hr = m_pd3dDevice->CreateRenderTargetView(m_pGBufferTextures[i].Get(), &rtvDesc, m_pGBufferRTV[i].GetAddressOf());
+        if (FAILED(hr)) return false;
+
+        // 셰이더 리소스 뷰 (SRV) 생성
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = texDesc.Format;
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = 1;
+        hr = m_pd3dDevice->CreateShaderResourceView(m_pGBufferTextures[i].Get(), &srvDesc, m_pGBufferSRV[i].GetAddressOf());
+        if (FAILED(hr)) return false;
+    }
+
+    return false;
+}
+
+void MyEngine::MyD3DContext::UninitGBufferTex()
+{
+    for (size_t i = 0; i < GBUFFER_TEX_SIZE; i++)
+    {
+        m_pGBufferSRV[i] = nullptr;
+        m_pGBufferRTV[i] = nullptr;
+        m_pGBufferTextures[i] = nullptr;
+    }
+}
+
 void MyEngine::MyD3DContext::DrawSkyBox()
 {
 
@@ -993,10 +1060,18 @@ void MyEngine::MyD3DContext::CreateSkinningRenderer(const Vector3& pos)
 void MyEngine::MyD3DContext::Clear()
 {
     //float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
-    float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // RGBA
+    float ClearColorAlbedo[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // RGBA
+    float ClearColorZero[4] = { 0,0,0,0 };
 
-    m_pContext->ClearRenderTargetView(m_pSceneColorRTV.Get(), ClearColor);
+    m_pContext->ClearRenderTargetView(m_pSceneColorRTV.Get(), ClearColorAlbedo);
     m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    //for (size_t i = 0; i < GBUFFER_TEX_SIZE; ++i)
+    //{
+    //    float* selectClearCol = (i == 2) ? ClearColorAlbedo : ClearColorZero;  // i == 2 -> Albedo
+
+    //    m_pContext->ClearRenderTargetView(m_pGBufferRTV[i].Get(), selectClearCol);
+    //}
 }
 
 void MyEngine::MyD3DContext::Render()
@@ -1401,11 +1476,14 @@ MyEngine::MyD3DContext::~MyD3DContext()
 
 #endif //_DEBUG
     m_pBackBufferRTV = nullptr;
+    m_pDepthStencilTex = nullptr;
     m_pDepthStencilView = nullptr;
-    m_pDepthStencil = nullptr;
+    m_pDepthStencilSRV = nullptr;
     m_pSceneColorRTV = nullptr;
     m_pSceneColorSRV = nullptr;
     m_pSceneColorTex = nullptr;
+
+    UninitGBufferTex();
 
     m_pDefRasterizerState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
@@ -1531,6 +1609,47 @@ bool MyEngine::MyD3DContext::CheckHDRSupport()
     return false;
 }
 
+void MyEngine::MyD3DContext::ResizeGBufferTex(UINT width, UINT height)
+{
+    for (size_t i = 0; i < GBUFFER_TEX_SIZE; i++)
+    {
+        m_pGBufferTextures[i].Reset();
+        m_pGBufferRTV[i].Reset();
+        m_pGBufferSRV[i].Reset();
+
+        // 텍스처 2D 디스크립션 설정
+        D3D11_TEXTURE2D_DESC texDesc = {};
+        texDesc.Width = width;
+        texDesc.Height = height;
+        texDesc.MipLevels = 1;
+        texDesc.ArraySize = 1;
+        texDesc.Format = m_GBufferFormats[i];
+        texDesc.SampleDesc.Count = 1;
+        texDesc.SampleDesc.Quality = 0;
+        texDesc.Usage = D3D11_USAGE_DEFAULT;
+        // Geometry Pass의 출력(RTV)과 Lighting Pass의 입력(SRV)으로 사용
+        texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        texDesc.CPUAccessFlags = 0;
+        texDesc.MiscFlags = 0;
+
+        // 텍스처 생성
+        m_pd3dDevice->CreateTexture2D(&texDesc, nullptr, m_pGBufferTextures[i].GetAddressOf());
+
+        // 렌더 타겟 뷰 (RTV) 생성
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+        rtvDesc.Format = texDesc.Format;
+        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        m_pd3dDevice->CreateRenderTargetView(m_pGBufferTextures[i].Get(), &rtvDesc, m_pGBufferRTV[i].GetAddressOf());
+
+        // 셰이더 리소스 뷰 (SRV) 생성
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Format = texDesc.Format;
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = 1;
+        m_pd3dDevice->CreateShaderResourceView(m_pGBufferTextures[i].Get(), &srvDesc, m_pGBufferSRV[i].GetAddressOf());
+    }
+}
+
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 {
     if (!m_pSwapChain || !m_pd3dDevice || !m_pContext)
@@ -1548,7 +1667,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     // 기존 화면 렌더타겟뷰를 모두 해제
     m_pBackBufferRTV.Reset();
     m_pDepthStencilView.Reset();
-    m_pDepthStencil.Reset();
+    m_pDepthStencilTex.Reset();
 
     // 스왑 체인 버퍼 크기 재조정
     HRESULT hr = m_pSwapChain->ResizeBuffers(
@@ -1582,42 +1701,42 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 
     // 포스트 프로세스 텍스쳐 및 뷰 재생성
     m_pSceneColorTex = nullptr;
-	m_pSceneColorRTV = nullptr;
-	D3D11_TEXTURE2D_DESC postProcessTexDesc = {};
-	postProcessTexDesc.Width = width;
-	postProcessTexDesc.Height = height;
-	postProcessTexDesc.MipLevels = 1;
-	postProcessTexDesc.ArraySize = 1;
-	postProcessTexDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	postProcessTexDesc.SampleDesc.Count = 1;
-	postProcessTexDesc.SampleDesc.Quality = 0;
-	postProcessTexDesc.Usage = D3D11_USAGE_DEFAULT;
-	postProcessTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	postProcessTexDesc.CPUAccessFlags = 0;
-	postProcessTexDesc.MiscFlags = 0;
-	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pSceneColorTex.GetAddressOf());
-	if (FAILED(hr)) {
-		OutputDebugStringA("포스트 프로세스 텍스쳐를 생성하는 데 실패했습니다.\n");
-		return;
-	}
-	hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColorTex.Get(), nullptr, m_pSceneColorRTV.GetAddressOf());
-	if (FAILED(hr)) {
-		OutputDebugStringA("포스트 프로세스 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
-		return;
-	}
+    m_pSceneColorRTV = nullptr;
+    D3D11_TEXTURE2D_DESC postProcessTexDesc = {};
+    postProcessTexDesc.Width = width;
+    postProcessTexDesc.Height = height;
+    postProcessTexDesc.MipLevels = 1;
+    postProcessTexDesc.ArraySize = 1;
+    postProcessTexDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    postProcessTexDesc.SampleDesc.Count = 1;
+    postProcessTexDesc.SampleDesc.Quality = 0;
+    postProcessTexDesc.Usage = D3D11_USAGE_DEFAULT;
+    postProcessTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    postProcessTexDesc.CPUAccessFlags = 0;
+    postProcessTexDesc.MiscFlags = 0;
+    hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pSceneColorTex.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("포스트 프로세스 텍스쳐를 생성하는 데 실패했습니다.\n");
+        return;
+    }
+    hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColorTex.Get(), nullptr, m_pSceneColorRTV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("포스트 프로세스 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
+        return;
+    }
 
     // 리소스 뷰 재생성
-	m_pSceneColorSRV = nullptr;
-	D3D11_SHADER_RESOURCE_VIEW_DESC postProcessSRVDesc = {};
-	postProcessSRVDesc.Format = postProcessTexDesc.Format;
-	postProcessSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	postProcessSRVDesc.Texture2D.MostDetailedMip = 0;
-	postProcessSRVDesc.Texture2D.MipLevels = 1;
-	hr = m_pd3dDevice->CreateShaderResourceView(m_pSceneColorTex.Get(), &postProcessSRVDesc, m_pSceneColorSRV.GetAddressOf());
-	if (FAILED(hr)) {
-		OutputDebugStringA("포스트 프로세스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
-		return;
-	}
+    m_pSceneColorSRV = nullptr;
+    D3D11_SHADER_RESOURCE_VIEW_DESC postProcessSRVDesc = {};
+    postProcessSRVDesc.Format = postProcessTexDesc.Format;
+    postProcessSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    postProcessSRVDesc.Texture2D.MostDetailedMip = 0;
+    postProcessSRVDesc.Texture2D.MipLevels = 1;
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pSceneColorTex.Get(), &postProcessSRVDesc, m_pSceneColorSRV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("포스트 프로세스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+        return;
+    }
 
     // 새로운 뎁스 스텐실 버퍼 및 뷰 생성
     D3D11_TEXTURE2D_DESC descDepth = {};
@@ -1625,28 +1744,42 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     descDepth.Height = height;
     descDepth.MipLevels = 1;
     descDepth.ArraySize = 1;
-    descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    descDepth.Format = DXGI_FORMAT_R24G8_TYPELESS;
     descDepth.SampleDesc.Count = 1;
     descDepth.SampleDesc.Quality = 0;
     descDepth.Usage = D3D11_USAGE_DEFAULT;
-    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
     descDepth.CPUAccessFlags = 0;
     descDepth.MiscFlags = 0;
-    hr = m_pd3dDevice->CreateTexture2D(&descDepth, nullptr, m_pDepthStencil.GetAddressOf());
+    hr = m_pd3dDevice->CreateTexture2D(&descDepth, nullptr, m_pDepthStencilTex.GetAddressOf());
     if (FAILED(hr)) {
         OutputDebugStringA("뎁스 스텐실 버퍼를 생성하는 데 실패했습니다.\n");
         return;
     }
 
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
-    descDSV.Format = descDepth.Format;
+    descDSV.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     descDSV.Texture2D.MipSlice = 0;
-    hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
+    hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencilTex.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
     if (FAILED(hr)) {
         OutputDebugStringA("뎁스 스텐실 뷰를 생성하는 데 실패했습니다.\n");
         return;
     }
+
+    m_pDepthStencilSRV.Reset(); // 멤버 변수 선언 가정
+    D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
+    depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV로 사용할 포맷
+    depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    depthSrvDesc.Texture2D.MipLevels = 1;
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthStencilSRV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("뎁스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+        return;
+    }
+
+    // GBuffer 리사이즈
+    ResizeGBufferTex(width, height);
 
     // 렌더 타겟 다시 설정
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());

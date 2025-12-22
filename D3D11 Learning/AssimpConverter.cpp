@@ -1181,6 +1181,7 @@ std::unique_ptr<MyEngine::SkinningMeshRenderer> MyEngine::AssimpConverter::LoadS
 
 MyEngine::AssimpConverter::LoadMaterialType MyEngine::AssimpConverter::s_materialType = MyEngine::AssimpConverter::LoadMaterialType::BlinnPhong;
 MyEngine::AssimpConverter::LoadMaterialProperties MyEngine::AssimpConverter::s_materialProperties = MyEngine::AssimpConverter::LoadMaterialProperties::None;
+MyEngine::AssimpConverter::LoadMaterialPixelShader MyEngine::AssimpConverter::s_materialPixelShader = MyEngine::AssimpConverter::LoadMaterialPixelShader::Deffered;
 
 void MyEngine::AssimpConverter::SetLoadMaterialType(LoadMaterialType type)
 {

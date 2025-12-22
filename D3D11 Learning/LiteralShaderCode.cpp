@@ -1046,7 +1046,6 @@ cbuffer MaterialBuffer : register(b1)
     float roughness;
 }
 Texture2D txDiffuse : register(t0);
-TextureCube skyBoxTX : register(t1);
 Texture2D normalMap : register(t2);
 Texture2D specularMap : register(t3);
 Texture2D emmisiveMap : register(t4);
@@ -1061,7 +1060,6 @@ TextureCube prefilterMap : register(t22);
 
 SamplerState samLinear : register(s0);
 SamplerComparisonState samShadow : register(s1);
-
 
 static const float EPS = 1e-6;
 static const float PI = 3.14159265f;
@@ -1249,6 +1247,14 @@ float4 PS(PS_INPUT input) : SV_TARGET
     return float4(finalColor,1.0f);
 }
 )";
+
+    const char* g_pscode_deffered_GBuffer = R"(
+    
+)";
+
+    const char* g_pscode_deffered_Light = R"(
+)";
+
     const char* g_postprocess_vscode_quad = R"(
 struct VS_Output
 {

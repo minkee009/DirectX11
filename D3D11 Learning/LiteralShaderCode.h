@@ -26,6 +26,12 @@ namespace MyEngine::D3DCTX
     //extern const char* g_pscode_skybox;
 }
 
+namespace MyEngine::D3DCTX
+{
+    extern const char* g_pscode_deffered_GBuffer;
+    extern const char* g_pscode_deffered_Light;
+}
+
 
 namespace MyEngine::D3DCTX
 {

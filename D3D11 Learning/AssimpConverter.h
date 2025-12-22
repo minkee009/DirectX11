@@ -52,6 +52,7 @@ namespace MyEngine
 	public:
 		enum class LoadMaterialType { BlinnPhong, BlinnPhongToon, BRDF };
 		enum class LoadMaterialProperties { None, All, OnlyBaseColor };
+		enum class LoadMaterialPixelShader { Forward, Deffered };
 
 		static void Initialize(ID3D11DeviceContext* context);
 		static void Release();
@@ -67,6 +68,7 @@ namespace MyEngine
 	private:
 		static LoadMaterialType s_materialType;
 		static LoadMaterialProperties s_materialProperties;
+		static LoadMaterialPixelShader s_materialPixelShader;
 	};
 
 }
