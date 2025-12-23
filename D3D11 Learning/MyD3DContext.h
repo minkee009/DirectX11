@@ -307,7 +307,7 @@ namespace MyEngine {
 			ComPtr<ID3D11Buffer>& outBuffer);
 
 		bool InitDefferedRenderpassBuffer();
-		bool UninitDefferedRenderpassBuffer();
+		void UninitDefferedRenderpassBuffer();
 
 		bool InitSkyBox();
 		bool InitShadowMapTex();

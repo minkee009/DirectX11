@@ -33,6 +33,13 @@ namespace MyEngine
 		LookUpTable = 1 << 9,		// 512
 	}; 
 
+	enum ExcludeShaderFlag
+	{
+		None = 0,
+		VertexShader = 1 << 0,
+		PixelShader = 1 << 1,
+	};
+
 	inline TextureType operator|(TextureType a, TextureType b)
 	{
 		return static_cast<TextureType>(
@@ -100,7 +107,7 @@ namespace MyEngine
 		Material(const std::string& name);
 		~Material();
 
-		void Bind(ID3D11DeviceContext* context);
+		void Bind(ID3D11DeviceContext* context, ExcludeShaderFlag flags = ExcludeShaderFlag::None);
 		bool InitVertexShader(ID3D11VertexShader* shader);
 		bool InitPixelShader(ID3D11PixelShader* shader);
 		bool InitTexture(TextureType type, UINT slot, std::shared_ptr<Texture> texture);

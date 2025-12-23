@@ -1255,23 +1255,23 @@ cbuffer ObjectMatBuffer : register(b5)
     uint isSkinnedMesh;
 }
 
-cbuffer DirectionalLightBuffer : register(b7)	//b7
+cbuffer DirectionalLightBuffer : register(b7)
 {
-	float3 Position;
-	float4 Direction;
-	float3 Color;
-	float Intensity;
-    matrix LightViewProjection
+    float3 Position;
+    float4 Direction;
+    float3 Color;
+    float Intensity;
+    matrix LightViewProjection;
 };
 
 cbuffer BoneModelBuffer : register(b2)
 {
-	matrix ModelMatricies[128];
+    matrix ModelMatricies[128];
 }
 
 cbuffer BoneOffsetBuffer : register(b3)
 {
-	matrix OffsetMatricies[128];
+    matrix OffsetMatricies[128];
 }
 
 struct VS_INPUT
@@ -1291,29 +1291,35 @@ struct PS_INPUT
 
 PS_INPUT VS(VS_INPUT input)
 {
-    VS_OUTPUT o;
-
-    float4 localPos = float4(input.Pos, 1.0);
-
+    PS_INPUT output = (PS_INPUT) 0;
+    
+    float4 localPos = input.Pos;
+    
     if (isSkinnedMesh != 0)
     {
-        matrix skin = 0;
+        matrix skinningMatrix = {
+            0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f
+        };
+        
         [unroll]
         for (int i = 0; i < 4; i++)
         {
-            skin += mul(
-                OffsetMatricies[input.BoneIndices[i]],
+            skinningMatrix += mul(
+                OffsetMatricies[input.BoneIndices[i]], 
                 ModelMatricies[input.BoneIndices[i]]
             ) * input.BoneWeights[i];
         }
-
-        localPos = mul(localPos, skin);
+        
+        localPos = mul(localPos, skinningMatrix);
     }
-
+    
     float4 worldPos = mul(localPos, World);
-    o.Pos = mul(worldPos, LightViewProjection);
-
-    return o;
+    output.Pos = mul(worldPos, LightViewProjection);
+    
+    return output;
 }
 )";
 
@@ -1352,13 +1358,12 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
 
-    float4 worldPos = mul(input.Pos, World);
-    output.WorldPos = worldPos.xyz;
-    output.Pos = mul(worldPos, View);
+    output.Pos = mul(input.Pos, World);
+    output.WorldPos = output.Pos.xyz;
+    output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
     
-    float3x3 normalMat = (float3x3)transpose(invert(World));
-    output.Norm = normalize(mul(input.Norm, normalMat));
+    output.Norm = normalize(mul(input.Norm, (float3x3) World));
     output.Tex = input.Tex;
     
     return output;
@@ -1422,15 +1427,14 @@ PS_INPUT VS(VS_INPUT input)
         skinningMatrix += mul(OffsetMatricies[input.BoneIndices[i]],ModelMatricies[input.BoneIndices[i]]) * input.BoneWeights[i] ;
     }
 
-	matrix finalWorld = mul(skinningMatrix, World);
+	matrix finalWorld = mul(skinningMatrix,World);
 
-    float4 worldPos = mul(input.Pos, finalWorld);
-    output.WorldPos = worldPos.xyz;
-    output.Pos = mul(worldPos, View);
+    output.Pos = mul(input.Pos, finalWorld);
+    output.WorldPos = output.Pos.xyz;
+    output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
 
-    float3x3 normalMat = (float3x3)transpose(invert(finalWorld));
-    output.Norm = normalize(mul(input.Norm, normalMat));
+    output.Norm = normalize(mul(input.Norm, (float3x3) finalWorld));
     output.Tex = input.Tex;
     
     return output;
@@ -1445,9 +1449,9 @@ SamplerState samLinear : register(s0);
 
 cbuffer MaterialBuffer : register(b1)
 {
-	uint textureFlags; 
+    uint textureFlags; 
     uint propertyFlags;
-	float4 baseColor;
+    float4 baseColor;
     float metallic;
     float roughness;
 }
@@ -1478,28 +1482,27 @@ struct PS_INPUT
 
 GBufferOut PS(PS_INPUT input)
 {
-    GBufferOut out;
-
-    out.Position = float4(input.WorldPos, 1.0f);
-
-    out.Normal = float4(normalize(N), 0.0f);
-
-    float3 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0).rgb;
-    out.Albedo = float4(albedo, 1.0f);
-
+    GBufferOut output;
+    
+    output.Position = float4(input.WorldPos, 1.0f);
+    output.Normal = float4(normalize(input.Norm), 0.0f);
+    
+    float3 albedo = lerp(baseColor.rgb, AlbedoMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
+    output.Albedo = float4(albedo, 1.0f);
+    
     float _metallic = lerp(metallic, MetallicMap.Sample(samLinear, input.Tex).r, (textureFlags & 128) != 0);
     if(useMaterialOverride)
         _metallic = metallicOverride;
-
-    out.Metallic = float4(_metallic, 0, 0, 0);
-
+    output.Metallic = float4(_metallic, 0, 0, 0);
+    
     float _roughness = lerp(roughness, RoughnessMap.Sample(samLinear, input.Tex).r, (textureFlags & 64) != 0);
     if(useMaterialOverride)
         _roughness = roughnessOverride;
     _roughness = max(_roughness, 0.001f);
-    out.Roughness = float4(_roughness, 0, 0, 0);
-
-    return out;
+    output.Roughness = float4(_roughness, 0, 0, 0);
+    
+    return output;
+}
 )";
 
     const char* g_pscode_deffered_Light = R"(

@@ -38,7 +38,7 @@ void MyEngine::SkinningMeshRenderer::Draw(ID3D11DeviceContext* context)
 		auto& mat = m_materials[materialIndices[meshCount++]];
 		if (GetEnabledBindMaterials())
 		{
-			mat->Bind(context);
+			mat->Bind(context, m_excludeShaderFlag);
 		}
 		auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
 		if (passForceVSIter != GetPassForceChangeVS().end())

@@ -76,14 +76,14 @@ MyEngine::Material::~Material()
 	m_textures.clear();
 }
 
-void MyEngine::Material::Bind(ID3D11DeviceContext* context)
+void MyEngine::Material::Bind(ID3D11DeviceContext* context, ExcludeShaderFlag flags)
 {
 	//상수버퍼 설정
 	context->PSSetConstantBuffers(1, 1, m_materialCB.GetAddressOf());
 
-	if (m_pVertexShader)
+	if (m_pVertexShader && (flags & ExcludeShaderFlag::VertexShader) == 0)
 		context->VSSetShader(m_pVertexShader, nullptr, 0);
-	if (m_pPixelShader)
+	if (m_pPixelShader && (flags & ExcludeShaderFlag::PixelShader) == 0)
 		context->PSSetShader(m_pPixelShader, nullptr, 0);
 
 	for (auto& tex : m_textures)

@@ -18,7 +18,7 @@ void MyEngine::StaticMeshRenderer::Draw(ID3D11DeviceContext* context)
         auto& mat = m_materials[materialIndices[matCount++]];
         if (GetEnabledBindMaterials())
         {
-            mat->Bind(context);
+            mat->Bind(context, m_excludeShaderFlag);
         }
         auto passForceVSIter = GetPassForceChangeVS().find(GetRenderPassNum());
         if (passForceVSIter != GetPassForceChangeVS().end())

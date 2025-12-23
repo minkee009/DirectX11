@@ -410,7 +410,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
 
-    //InitGBufferTex();
+    InitGBufferTex();
 
     D3DCTX::TextureManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
     D3DCTX::ShaderManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
@@ -431,6 +431,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     HRESULT hr = S_OK;
 
+    InitDefferedRenderpassBuffer();
     InitSkyBox();
     InitShadowMapTex();
     InitBRDFEnvironment();
@@ -521,16 +522,13 @@ bool MyEngine::MyD3DContext::InitializeScene()
     // 2 : scene draw
 
     // Ground.fbx setting
-    m_meshRenderers[0]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader());
     m_meshRenderers[0]->SetPassCheckKeyword("IsBRDF");
 
     // skinningTest.fbx setting
     m_meshRenderers[1]->SetPassCheckKeyword("IsBRDF");
-    m_meshRenderers[1]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader_SkinningBone());
 
     // char.fbx setting
     m_meshRenderers[2]->SetPassCheckKeyword("IsBRDF");
-    m_meshRenderers[2]->SetPassForceChangeVS(0, D3DCTX::ShaderManager::Get()->GetCommonVertexShader());
 
     // DebugDraw
     m_states = std::make_unique<CommonStates>(m_pd3dDevice.Get());
@@ -568,27 +566,8 @@ void MyEngine::MyD3DContext::Update()
 {
     m_pCamera->InputUpdate(TIME_GET_DELTA());
 
-    //static Keyboard::State prev;
-    //static Keyboard::State curr;
-
-    //prev = curr;
-    //curr = Keyboard::Get().GetState();
-
-    //if (!prev.F && curr.F)
-    //{
-    //    auto camFwd = m_pCamera->GetTransform()->GetWorldMatrix().Forward();
-    //    auto camPos = m_pCamera->GetTransform()->GetLocalPosition();
-
-    //    CreateSkinningRenderer(camPos + camFwd * 8.5f);
-    //}
-
-    //if (!prev.G && curr.G)
-    //{
-    //    if(!m_sceneObjects.empty())
-    //        m_sceneObjects.pop_back();
-    //    if (!m_meshRenderers.empty())
-    //        m_meshRenderers.pop_back();
-    //}
+    auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
+    m_pDirectionalLightT->SetLocalPosition(lightFwd * -SHADOW_MAP_DEPTH);
 
     for (auto& renderer : m_meshRenderers)
     {
@@ -620,26 +599,49 @@ bool MyEngine::MyD3DContext::InitDefferedRenderpassBuffer()
 {
     if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(ObjectMatCB),
         D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE, m_pObjectMatBuffer))
+    {
+        OutputDebugStringA("Failed to create ObjectMatBuffer\n");
         return false;
+    }
+
     if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(CameraCB),
         D3D11_USAGE_DEFAULT, 0, m_pCameraBuffer))
+    {
+        OutputDebugStringA("Failed to create CameraBuffer\n");
         return false;
+    }
+
     if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(DirectionalLightCB),
         D3D11_USAGE_DEFAULT, 0, m_pDirectionalLightBuffer))
+    {
+        OutputDebugStringA("Failed to create DirectionalLightBuffer\n");
         return false;
+    }
+
     if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(PointLightCB),
         D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE, m_pPointLightBuffer))
+    {
+        OutputDebugStringA("Failed to create PointLightBuffer\n");
         return false;
+    }
+
     if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(PBRDebugCB),
         D3D11_USAGE_DEFAULT, 0, m_pPBRDebugBuffer))
+    {
+        OutputDebugStringA("Failed to create PBRDebugBuffer\n");
         return false;
+    }
 
     return true;
 }
 
-bool MyEngine::MyD3DContext::UninitDefferedRenderpassBuffer()
+void MyEngine::MyD3DContext::UninitDefferedRenderpassBuffer()
 {
-    return true;
+    m_pObjectMatBuffer = nullptr;
+    m_pCameraBuffer = nullptr;
+    m_pDirectionalLightBuffer = nullptr;
+    m_pPointLightBuffer = nullptr;
+    m_pPBRDebugBuffer = nullptr;
 }
 
 bool MyEngine::MyD3DContext::InitSkyBox()
@@ -1109,17 +1111,19 @@ void MyEngine::MyD3DContext::Clear()
     m_pContext->ClearRenderTargetView(m_pSceneColorRTV.Get(), ClearColorAlbedo);
     m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    //for (size_t i = 0; i < GBUFFER_TEX_SIZE; ++i)
-    //{
-    //    float* selectClearCol = (i == 2) ? ClearColorAlbedo : ClearColorZero;  // i == 2 -> Albedo
+    for (size_t i = 0; i < GBUFFER_TEX_SIZE; ++i)
+    {
+        float* selectClearCol = (i == 2) ? ClearColorAlbedo : ClearColorZero;  // i == 2 -> Albedo
 
-    //    m_pContext->ClearRenderTargetView(m_pGBufferRTV[i].Get(), selectClearCol);
-    //}
+        m_pContext->ClearRenderTargetView(m_pGBufferRTV[i].Get(), selectClearCol);
+    }
 }
 
 
 void MyEngine::MyD3DContext::Render()
 {
+    DefferedRenderPass();
+
     // tone mapping
     ID3D11RenderTargetView* nullRTV[1] = { nullptr };
     m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
@@ -1229,6 +1233,8 @@ void MyEngine::MyD3DContext::UninitializeScene()
 	m_pPrefilteredEnvSRV = nullptr;
 	m_pBRDFLUTSRV = nullptr;
     m_pEnvSRV = nullptr;
+
+    UninitDefferedRenderpassBuffer();
 
     m_sceneObjects.clear();
     m_pDirectionalLightT.reset();
@@ -1684,11 +1690,162 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
 
 void MyEngine::MyD3DContext::DefferedRenderPass()
 {
-    // pass - 0 : Geometry
+    ID3D11ShaderResourceView* nullSRVs[19] = { nullptr };
+    m_pContext->PSSetShaderResources(1, 19, nullSRVs);
+    m_pContext->VSSetShaderResources(1, 19, nullSRVs);
+
+    ID3D11Buffer* nullBuffers[10] = { nullptr };
+    m_pContext->VSSetConstantBuffers(0, 10, nullBuffers);
+    m_pContext->PSSetConstantBuffers(0, 10, nullBuffers);
+
+    ObjectMatCB cb_objMat = {};              // fast update
+    CameraCB cb_cam = {};
+    DirectionalLightCB cb_dirLight = {};
+    PointLightCB cb_pointLight = {};         // fast update
+    PBRDebugCB cb_pbr_debug = {};
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+
+    // directional light set-up
+    Matrix lightViewMat = m_pDirectionalLightT->GetWorldMatrix().Invert();
+    Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, m_lightProjectNear, m_lightProjectFar);
+    Matrix lightViewProj = lightViewMat * lightProj;
+    auto lightFwd = m_pDirectionalLightT->GetLocalMatrix().Forward();
+    cb_dirLight.Color = { m_lightColor.x, m_lightColor.y, m_lightColor.z };
+    cb_dirLight.Direction = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
+    cb_dirLight.mLightViewProjection = lightViewProj.Transpose();
+    m_pContext->UpdateSubresource(m_pDirectionalLightBuffer.Get(), 0, nullptr, &cb_dirLight, 0, 0);
+
+    // camera set-up
+    cb_cam.mView = XMMatrixTranspose(m_pCamera->GetViewMatrix());
+    cb_cam.mProjection = XMMatrixTranspose(m_pCamera->GetProjMatrix());
+    cb_cam.CameraPos = m_pCamera->GetTransform()->GetLocalPosition();
+    m_pContext->UpdateSubresource(m_pCameraBuffer.Get(), 0, nullptr, &cb_cam, 0, 0);
+
+    // pbr debug set-up
+    cb_pbr_debug.UseOverride = true;
+    cb_pbr_debug.MetallicOverride = m_diffuseStrength;
+    cb_pbr_debug.RoughnessOverride = m_ambientStrength;
+    m_pContext->UpdateSubresource(m_pPBRDebugBuffer.Get(), 0, nullptr, &cb_pbr_debug, 0, 0);
+
+    // pass - 0 : Shadow Cast
     m_currentRenderPassNum = 0;
 
-    // pass - 1 : Light
+    m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
+    m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
+    m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
+
+    m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
+
+    m_pContext->RSSetState(m_pShadowMapRasterizerState.Get());
+    m_pContext->RSSetViewports(1, &m_shadowViewport);
+
+    m_pContext->VSSetShader(D3DCTX::ShaderManager::Get()->GetShadowCastVertexShader(), nullptr, 0);
+    m_pContext->VSSetConstantBuffers(5, 1, m_pObjectMatBuffer.GetAddressOf());
+    m_pContext->VSSetConstantBuffers(7, 1, m_pDirectionalLightBuffer.GetAddressOf());
+
+    m_pContext->PSSetShader(nullptr, nullptr, 0);
+
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+    {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
+        bool isSkinned = dynamic_cast<SkinningMeshRenderer*>(meshRenderer.get()) != nullptr;
+
+        cb_objMat.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        cb_objMat.isSkinnedMesh = isSkinned ? 1 : 0;
+
+        m_pContext->Map(
+            m_pObjectMatBuffer.Get(),
+            0,
+            D3D11_MAP_WRITE_DISCARD,
+            0,
+            &mapped
+        );
+
+        memcpy(mapped.pData, &cb_objMat, sizeof(ObjectMatCB));
+
+        m_pContext->Unmap(m_pObjectMatBuffer.Get(), 0);
+
+
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(false);
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->Draw(m_pContext.Get());
+    }
+
+    Clear();
+
+    // pass - 1 : Geometry
     m_currentRenderPassNum = 1;
+    
+    ID3D11RenderTargetView* rtvs[GBUFFER_TEX_SIZE] = {};
+    for (UINT i = 0; i < GBUFFER_TEX_SIZE; ++i)
+        rtvs[i] = m_pGBufferRTV[i].Get();
+
+    m_pContext->OMSetRenderTargets(
+        GBUFFER_TEX_SIZE,
+        rtvs,
+        m_pDepthStencilView.Get()
+    );
+
+    m_pContext->PSSetShaderResources(1, 19, nullSRVs);
+    m_pContext->VSSetShaderResources(1, 19, nullSRVs);
+
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(D3DCTX::InputLayoutManager::Get()->GetDefaultInputLayout());
+
+    m_pContext->RSSetViewports(1, &m_vp);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+
+    m_pContext->VSSetConstantBuffers(6, 1, m_pCameraBuffer.GetAddressOf());
+
+    m_pContext->PSSetShader(D3DCTX::ShaderManager().Get()->GetDefferedGeometryPixelShader(),nullptr,0);
+    m_pContext->PSSetConstantBuffers(9, 1, m_pPBRDebugBuffer.GetAddressOf());
+
+    for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+    {
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
+        cb_objMat.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+
+        m_pContext->Map(
+            m_pObjectMatBuffer.Get(),
+            0,
+            D3D11_MAP_WRITE_DISCARD,
+            0,
+            &mapped
+        );
+
+        memcpy(mapped.pData, &cb_objMat, sizeof(ObjectMatCB));
+
+        m_pContext->Unmap(m_pObjectMatBuffer.Get(), 0);
+
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(true);
+        meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::PixelShader);
+        meshRenderer->Draw(m_pContext.Get());
+        meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::None);
+    }
+
+    ID3D11RenderTargetView* nullRTVs[GBUFFER_TEX_SIZE] = {};
+    m_pContext->OMSetRenderTargets(
+        GBUFFER_TEX_SIZE,
+        nullRTVs,
+        nullptr
+    );
+
+    // pass - 2 : Light
+    m_currentRenderPassNum = 2;
+
+    // pass - 3 : SkyBox 
+    m_currentRenderPassNum = 2;
 }
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)

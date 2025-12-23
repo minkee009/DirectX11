@@ -18,3 +18,8 @@ void MyEngine::MeshRenderer::SetPassForceChangePS(UINT renderPassNum, ID3D11Pixe
 {
 	m_passForceChangePS[renderPassNum] = PS;
 }
+
+void MyEngine::MeshRenderer::SetExcludeShaderFlag(ExcludeShaderFlag flags)
+{
+	m_excludeShaderFlag = flags;
+}
