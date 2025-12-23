@@ -3,7 +3,7 @@
 namespace MyEngine::D3DCTX
 {
     extern const char* g_vscode_def;
-    extern const char* g_vscode_outline;
+    extern const char* g_vscode_outline_static;
     extern const char* g_vscode_outline_rigid;
     extern const char* g_vscode_outline_skinning;
 
@@ -28,7 +28,12 @@ namespace MyEngine::D3DCTX
 
 namespace MyEngine::D3DCTX
 {
-    extern const char* g_pscode_deffered_GBuffer;
+    extern const char* g_vscode_shadowcast_common;
+
+    extern const char* g_vscode_deffered_static;
+    extern const char* g_vscode_deffered_skinning;
+
+    extern const char* g_pscode_deffered_Geometry;
     extern const char* g_pscode_deffered_Light;
 }
 

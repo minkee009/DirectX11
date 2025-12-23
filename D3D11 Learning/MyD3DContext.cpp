@@ -600,6 +600,48 @@ void MyEngine::MyD3DContext::Update()
     }
 }
 
+bool MyEngine::MyD3DContext::CreateConstantBuffer(
+    ID3D11Device* device, 
+    UINT size, 
+    D3D11_USAGE usage, 
+    UINT cpuAccess, 
+    ComPtr<ID3D11Buffer>& outBuffer)
+{
+    D3D11_BUFFER_DESC desc = {};
+    desc.Usage = usage;
+    desc.ByteWidth = (size + 15) & ~15;
+    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    desc.CPUAccessFlags = cpuAccess;
+
+    return SUCCEEDED(device->CreateBuffer(&desc, nullptr, outBuffer.GetAddressOf()));
+}
+
+bool MyEngine::MyD3DContext::InitDefferedRenderpassBuffer()
+{
+    if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(ObjectMatCB),
+        D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE, m_pObjectMatBuffer))
+        return false;
+    if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(CameraCB),
+        D3D11_USAGE_DEFAULT, 0, m_pCameraBuffer))
+        return false;
+    if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(DirectionalLightCB),
+        D3D11_USAGE_DEFAULT, 0, m_pDirectionalLightBuffer))
+        return false;
+    if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(PointLightCB),
+        D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE, m_pPointLightBuffer))
+        return false;
+    if (!CreateConstantBuffer(m_pd3dDevice.Get(), sizeof(PBRDebugCB),
+        D3D11_USAGE_DEFAULT, 0, m_pPBRDebugBuffer))
+        return false;
+
+    return true;
+}
+
+bool MyEngine::MyD3DContext::UninitDefferedRenderpassBuffer()
+{
+    return true;
+}
+
 bool MyEngine::MyD3DContext::InitSkyBox()
 {
     HRESULT hr = S_OK;
@@ -914,7 +956,8 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
             L"BRDF Specular 텍스쳐가 큐브맵이 아닙니다.", L"오류", MB_OK);
         return false;
 	}
-	hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pPrefilteredEnvSRV.GetAddressOf());
+
+    hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pPrefilteredEnvSRV.GetAddressOf());
     if (FAILED(hr))
 		return false;
 
@@ -970,7 +1013,7 @@ bool MyEngine::MyD3DContext::InitGBufferTex()
         if (FAILED(hr)) return false;
     }
 
-    return false;
+    return true;
 }
 
 void MyEngine::MyD3DContext::UninitGBufferTex()
@@ -1077,12 +1120,6 @@ void MyEngine::MyD3DContext::Clear()
 
 void MyEngine::MyD3DContext::Render()
 {
-    // pass - 0 : Geometry
-    m_currentRenderPassNum = 0;
-
-    // pass - 1 : Light
-    m_currentRenderPassNum = 1;
-
     // tone mapping
     ID3D11RenderTargetView* nullRTV[1] = { nullptr };
     m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
@@ -1643,6 +1680,15 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
         meshRenderer->SetEnabledBindMaterials(true);
         meshRenderer->Draw(m_pContext.Get());
     }
+}
+
+void MyEngine::MyD3DContext::DefferedRenderPass()
+{
+    // pass - 0 : Geometry
+    m_currentRenderPassNum = 0;
+
+    // pass - 1 : Light
+    m_currentRenderPassNum = 1;
 }
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)

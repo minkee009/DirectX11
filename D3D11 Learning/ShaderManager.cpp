@@ -106,7 +106,7 @@ bool MyEngine::D3DCTX::ShaderManager::CompileLiteralCodeToPixelShader(ID3D11Devi
 void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
 	CompileLiteralCodeToVertexShader(pDevice, m_pDefaultVertexShader.GetAddressOf(), g_vscode_def, m_pDefaultVSBlob.GetAddressOf());
-	CompileLiteralCodeToVertexShader(pDevice, m_pOutlineVertexShader.GetAddressOf(), g_vscode_outline);	
+	CompileLiteralCodeToVertexShader(pDevice, m_pOutlineVertexShader.GetAddressOf(), g_vscode_outline_static);	
 	CompileLiteralCodeToVertexShader(pDevice, m_pOutlineVertexShader_useRigidBone.GetAddressOf(), g_vscode_outline_rigid);
 	CompileLiteralCodeToVertexShader(pDevice, m_pOutlineVertexShader_useSkinningBone.GetAddressOf(), g_vscode_outline_skinning);
 
@@ -114,21 +114,31 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefaultPixelShader.GetAddressOf(), g_pscode_def);
 	CompileLiteralCodeToPixelShader(pDevice, m_pOutlinePixelShader.GetAddressOf(), g_pscode_outline);
 
-	//ºí¸° Æþ Á¤Á¡ ¼ÎÀÌ´õ
-	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader.GetAddressOf(), g_vscode_common_static, m_pBlinnPhongVSBlob.GetAddressOf());
-	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useRigidBone.GetAddressOf(), g_vscode_common_rigid);
-	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useSkinningBone.GetAddressOf(), g_vscode_common_skinning);
+	////ºí¸° Æþ Á¤Á¡ ¼ÎÀÌ´õ
+	//CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader.GetAddressOf(), g_vscode_common_static, m_pBlinnPhongVSBlob.GetAddressOf());
+	//CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useRigidBone.GetAddressOf(), g_vscode_common_rigid);
+	//CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useSkinningBone.GetAddressOf(), g_vscode_common_skinning);
 
-	//ºí¸° Æþ ÇÈ¼¿ ¼ÎÀÌ´õ
+	////ºí¸° Æþ ÇÈ¼¿ ¼ÎÀÌ´õ
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongPixelShader.GetAddressOf(), g_pscode_blinnphong);
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongToonPixelShader.GetAddressOf(), g_pscode_blinnphong_toon);
 	CompileLiteralCodeToPixelShader(pDevice, m_pBlinnPhongShadowMapPixelShader.GetAddressOf(), g_pscode_blinnphong_shadowmap);
+
+	//µðÆÛµå ¿ë Á¤Á¡ ¼ÎÀÌ´õ
+	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader.GetAddressOf(), g_vscode_deffered_static, m_pBlinnPhongVSBlob.GetAddressOf());
+	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useRigidBone.GetAddressOf(), g_vscode_common_rigid);
+	CompileLiteralCodeToVertexShader(pDevice, m_pCommonVertexShader_useSkinningBone.GetAddressOf(), g_vscode_deffered_skinning);
+
+	CompileLiteralCodeToVertexShader(pDevice, m_pShadowCastVertexShader.GetAddressOf(), g_vscode_shadowcast_common);
 
 	//BRDF ÇÈ¼¿ ¼ÎÀÌ´õ
 	CompileLiteralCodeToPixelShader(pDevice, m_pBRDFPixelShader.GetAddressOf(), g_pscode_BRDF_cook_torrance);
 
 	CompileLiteralCodeToVertexShader(pDevice, m_pPostProcessingVertexShader.GetAddressOf(), g_postprocess_vscode_quad);
 	CompileLiteralCodeToPixelShader(pDevice, m_pPostProcessingPixelShader.GetAddressOf(), g_postprocess_pscode_ACES_toneMapping);
+
+	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedGeometryPixelShader.GetAddressOf(), g_pscode_deffered_Geometry);
+	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedLightPixelShader.GetAddressOf(), g_pscode_deffered_Light);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()

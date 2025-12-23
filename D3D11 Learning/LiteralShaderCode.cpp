@@ -52,7 +52,7 @@ PS_INPUT VS(VS_INPUT input)
 	return output;                                
 }
 )";
-    const char* g_vscode_outline = R"(
+    const char* g_vscode_outline_static = R"(
 struct VS_INPUT                                   
 {                                                 
 	float4 Pos : POSITION;     
@@ -1246,10 +1246,260 @@ float4 PS(PS_INPUT input) : SV_TARGET
 
     return float4(finalColor,1.0f);
 }
+)"; 
+
+    const char* g_vscode_shadowcast_common = R"(
+cbuffer ObjectMatBuffer : register(b5)
+{
+    matrix World;
+    uint isSkinnedMesh;
+}
+
+cbuffer DirectionalLightBuffer : register(b7)	//b7
+{
+	float3 Position;
+	float4 Direction;
+	float3 Color;
+	float Intensity;
+    matrix LightViewProjection
+};
+
+cbuffer BoneModelBuffer : register(b2)
+{
+	matrix ModelMatricies[128];
+}
+
+cbuffer BoneOffsetBuffer : register(b3)
+{
+	matrix OffsetMatricies[128];
+}
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    VS_OUTPUT o;
+
+    float4 localPos = float4(input.Pos, 1.0);
+
+    if (isSkinnedMesh != 0)
+    {
+        matrix skin = 0;
+        [unroll]
+        for (int i = 0; i < 4; i++)
+        {
+            skin += mul(
+                OffsetMatricies[input.BoneIndices[i]],
+                ModelMatricies[input.BoneIndices[i]]
+            ) * input.BoneWeights[i];
+        }
+
+        localPos = mul(localPos, skin);
+    }
+
+    float4 worldPos = mul(localPos, World);
+    o.Pos = mul(worldPos, LightViewProjection);
+
+    return o;
+}
 )";
 
-    const char* g_pscode_deffered_GBuffer = R"(
+    const char* g_vscode_deffered_static = R"(
+cbuffer ObjectMatBuffer : register(b5)
+{
+    matrix World;
+    uint isSkinnedMesh;
+}
+cbuffer CameraBuffer : register(b6)
+{
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+}
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float2 Tex : TEXCOORD2;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT) 0;
+
+    float4 worldPos = mul(input.Pos, World);
+    output.WorldPos = worldPos.xyz;
+    output.Pos = mul(worldPos, View);
+    output.Pos = mul(output.Pos, Projection);
     
+    float3x3 normalMat = (float3x3)transpose(invert(World));
+    output.Norm = normalize(mul(input.Norm, normalMat));
+    output.Tex = input.Tex;
+    
+    return output;
+}
+)";
+
+    const char* g_vscode_deffered_skinning = R"(
+cbuffer ObjectMatBuffer : register(b5)
+{
+    matrix World;
+    uint isSkinnedMesh;
+}
+cbuffer CameraBuffer : register(b6)
+{
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+}
+
+cbuffer BoneModelBuffer : register(b2)
+{
+	matrix ModelMatricies[128];
+}
+
+cbuffer BoneOffsetBuffer : register(b3)
+{
+	matrix OffsetMatricies[128];
+}
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Norm : NORMAL;
+    float3 Tan : TANGENT;
+    float2 Tex : TEXCOORD0;
+    uint4 BoneIndices : BONEINDICES;
+    float4 BoneWeights : BONEWEIGHTS;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm : TEXCOORD1;
+    float2 Tex : TEXCOORD2;
+};
+
+PS_INPUT VS(VS_INPUT input)
+{
+    PS_INPUT output = (PS_INPUT) 0;
+	
+    matrix skinningMatrix =  {
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f
+    };
+
+    for (int i = 0; i < 4; i++)
+    {
+        skinningMatrix += mul(OffsetMatricies[input.BoneIndices[i]],ModelMatricies[input.BoneIndices[i]]) * input.BoneWeights[i] ;
+    }
+
+	matrix finalWorld = mul(skinningMatrix, World);
+
+    float4 worldPos = mul(input.Pos, finalWorld);
+    output.WorldPos = worldPos.xyz;
+    output.Pos = mul(worldPos, View);
+    output.Pos = mul(output.Pos, Projection);
+
+    float3x3 normalMat = (float3x3)transpose(invert(finalWorld));
+    output.Norm = normalize(mul(input.Norm, normalMat));
+    output.Tex = input.Tex;
+    
+    return output;
+}
+)";
+
+    const char* g_pscode_deffered_Geometry = R"(
+Texture2D AlbedoMap    : register(t0);
+Texture2D MetallicMap  : register(t6);
+Texture2D RoughnessMap : register(t7);
+SamplerState samLinear : register(s0);
+
+cbuffer MaterialBuffer : register(b1)
+{
+	uint textureFlags; 
+    uint propertyFlags;
+	float4 baseColor;
+    float metallic;
+    float roughness;
+}
+
+cbuffer PBRDebugBuffer : register(b9)
+{
+    float useMaterialOverride;
+    float metallicOverride;
+    float roughnessOverride;
+}
+
+struct GBufferOut
+{
+    float4 Position  : SV_Target0; // GBuffer #1
+    float4 Normal    : SV_Target1; // GBuffer #2
+    float4 Albedo    : SV_Target2; // GBuffer #3
+    float4 Metallic  : SV_Target3; // GBuffer #4 (R만 사용)
+    float4 Roughness : SV_Target4; // GBuffer #5 (R만 사용)
+};
+
+struct PS_INPUT
+{
+    float4 Pos      : SV_POSITION;
+    float3 WorldPos : TEXCOORD0;
+    float3 Norm     : TEXCOORD1;
+    float2 Tex      : TEXCOORD2;
+};
+
+GBufferOut PS(PS_INPUT input)
+{
+    GBufferOut out;
+
+    out.Position = float4(input.WorldPos, 1.0f);
+
+    out.Normal = float4(normalize(N), 0.0f);
+
+    float3 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0).rgb;
+    out.Albedo = float4(albedo, 1.0f);
+
+    float _metallic = lerp(metallic, MetallicMap.Sample(samLinear, input.Tex).r, (textureFlags & 128) != 0);
+    if(useMaterialOverride)
+        _metallic = metallicOverride;
+
+    out.Metallic = float4(_metallic, 0, 0, 0);
+
+    float _roughness = lerp(roughness, RoughnessMap.Sample(samLinear, input.Tex).r, (textureFlags & 64) != 0);
+    if(useMaterialOverride)
+        _roughness = roughnessOverride;
+    _roughness = max(_roughness, 0.001f);
+    out.Roughness = float4(_roughness, 0, 0, 0);
+
+    return out;
 )";
 
     const char* g_pscode_deffered_Light = R"(

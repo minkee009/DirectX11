@@ -26,6 +26,8 @@ namespace MyEngine::D3DCTX
 		ComPtr<ID3D11VertexShader> m_pCommonVertexShader_useRigidBone;
 		ComPtr<ID3D11VertexShader> m_pCommonVertexShader_useSkinningBone;
 
+		ComPtr<ID3D11VertexShader> m_pShadowCastVertexShader;
+
 		ComPtr<ID3D11PixelShader> m_pDefaultPixelShader;
 		ComPtr<ID3D11PixelShader> m_pOutlinePixelShader;
 
@@ -35,6 +37,11 @@ namespace MyEngine::D3DCTX
 
 		ComPtr<ID3D11VertexShader> m_pPostProcessingVertexShader;
 		ComPtr<ID3D11PixelShader> m_pPostProcessingPixelShader;
+
+		ComPtr<ID3D11PixelShader> m_pDefferedGeometryPixelShader;
+		ComPtr<ID3D11PixelShader> m_pDefferedLightPixelShader;
+
+
 
 		ComPtr<ID3D11PixelShader> m_pBRDFPixelShader;
 
@@ -76,6 +83,10 @@ namespace MyEngine::D3DCTX
 		inline ID3D11PixelShader* GetBRDFPixelShader() { return m_pBRDFPixelShader.Get(); }
 		inline ID3D11VertexShader* GetPostProcessingVertexShader() { return m_pPostProcessingVertexShader.Get(); }
 		inline ID3D11PixelShader* GetPostProcessingPixelShader() { return m_pPostProcessingPixelShader.Get(); }
+		inline ID3D11PixelShader* GetDefferedGeometryPixelShader() { return m_pDefferedGeometryPixelShader.Get(); }
+		inline ID3D11PixelShader* GetDefferedLightPixelShader() { return m_pDefferedLightPixelShader.Get(); }
+
+		inline ID3D11VertexShader* GetShadowCastVertexShader() { return m_pShadowCastVertexShader.Get(); }
 
 		inline ID3DBlob* GetBlinnPhongVSBlob() { return m_pBlinnPhongVSBlob.Get(); }
 	};

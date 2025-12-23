@@ -51,18 +51,14 @@ namespace MyEngine {
 		FLOAT rimLightStr;
 	};
 
-	struct PBRDebugCB
-	{
-		FLOAT RoughnessOverride;
-		FLOAT MetallicOverride;
-	};
-
-	struct ObjectMatCB
+	struct ObjectMatCB              //b5
 	{
 		XMMATRIX mWorld;
+		UINT isSkinnedMesh;
+		XMFLOAT3 pad;
 	};
 
-	struct CameraCB
+	struct CameraCB					//b6
 	{
 		XMMATRIX mView;
 		XMMATRIX mProjection;
@@ -70,22 +66,32 @@ namespace MyEngine {
 		FLOAT pad;
 	};
 
-	struct DirectionalLightCB
+	struct DirectionalLightCB		//b7
 	{
 		XMFLOAT3 Position;
 		FLOAT pad;
 		XMFLOAT4 Direction;
 		XMFLOAT3 Color;
 		FLOAT Intensity;
+		XMMATRIX mLightViewProjection;
 	};
 
-	struct PointLightCB
+	struct PointLightCB				//b8
 	{
 		XMFLOAT3 Color;
 		FLOAT Intensity;
 		XMFLOAT3 Position;
 		FLOAT Range;
 	};
+
+	struct PBRDebugCB				//b9
+	{
+		FLOAT UseOverride;
+		FLOAT RoughnessOverride;
+		FLOAT MetallicOverride;
+		FLOAT pad;
+	};
+
 
 	struct OutlineCB
 	{
@@ -209,6 +215,12 @@ namespace MyEngine {
 		ComPtr<ID3D11Buffer> m_pOutlineCB = nullptr;
 		ComPtr<ID3D11Buffer> m_pGradientCB = nullptr;
 
+		ComPtr<ID3D11Buffer> m_pObjectMatBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pCameraBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pDirectionalLightBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pPointLightBuffer = nullptr;
+		ComPtr<ID3D11Buffer> m_pPBRDebugBuffer = nullptr;
+
 		ComPtr<ID3D11ShaderResourceView> m_pSkyBoxTextureRV = nullptr;
 
 		std::unique_ptr<Camera> m_pCamera;
@@ -287,6 +299,16 @@ namespace MyEngine {
 
 //#endif //_DEBUG
 
+		bool CreateConstantBuffer(
+			ID3D11Device* device,
+			UINT size,
+			D3D11_USAGE usage,
+			UINT cpuAccess,
+			ComPtr<ID3D11Buffer>& outBuffer);
+
+		bool InitDefferedRenderpassBuffer();
+		bool UninitDefferedRenderpassBuffer();
+
 		bool InitSkyBox();
 		bool InitShadowMapTex();
 		bool InitBRDFEnvironment();
@@ -294,6 +316,7 @@ namespace MyEngine {
 		bool InitGBufferTex();
 
 		void UninitGBufferTex();
+
 
 		void DrawSkyBox();
 		void DrawShadowMap();
@@ -309,6 +332,9 @@ namespace MyEngine {
 		bool CheckHDRSupport();
 
 		void ResizeGBufferTex(UINT width, UINT height);
+
+		void ForwardRenderPass();
+		void DefferedRenderPass();
 
 	public:
 		bool Initialize(HWND hWnd, int width, int height);
