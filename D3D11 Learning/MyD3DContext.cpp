@@ -393,6 +393,24 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateBlendState(&blendDesc, &m_pBlendState);
 
+    // Geometry Pass용 Blend State 설정
+    D3D11_BLEND_DESC deferredBlendDesc = {};
+    deferredBlendDesc.AlphaToCoverageEnable = FALSE;
+    // 모든 RTV에 대해 독립적인 설정을 적용하겠다고 명시
+    deferredBlendDesc.IndependentBlendEnable = FALSE;
+
+    // 단일 Target 설정
+    deferredBlendDesc.RenderTarget[0].BlendEnable = FALSE; // 블렌딩 비활성화
+    deferredBlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+    deferredBlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+    deferredBlendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    deferredBlendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    deferredBlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    deferredBlendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    deferredBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    m_pd3dDevice->CreateBlendState(&deferredBlendDesc, &m_pGeometryBlendState);
+
     //뎁스 스텐실 상태 설정
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
     depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
@@ -1107,116 +1125,34 @@ void MyEngine::MyD3DContext::Clear()
     //float ClearColor[4] = { 0.0f, 0.9f, 0.6f, 1.0f }; // RGBA
     float ClearColorAlbedo[4] = { 0.0f, 0.0f, 0.0f, 1.0f }; // RGBA
     float ClearColorZero[4] = { 0,0,0,0 };
+    float ClearColorNormal[4] = { 0.0f, 0.0f, 1.0f, 0.0f }; // (R, G, B, A)
 
     m_pContext->ClearRenderTargetView(m_pSceneColorRTV.Get(), ClearColorAlbedo);
     m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     for (size_t i = 0; i < GBUFFER_TEX_SIZE; ++i)
     {
-        float* selectClearCol = (i == 2) ? ClearColorAlbedo : ClearColorZero;  // i == 2 -> Albedo
+        float* selectClearCol;
+
+        if (i == 1) // GBuffer #2: Normal
+        {
+            selectClearCol = ClearColorNormal;
+        }
+        else if (i == 2) // GBuffer #3: Albedo
+        {
+            selectClearCol = ClearColorAlbedo;
+        }
+        else
+        {
+            // Position, Metallic, Roughness 등 (대부분 0.0 또는 특정 기본값)
+            selectClearCol = ClearColorZero;
+        }
 
         m_pContext->ClearRenderTargetView(m_pGBufferRTV[i].Get(), selectClearCol);
     }
 }
 
 
-void MyEngine::MyD3DContext::Render()
-{
-    DefferedRenderPass();
-
-    // tone mapping
-    ID3D11RenderTargetView* nullRTV[1] = { nullptr };
-    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
-
-    ID3D11ShaderResourceView* nullSRVs2[19] = { nullptr };
-    m_pContext->PSSetShaderResources(1, 19, nullSRVs2);
-
-    ID3D11VertexShader* postProcessingVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
-    ID3D11PixelShader* postProcessingPS = D3DCTX::ShaderManager::Get()->GetPostProcessingPixelShader();
-
-    m_pContext->OMSetDepthStencilState(nullptr, 0);
-    m_pContext->IASetInputLayout(nullptr);
-    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
-    m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
-    m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
-
-    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
-
-    PostProcessCB pp_cb = {};
-    pp_cb.exposure = m_exposure;
-    pp_cb.supportHDR = m_supportHDR ? 1.0f : 0.0f;
-    m_pContext->UpdateSubresource(m_pPostProcessCB.Get(), 0, nullptr, &pp_cb, 0, 0);
-    m_pContext->PSSetConstantBuffers(0, 1, m_pPostProcessCB.GetAddressOf());
-
-    m_pContext->RSSetViewports(1, &m_vp);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get());
-
-    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get());
-    m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), nullptr);
-    m_pContext->Draw(3, 0);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get());
-    ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
-    m_pContext->PSSetShaderResources(0, 1, nullSRV3);
-
-    // debug draw
-    if (m_enableDebugDraw)
-    {
-        if (!m_enableDebugDrawZbuffer)
-        {
-            m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-            m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
-            m_pContext->RSSetState(m_states->CullNone());
-        }
-        else
-        {
-            m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), m_pDepthStencilView.Get());
-        }
-
-        m_effect->SetView(m_pCamera->GetViewMatrix());
-        m_effect->SetProjection(m_pCamera->GetProjMatrix());
-        m_effect->Apply(m_pContext.Get());
-        m_pContext->IASetInputLayout(m_pDebugDrawIL.Get());
-
-        m_batch->Begin();
-
-        for (size_t i = 0; i < m_sceneObjects.size(); ++i)
-        {
-            if (auto skinningMeshRenderer = dynamic_cast<SkinningMeshRenderer*>(m_meshRenderers[i].get()))
-            {
-                DrawSkeleton(*m_sceneObjects[i].get(), *skinningMeshRenderer);
-            }
-
-            if (i == 0) continue;
-            auto renderer_AABB = m_meshRenderers[i]->GetBBox();
-            auto& obj = m_sceneObjects[i];
-            BoundingOrientedBox obb;
-            obb.CreateFromBoundingBox(obb, renderer_AABB);
-            obb.Transform(obb, obj->GetWorldMatrix());
-            DX::Draw(m_batch.get(), obb, Colors::Aqua);
-        }
-
-        auto frustum = m_pCamera->GetProjFrustum();
-        frustum.Transform(frustum, m_pCamera->GetTransform()->GetWorldMatrix());
-
-        DX::Draw(m_batch.get(), frustum, Colors::GhostWhite);
-
-        m_batch->End();
-
-        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-    }
-
-
-    //#ifdef _DEBUG
-    m_imgui.BeginFrame();
-    m_imgui.Update();
-    m_imgui.Render();
-    //#endif //_DEBUG
-
-    Present();
-}
 
 
 void MyEngine::MyD3DContext::Present()
@@ -1290,6 +1226,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pDefRasterizerState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
     m_pBlendState = nullptr;
+    m_pGeometryBlendState = nullptr;
     m_pOpaqueState = nullptr;
     m_pTransparentState = nullptr;
     m_pSamplerPoint = nullptr;
@@ -1714,6 +1651,8 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     cb_dirLight.Color = { m_lightColor.x, m_lightColor.y, m_lightColor.z };
     cb_dirLight.Direction = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
     cb_dirLight.mLightViewProjection = lightViewProj.Transpose();
+    cb_dirLight.Intensity = 15.0f;
+    cb_dirLight.Position = m_pDirectionalLightT->GetLocalPosition();
     m_pContext->UpdateSubresource(m_pDirectionalLightBuffer.Get(), 0, nullptr, &cb_dirLight, 0, 0);
 
     // camera set-up
@@ -1726,6 +1665,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     cb_pbr_debug.UseOverride = true;
     cb_pbr_debug.MetallicOverride = m_diffuseStrength;
     cb_pbr_debug.RoughnessOverride = m_ambientStrength;
+    cb_pbr_debug.AmbeintIntensity = 1.0f;
     m_pContext->UpdateSubresource(m_pPBRDebugBuffer.Get(), 0, nullptr, &cb_pbr_debug, 0, 0);
 
     // pass - 0 : Shadow Cast
@@ -1782,7 +1722,8 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 
     // pass - 1 : Geometry
     m_currentRenderPassNum = 1;
-    
+    m_pContext->OMSetBlendState(m_pGeometryBlendState.Get(), NULL, 0xFFFFFFFF);
+
     ID3D11RenderTargetView* rtvs[GBUFFER_TEX_SIZE] = {};
     for (UINT i = 0; i < GBUFFER_TEX_SIZE; ++i)
         rtvs[i] = m_pGBufferRTV[i].Get();
@@ -1804,8 +1745,9 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 
     m_pContext->VSSetConstantBuffers(6, 1, m_pCameraBuffer.GetAddressOf());
 
-    m_pContext->PSSetShader(D3DCTX::ShaderManager().Get()->GetDefferedGeometryPixelShader(),nullptr,0);
+    m_pContext->PSSetShader(D3DCTX::ShaderManager().Get()->GetDefferedGeometryPixelShader(), nullptr, 0);
     m_pContext->PSSetConstantBuffers(9, 1, m_pPBRDebugBuffer.GetAddressOf());
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 
     for (size_t i = 0; i < m_sceneObjects.size(); ++i)
     {
@@ -1834,7 +1776,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::None);
     }
 
-    ID3D11RenderTargetView* nullRTVs[GBUFFER_TEX_SIZE] = {};
+    ID3D11RenderTargetView* nullRTVs[GBUFFER_TEX_SIZE] = { nullptr, };
     m_pContext->OMSetRenderTargets(
         GBUFFER_TEX_SIZE,
         nullRTVs,
@@ -1843,20 +1785,46 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 
     // pass - 2 : Light
     m_currentRenderPassNum = 2;
-    
+
+    m_pContext->PSSetShaderResources(0, 19, nullSRVs);
+    m_pContext->VSSetShaderResources(0, 19, nullSRVs);
+
     // G-Buffer RTV -> SRV Bind
-   
+    ID3D11ShaderResourceView* srvs[GBUFFER_TEX_SIZE] = {};
+    for (UINT i = 0; i < GBUFFER_TEX_SIZE; ++i)
+        srvs[i] = m_pGBufferSRV[i].Get();
+
+    m_pContext->PSSetShaderResources(0, GBUFFER_TEX_SIZE, srvs);
+    m_pContext->PSSetShaderResources(10, 1, m_pShadowSRV.GetAddressOf());
+
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
+    m_pContext->PSSetConstantBuffers(6, 1, m_pCameraBuffer.GetAddressOf());
+    m_pContext->PSSetConstantBuffers(7, 1, m_pDirectionalLightBuffer.GetAddressOf());
+
     // RTV -> SceneColor
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), nullptr);
 
     // VS, PS (Quad vertices, LightPass pixel shader)
+    ID3D11VertexShader* QuadVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+    ID3D11PixelShader* LightPassPS = D3DCTX::ShaderManager::Get()->GetDefferedLightPixelShader();
 
-    // DrawIndexed()
+    m_pContext->OMSetDepthStencilState(nullptr, 0);
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
+    m_pContext->IASetInputLayout(nullptr);
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    m_pContext->VSSetShader(QuadVS, nullptr, 0);
+    m_pContext->PSSetShader(LightPassPS, nullptr, 0);
 
+    m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
 
+    m_pContext->Draw(3, 0);
 
     // pass - 3 : SkyBox 
     m_currentRenderPassNum = 3;
 
+    m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
     // Clock Work Rasterizer (이 렌더러는 왼손 좌표계임)
 
     // Skybox Texture Bind
@@ -1867,6 +1835,105 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 
 
 }
+
+void MyEngine::MyD3DContext::Render()
+{
+    DefferedRenderPass();
+
+    // tone mapping
+    ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+
+    ID3D11ShaderResourceView* nullSRVs2[19] = { nullptr };
+    m_pContext->PSSetShaderResources(1, 19, nullSRVs2);
+
+    ID3D11VertexShader* postProcessingVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+    ID3D11PixelShader* postProcessingPS = D3DCTX::ShaderManager::Get()->GetPostProcessingPixelShader();
+
+    m_pContext->OMSetDepthStencilState(nullptr, 0);
+    m_pContext->IASetInputLayout(nullptr);
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
+    m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
+
+    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+
+    PostProcessCB pp_cb = {};
+    pp_cb.exposure = m_exposure;
+    pp_cb.supportHDR = m_supportHDR ? 1.0f : 0.0f;
+    m_pContext->UpdateSubresource(m_pPostProcessCB.Get(), 0, nullptr, &pp_cb, 0, 0);
+    m_pContext->PSSetConstantBuffers(0, 1, m_pPostProcessCB.GetAddressOf());
+
+    m_pContext->RSSetViewports(1, &m_vp);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get());
+    m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), nullptr);
+    m_pContext->Draw(3, 0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+    ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, nullSRV3);
+
+    // debug draw
+    if (m_enableDebugDraw)
+    {
+        if (!m_enableDebugDrawZbuffer)
+        {
+            m_pContext->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+            m_pContext->OMSetDepthStencilState(m_states->DepthNone(), 0);
+            m_pContext->RSSetState(m_states->CullNone());
+        }
+        else
+        {
+            m_pContext->OMSetRenderTargets(1, m_pBackBufferRTV.GetAddressOf(), m_pDepthStencilView.Get());
+        }
+
+        m_effect->SetView(m_pCamera->GetViewMatrix());
+        m_effect->SetProjection(m_pCamera->GetProjMatrix());
+        m_effect->Apply(m_pContext.Get());
+        m_pContext->IASetInputLayout(m_pDebugDrawIL.Get());
+
+        m_batch->Begin();
+
+        for (size_t i = 0; i < m_sceneObjects.size(); ++i)
+        {
+            if (auto skinningMeshRenderer = dynamic_cast<SkinningMeshRenderer*>(m_meshRenderers[i].get()))
+            {
+                DrawSkeleton(*m_sceneObjects[i].get(), *skinningMeshRenderer);
+            }
+
+            if (i == 0) continue;
+            auto renderer_AABB = m_meshRenderers[i]->GetBBox();
+            auto& obj = m_sceneObjects[i];
+            BoundingOrientedBox obb;
+            obb.CreateFromBoundingBox(obb, renderer_AABB);
+            obb.Transform(obb, obj->GetWorldMatrix());
+            DX::Draw(m_batch.get(), obb, Colors::Aqua);
+        }
+
+        auto frustum = m_pCamera->GetProjFrustum();
+        frustum.Transform(frustum, m_pCamera->GetTransform()->GetWorldMatrix());
+
+        DX::Draw(m_batch.get(), frustum, Colors::GhostWhite);
+
+        m_batch->End();
+
+        m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+        m_pContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
+    }
+
+
+    //#ifdef _DEBUG
+    m_imgui.BeginFrame();
+    m_imgui.Update();
+    m_imgui.Render();
+    //#endif //_DEBUG
+
+    Present();
+}
+
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 {

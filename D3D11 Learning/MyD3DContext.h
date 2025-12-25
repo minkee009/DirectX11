@@ -143,6 +143,7 @@ namespace MyEngine {
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
 		ComPtr<ID3D11SamplerState> m_pSamplerPoint = nullptr;
 		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
+		ComPtr<ID3D11BlendState> m_pGeometryBlendState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 

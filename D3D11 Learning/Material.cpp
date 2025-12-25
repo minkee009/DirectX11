@@ -90,8 +90,8 @@ void MyEngine::Material::Bind(ID3D11DeviceContext* context, ExcludeShaderFlag fl
 	{
 		if (tex.pTexture->GetSRV())
 			context->PSSetShaderResources(tex.slot, 1, tex.pTexture->GetSRVAddress());
-		if (tex.pTexture->GetSamplerState())
-			context->PSSetSamplers(tex.slot, 1, tex.pTexture->GetSamplerStateAddress());
+		//if (tex.pTexture->GetSamplerState())
+		//	context->PSSetSamplers(tex.slot, 1, tex.pTexture->GetSamplerStateAddress());
 	}
 
 	if (m_textures.empty() && (m_propertyFlags & static_cast<UINT>(TextureType::Diffuse)) == 0)

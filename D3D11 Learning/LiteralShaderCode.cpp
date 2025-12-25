@@ -1461,6 +1461,7 @@ cbuffer PBRDebugBuffer : register(b9)
     float useMaterialOverride;
     float metallicOverride;
     float roughnessOverride;
+    float ambientIntensity;
 }
 
 struct GBufferOut
@@ -1487,13 +1488,13 @@ GBufferOut PS(PS_INPUT input)
     output.Position = float4(input.WorldPos, 1.0f);
     output.Normal = float4(normalize(input.Norm), 0.0f);
     
-    float3 albedo = lerp(baseColor.rgb, AlbedoMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
+    float4 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
 
     //알파 컷
     const float alphaCutoff = 0.5f;
     clip(albedo.a - alphaCutoff);
 
-    output.Albedo = float4(albedo, 1.0f);
+    output.Albedo = float4(albedo.rgb, 1.0f);
 
 
     float _metallic = lerp(metallic, MetallicMap.Sample(samLinear, input.Tex).r, (textureFlags & 128) != 0);
@@ -1519,24 +1520,43 @@ Texture2D AlbedoMap    : register(t2);
 Texture2D MetallicMap  : register(t3);
 Texture2D RoughnessMap : register(t4);
 
+Texture2D shadowMap : register(t10); 
+
+Texture2D brdfLUT : register(t20);
 TextureCube irradianceMap : register(t21);
 TextureCube prefilterMap  : register(t22);
+
+SamplerState samLinear : register(s0);
+SamplerState samPoint : register(s2);
+
+SamplerComparisonState samShadow : register(s1);
 
 cbuffer CameraBuffer : register(b6)
 {
     matrix View;
     matrix Projection;
     float3 CameraPos;
-}
+};
 
 cbuffer DirectionalLightBuffer : register(b7)
 {
-    float3 Position;
-    float4 Direction;
-    float3 Color;
-    float Intensity;
+    float3 DirectionalLightPos;
+    float4 DirectionalLightDir;
+    float3 DirectionalLightColor;
+    float DirectionalLightIntensity;
     matrix LightViewProjection;
 };
+
+cbuffer PBRDebugBuffer : register(b9)
+{
+    float useMaterialOverride;
+    float metallicOverride;
+    float roughnessOverride;
+    float ambientIntensity;
+};
+
+static const float PI = 3.14159265359f;
+static const float EPS = 1e-6f;
 
 float3 fresnelSchlick(float cosTheta, float3 F0)
 {
@@ -1626,9 +1646,70 @@ struct PSIn
 
 float4 PS(PSIn input) : SV_Target
 {
-    
-}
+    // 필요한 변수를 모두 구하기
+    float3 lightColor = DirectionalLightColor * DirectionalLightIntensity;
 
+    float3 WorldPos = PositionMap.Sample(samLinear, input.uv);    
+    float4 toDirLightViewPos = mul(float4(WorldPos, 1.0f), LightViewProjection);
+
+    float3 N = normalize(NormalMap.Sample(samLinear, input.uv).xyz); 
+
+    float3 V = normalize(CameraPos.xyz - WorldPos.xyz);
+    float3 L = normalize(-DirectionalLightDir.xyz);
+    float3 H = normalize(V + L);
+    float3 R = reflect(-V, N);
+    R.x = -R.x;
+
+    float NdotL = saturate(dot(N, L));
+    float NdotV = saturate(dot(N, V));
+
+    float4 albedo = AlbedoMap.Sample(samLinear, input.uv);
+    float _metallic = MetallicMap.Sample(samLinear, input.uv).r;
+    float _roughness = RoughnessMap.Sample(samLinear, input.uv).r;
+
+    // BRDF 계산
+    // Cook-Torrance 모델
+
+    // 직접광
+    float3 F0 = lerp(float3(0.04f, 0.04f, 0.04f), albedo.rgb, _metallic);
+    float NDF = ndfGGX(N, H, _roughness);
+    float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    float G = geometrySmith(N, V, L, _roughness);
+
+    float3 numerator = NDF * G * F;
+    float denominator = 4.0 * NdotV * NdotL + 1e-4f;
+    float3 specularBRDF = numerator / denominator;
+    float3 kS = F;
+    float3 kD = 1.0 - kS;
+    kD *= 1.0 - _metallic;
+    float3 diffuseBRDF = (kD * albedo.rgb / PI);
+    float3 Lo = (diffuseBRDF + specularBRDF) * lightColor * NdotL;
+
+    float shadow = CalculateShadowPCF(toDirLightViewPos);
+    Lo *= shadow;
+
+    // 간접광 (IBL)
+    float3 irradiance = irradianceMap.Sample(samLinear, N).rgb;
+    float3 F_ibl = fresnelSchlickRoughness(NdotV, F0, _roughness);
+    float3 kD_ibl = (1.0 - F_ibl) * (1.0 - _metallic);
+    float3 diffuseIBL = kD_ibl * irradiance * albedo.rgb;
+    
+    uint width, height, numMips;
+    prefilterMap.GetDimensions(0,width, height, numMips);
+
+    float maxMip = float(numMips - 1);
+    float lod = _roughness * maxMip;
+
+    float3 prefilteredColor = prefilterMap.SampleLevel(samLinear, R, lod).rgb;
+    float2 brdf  = brdfLUT.Sample(samLinear, float2(NdotV, _roughness)).rg;
+    float3 specularIBL = prefilteredColor * (F_ibl * brdf.x + brdf.y);
+
+    float3 ambient = (diffuseIBL + specularIBL) * ambientIntensity;
+    
+    float3 finalColor = Lo + ambient;
+
+    return float4(finalColor,1.0f);
+}
 )";
 
     const char* g_postprocess_vscode_quad = R"(
@@ -1694,18 +1775,18 @@ struct PSIn
 
 float4 PS(PSIn input) : SV_Target
 {
-    uint width, height;
+    //uint width, height;
 
-    txInput.GetDimensions(width, height);
+    //txInput.GetDimensions(width, height);
 
-    float2 pixel = input.uv * float2(width, height);    
-    float pixelScale = 4.0f;
+    //float2 pixel = input.uv * float2(width, height);    
+    //float pixelScale = 4.0f;
 
-    pixel = floor(pixel / pixelScale) * pixelScale;
+    //pixel = floor(pixel / pixelScale) * pixelScale;
 
     float4 color = float4(0,0,0,0);
 
-    color = txInput.Sample(samLinear, pixel / float2(width, height));
+    color = txInput.Sample(samLinear, input.uv);
 
     // Linear HDR 밝기 조절 (nits 스케일)
     color *= exposure;

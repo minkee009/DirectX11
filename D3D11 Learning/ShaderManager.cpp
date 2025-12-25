@@ -138,7 +138,7 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	CompileLiteralCodeToPixelShader(pDevice, m_pPostProcessingPixelShader.GetAddressOf(), g_postprocess_pscode_ACES_toneMapping);
 
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedGeometryPixelShader.GetAddressOf(), g_pscode_deffered_Geometry);
-	//CompileLiteralCodeToPixelShader(pDevice, m_pDefferedLightPixelShader.GetAddressOf(), g_pscode_deffered_Light);
+	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedLightPixelShader.GetAddressOf(), g_pscode_deffered_Light);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
