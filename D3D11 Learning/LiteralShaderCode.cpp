@@ -1488,13 +1488,20 @@ GBufferOut PS(PS_INPUT input)
     output.Normal = float4(normalize(input.Norm), 0.0f);
     
     float3 albedo = lerp(baseColor.rgb, AlbedoMap.Sample(samLinear, input.Tex).rgb, (textureFlags & 1) != 0);
+
+    //¾ËÆÄ ÄÆ
+    const float alphaCutoff = 0.5f;
+    clip(albedo.a - alphaCutoff);
+
     output.Albedo = float4(albedo, 1.0f);
-    
+
+
     float _metallic = lerp(metallic, MetallicMap.Sample(samLinear, input.Tex).r, (textureFlags & 128) != 0);
     if(useMaterialOverride)
         _metallic = metallicOverride;
     output.Metallic = float4(_metallic, 0, 0, 0);
     
+
     float _roughness = lerp(roughness, RoughnessMap.Sample(samLinear, input.Tex).r, (textureFlags & 64) != 0);
     if(useMaterialOverride)
         _roughness = roughnessOverride;
@@ -1506,6 +1513,122 @@ GBufferOut PS(PS_INPUT input)
 )";
 
     const char* g_pscode_deffered_Light = R"(
+Texture2D PositionMap  : register(t0);
+Texture2D NormalMap    : register(t1);
+Texture2D AlbedoMap    : register(t2);
+Texture2D MetallicMap  : register(t3);
+Texture2D RoughnessMap : register(t4);
+
+TextureCube irradianceMap : register(t21);
+TextureCube prefilterMap  : register(t22);
+
+cbuffer CameraBuffer : register(b6)
+{
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+}
+
+cbuffer DirectionalLightBuffer : register(b7)
+{
+    float3 Position;
+    float4 Direction;
+    float3 Color;
+    float Intensity;
+    matrix LightViewProjection;
+};
+
+float3 fresnelSchlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
+
+float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
+{
+    return F0 + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) 
+                * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float ndfGGX(float3 N, float3 H, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = max(denom, EPS);
+    denom = PI * denom * denom;
+    return a2 / denom;
+}
+
+float geometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+    denom = max(denom, EPS);
+	
+    return num / denom;
+}
+
+float geometrySmith(float3 N, float3 V, float3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = geometrySchlickGGX(NdotV, roughness);
+    float ggx1  = geometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
+
+float CalculateShadowPCF(float4 LightPos)
+{
+    float3 projCoords = LightPos.xyz / LightPos.w;
+    float2 texCoords; 
+    texCoords.x = projCoords.x * 0.5f + 0.5f;
+    texCoords.y = -projCoords.y * 0.5f + 0.5f;
+    
+    if (texCoords.x < 0.0f || texCoords.x > 1.0f || 
+        texCoords.y < 0.0f || texCoords.y > 1.0f)
+        return 1.0f;
+    
+    float currentDepth = projCoords.z;
+    if (currentDepth < 0.0f || currentDepth > 1.0f)
+        return 1.0f;
+    
+    float bias = 0.005f;
+    currentDepth -= bias;
+    
+    // 3x3 PCF
+    float shadow = 0.0f;
+    float2 texelSize = 1.0f / 4096.0f; // Shadow Map Å©±â
+    
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float2 offset = float2(x, y) * texelSize;
+            shadow += shadowMap.SampleCmpLevelZero(samShadow, texCoords + offset, currentDepth);
+        }
+    }
+    shadow /= 9.0f;
+    
+    return shadow;
+}
+
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+float4 PS(PSIn input) : SV_Target
+{
+    
+}
+
 )";
 
     const char* g_postprocess_vscode_quad = R"(

@@ -1843,9 +1843,29 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 
     // pass - 2 : Light
     m_currentRenderPassNum = 2;
+    
+    // G-Buffer RTV -> SRV Bind
+   
+    // RTV -> SceneColor
+
+    // VS, PS (Quad vertices, LightPass pixel shader)
+
+    // DrawIndexed()
+
+
 
     // pass - 3 : SkyBox 
-    m_currentRenderPassNum = 2;
+    m_currentRenderPassNum = 3;
+
+    // Clock Work Rasterizer (ÀÌ ·»´õ·¯´Â ¿Þ¼Õ ÁÂÇ¥°èÀÓ)
+
+    // Skybox Texture Bind
+
+    // Skybox Vertices Bind
+
+    // Draw
+
+
 }
 
 void MyEngine::MyD3DContext::Resize(UINT width, UINT height)

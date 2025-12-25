@@ -89,7 +89,7 @@ namespace MyEngine {
 		FLOAT UseOverride;
 		FLOAT RoughnessOverride;
 		FLOAT MetallicOverride;
-		FLOAT pad;
+		FLOAT AmbeintIntensity;
 	};
 
 
