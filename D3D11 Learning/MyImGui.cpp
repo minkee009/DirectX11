@@ -415,6 +415,21 @@ void MyEngine::MyImGui::Update()
         //if (ImGui::Button(u8"초기값##6")) {
         //    m_d3dContext->m_ambientColor = { 0.9255f,0.5059f,0.7490f,1 };
         //}
+        ImGui::Text(u8"빛 HDR(Light HDR) : 강도");
+        ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 1.0f, 30.0f);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"초기값##9")) {
+            m_d3dContext->m_specularStrength = 15.0f;
+        }
+
+        ImGui::Text(u8"환경광 (ambient) : 강도");
+        ImGui::SliderFloat("##RimLightStrength", &m_d3dContext->m_rimLightStrength, 0.0f, 1.0f);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"초기값##10")) {
+            m_d3dContext->m_rimLightStrength = 1.0f;
+        }
+        ImGui::Separator();
+        ImGui::Checkbox(u8"재질 덮어씌우기", &m_d3dContext->m_useMatOverride);
 
         ImGui::Text(u8"거칠기(Roughness) : 강도");
         ImGui::SliderFloat("##AmbientStrength", &m_d3dContext->m_ambientStrength, 0.0f, 1.0f);
@@ -430,19 +445,7 @@ void MyEngine::MyImGui::Update()
             m_d3dContext->m_diffuseStrength = 1.0f;
         }
 
-        ImGui::Text(u8"빛 HDR(Light HDR) : 강도");
-        ImGui::SliderFloat("##SpecularStrength", &m_d3dContext->m_specularStrength, 1.0f, 30.0f);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##9")) {
-            m_d3dContext->m_specularStrength = 15.0f;
-        }
 
-        ImGui::Text(u8"환경광 (ambient) : 강도");
-        ImGui::SliderFloat("##RimLightStrength", &m_d3dContext->m_rimLightStrength, 0.0f, 1.0f);
-        ImGui::SameLine();
-        if (ImGui::Button(u8"초기값##10")) {
-            m_d3dContext->m_rimLightStrength = 1.0f;
-        }
 
         //ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
         //ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
@@ -584,6 +587,21 @@ void MyEngine::MyImGui::Update()
     {
         ImGui::Text(u8"Shadow Map이 초기화되지 않음");
     }
+    ImGui::End();
+    ImGui::Begin(u8"G-Buffer 디버그");
+
+
+    static int selected = 0;
+    const char* items[] = { "Position", "Normal", "Albedo", "Metallic", "Roughness" };
+
+    auto texHeight = 256 * ((float)m_d3dContext->m_height / (float)m_d3dContext->m_width);
+
+    ImGui::Combo(u8"- G-텍스쳐", &selected, items, IM_ARRAYSIZE(items));
+    ImVec2 texSize(256, texHeight);
+    ImGui::Image(
+        (ImTextureID)m_d3dContext->m_pGBufferSRV[selected].Get(),  // SRV 포인터
+        ImVec2(256, texHeight)  // 이미지 크기
+    );
 
     ImGui::End();
 

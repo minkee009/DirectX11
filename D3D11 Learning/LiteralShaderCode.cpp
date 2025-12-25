@@ -1351,7 +1351,8 @@ struct PS_INPUT
     float4 Pos : SV_POSITION;
     float3 WorldPos : TEXCOORD0;
     float3 Norm : TEXCOORD1;
-    float2 Tex : TEXCOORD2;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -1364,6 +1365,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(output.Pos, Projection);
     
     output.Norm = normalize(mul(input.Norm, (float3x3) World));
+    output.Tan = normalize(mul(input.Tan, (float3x3) World));
     output.Tex = input.Tex;
     
     return output;
@@ -1408,7 +1410,8 @@ struct PS_INPUT
     float4 Pos : SV_POSITION;
     float3 WorldPos : TEXCOORD0;
     float3 Norm : TEXCOORD1;
-    float2 Tex : TEXCOORD2;
+    float3 Tan : TEXCOORD2;
+    float2 Tex : TEXCOORD3;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -1435,6 +1438,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(output.Pos, Projection);
 
     output.Norm = normalize(mul(input.Norm, (float3x3) finalWorld));
+    output.Tan = normalize(mul(input.Tan, (float3x3) finalWorld));
     output.Tex = input.Tex;
     
     return output;
@@ -1443,8 +1447,9 @@ PS_INPUT VS(VS_INPUT input)
 
     const char* g_pscode_deffered_Geometry = R"(
 Texture2D AlbedoMap    : register(t0);
-Texture2D MetallicMap  : register(t6);
-Texture2D RoughnessMap : register(t7);
+Texture2D NormalMap    : register(t2);
+Texture2D RoughnessMap : register(t6);
+Texture2D MetallicMap  : register(t7);
 SamplerState samLinear : register(s0);
 
 cbuffer MaterialBuffer : register(b1)
@@ -1478,7 +1483,8 @@ struct PS_INPUT
     float4 Pos      : SV_POSITION;
     float3 WorldPos : TEXCOORD0;
     float3 Norm     : TEXCOORD1;
-    float2 Tex      : TEXCOORD2;
+    float3 Tan      : TEXCOORD2;
+    float2 Tex      : TEXCOORD3;
 };
 
 GBufferOut PS(PS_INPUT input)
@@ -1486,9 +1492,19 @@ GBufferOut PS(PS_INPUT input)
     GBufferOut output;
     
     output.Position = float4(input.WorldPos, 1.0f);
-    output.Normal = float4(normalize(input.Norm), 0.0f);
+
+    float3 N = normalize(input.Norm);
+    float3 T = normalize(input.Tan);
+    T = normalize(T - dot(T, N) * N); // N에 직교하도록 조정
+    float3 B = cross(N, T);
+    float3x3 TBN = float3x3(T, B, N);
+    float3 normalTex = NormalMap.Sample(samLinear, input.Tex).xyz * 2.0f - 1.0f; // 정규화
+    normalTex = normalize(mul(normalTex, TBN)); // TBN 행렬을 곱해서 월드공간으로 변환
+
+    output.Normal = float4(lerp(N, normalTex, (textureFlags & 4) != 0),0.0f);
     
     float4 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
+    albedo = lerp(baseColor, albedo, (propertyFlags & 1) != 0);
 
     //알파 컷
     const float alphaCutoff = 0.5f;
@@ -1498,17 +1514,18 @@ GBufferOut PS(PS_INPUT input)
 
 
     float _metallic = lerp(metallic, MetallicMap.Sample(samLinear, input.Tex).r, (textureFlags & 128) != 0);
+    _metallic = lerp(_metallic, metallic, (propertyFlags & 128) != 0);
     if(useMaterialOverride)
         _metallic = metallicOverride;
     output.Metallic = float4(_metallic, 0, 0, 0);
     
 
     float _roughness = lerp(roughness, RoughnessMap.Sample(samLinear, input.Tex).r, (textureFlags & 64) != 0);
+    //_roughness = lerp(_roughness,roughness, (propertyFlags & 64) != 0);
     if(useMaterialOverride)
         _roughness = roughnessOverride;
-    _roughness = max(_roughness, 0.001f);
     output.Roughness = float4(_roughness, 0, 0, 0);
-    
+
     return output;
 }
 )";
@@ -1649,10 +1666,10 @@ float4 PS(PSIn input) : SV_Target
     // 필요한 변수를 모두 구하기
     float3 lightColor = DirectionalLightColor * DirectionalLightIntensity;
 
-    float3 WorldPos = PositionMap.Sample(samLinear, input.uv);    
+    float3 WorldPos = PositionMap.Sample(samPoint, input.uv);    
     float4 toDirLightViewPos = mul(float4(WorldPos, 1.0f), LightViewProjection);
 
-    float3 N = normalize(NormalMap.Sample(samLinear, input.uv).xyz); 
+    float3 N = normalize(NormalMap.Sample(samPoint, input.uv).xyz); 
 
     float3 V = normalize(CameraPos.xyz - WorldPos.xyz);
     float3 L = normalize(-DirectionalLightDir.xyz);
@@ -1663,9 +1680,10 @@ float4 PS(PSIn input) : SV_Target
     float NdotL = saturate(dot(N, L));
     float NdotV = saturate(dot(N, V));
 
-    float4 albedo = AlbedoMap.Sample(samLinear, input.uv);
-    float _metallic = MetallicMap.Sample(samLinear, input.uv).r;
-    float _roughness = RoughnessMap.Sample(samLinear, input.uv).r;
+    float4 albedo = AlbedoMap.Sample(samPoint, input.uv);
+    float _metallic = MetallicMap.Sample(samPoint, input.uv).r;
+    float _roughness = RoughnessMap.Sample(samPoint, input.uv).r;
+    _roughness = max(_roughness, 0.025f);
 
     // BRDF 계산
     // Cook-Torrance 모델

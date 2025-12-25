@@ -1651,7 +1651,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     cb_dirLight.Color = { m_lightColor.x, m_lightColor.y, m_lightColor.z };
     cb_dirLight.Direction = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
     cb_dirLight.mLightViewProjection = lightViewProj.Transpose();
-    cb_dirLight.Intensity = 15.0f;
+    cb_dirLight.Intensity = m_specularStrength;
     cb_dirLight.Position = m_pDirectionalLightT->GetLocalPosition();
     m_pContext->UpdateSubresource(m_pDirectionalLightBuffer.Get(), 0, nullptr, &cb_dirLight, 0, 0);
 
@@ -1662,10 +1662,10 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->UpdateSubresource(m_pCameraBuffer.Get(), 0, nullptr, &cb_cam, 0, 0);
 
     // pbr debug set-up
-    cb_pbr_debug.UseOverride = true;
+    cb_pbr_debug.UseOverride = m_useMatOverride;
     cb_pbr_debug.MetallicOverride = m_diffuseStrength;
     cb_pbr_debug.RoughnessOverride = m_ambientStrength;
-    cb_pbr_debug.AmbeintIntensity = 1.0f;
+    cb_pbr_debug.AmbeintIntensity = m_rimLightStrength;
     m_pContext->UpdateSubresource(m_pPBRDebugBuffer.Get(), 0, nullptr, &cb_pbr_debug, 0, 0);
 
     // pass - 0 : Shadow Cast
@@ -1825,15 +1825,22 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_currentRenderPassNum = 3;
 
     m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
-    // Clock Work Rasterizer (이 렌더러는 왼손 좌표계임)
+    m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
 
-    // Skybox Texture Bind
+    m_pContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+    m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
+    m_pContext->IASetVertexBuffers(0, 1, m_pSkyBoxVertexBuffer.GetAddressOf(), &m_skyBoxVertexBufferStride, &m_skyBoxVertexBufferOffset);
+    m_pContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-    // Skybox Vertices Bind
-
-    // Draw
-
-
+    m_pContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //스카이박스는 시계방향으로 컬링
+    m_pContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
+    m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
+    m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 }
 
 void MyEngine::MyD3DContext::Render()

@@ -87,8 +87,8 @@ namespace MyEngine {
 	struct PBRDebugCB				//b9
 	{
 		FLOAT UseOverride;
-		FLOAT RoughnessOverride;
 		FLOAT MetallicOverride;
+		FLOAT RoughnessOverride;
 		FLOAT AmbeintIntensity;
 	};
 
@@ -250,6 +250,8 @@ namespace MyEngine {
 
 		FLOAT m_reflectionFactor = 0.005f;
 		bool m_isPointLight = false;
+
+		bool m_useMatOverride = false;
 
 		UINT m_skyBoxVertexCount = 0;
 		UINT m_skyBoxVertexBufferStride = 0;

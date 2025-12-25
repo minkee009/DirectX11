@@ -14,5 +14,5 @@ float4 PS(PS_INPUT input) : SV_Target
     float3 skyBoxColor = skyBoxTX.Sample(samLinear, normalize(input.Tex));
     
     // 나중에 햇빛 블루밍 처리를 위해 쉐이더코드를 분리
-    return float4(skyBoxColor * rimLightStr, 1.0f);
+    return float4(skyBoxColor * ambientIntensity, 1.0f);
 }
