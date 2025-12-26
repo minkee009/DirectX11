@@ -8,6 +8,7 @@
 #include <d3dcompiler.h>
 #include <wincodec.h>
 #include <dxgi1_6.h>
+#include <random>
 
 #ifdef _DEBUG
 #include <dxgidebug.h>
@@ -411,6 +412,27 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateBlendState(&deferredBlendDesc, &m_pGeometryBlendState);
 
+    D3D11_BLEND_DESC desc = {};
+    desc.AlphaToCoverageEnable = FALSE;
+    desc.IndependentBlendEnable = FALSE;
+
+    D3D11_RENDER_TARGET_BLEND_DESC& rt = desc.RenderTarget[0];
+    rt.BlendEnable = TRUE;
+
+    // RGB
+    rt.SrcBlend = D3D11_BLEND_ONE;
+    rt.DestBlend = D3D11_BLEND_ONE;
+    rt.BlendOp = D3D11_BLEND_OP_ADD;
+
+    // Alpha (보통 사용 안 함)
+    rt.SrcBlendAlpha = D3D11_BLEND_ONE;
+    rt.DestBlendAlpha = D3D11_BLEND_ONE;
+    rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+
+    rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    m_pd3dDevice->CreateBlendState(&desc, &m_pAdditiveBlendState);
+
     //뎁스 스텐실 상태 설정
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
     depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
@@ -521,10 +543,10 @@ bool MyEngine::MyD3DContext::InitializeScene()
     obj1->SetWorldPosition(0, 0, 0);
 
     auto obj2 = m_sceneObjects[1].get();
-    obj2->SetWorldPosition(4.950f, 0.250f, 4.700f);
+    obj2->SetWorldPosition(4.950f, 0.250f, 0.0f);
 
     auto obj3 = m_sceneObjects[2].get();
-    obj3->SetWorldPosition(-3.8f, 0.25f, 4.85f);
+    obj3->SetWorldPosition(-3.8f, 0.25f, 0.0f);
 
     AssimpConverter::SetLoadMaterialType(AssimpConverter::LoadMaterialType::BRDF);
     AssimpConverter::SetLoadMaterialProperties(AssimpConverter::LoadMaterialProperties::All);
@@ -577,6 +599,48 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_pBVHTree->Build(m_bboxRegistry);
 
+    // 시드 설정
+    std::mt19937 rng(static_cast<unsigned int>(std::time(0)));
+
+    // 분포 정의
+    std::uniform_real_distribution<float> posXZDist(-8.2f, 8.2f); // 광원의 초기 위치 범위
+    std::uniform_real_distribution<float> posYDist(3.0f, 6.2f); // 광원의 초기 위치 범위
+    std::uniform_real_distribution<float> colorDist(0.3f, 1.0f); // 색상 (어두운 색상 방지)
+    std::uniform_real_distribution<float> intensityDist(15.0f, 45.0f); // 밝기 (15.0 ~ 45.0)
+    std::uniform_real_distribution<float> rangeDist(1.0f, 6.0f); // 범위 (1.0 ~ 6.0)
+    std::uniform_real_distribution<float> offsetDist(0.0f, 100.0f); // 애니메이션 오프셋
+
+    const size_t NUM_POINT_LIGHTS = 12;
+    m_pointLights.resize(NUM_POINT_LIGHTS);
+
+    for (size_t i = 0; i < NUM_POINT_LIGHTS; ++i)
+    {
+        PointLight& light = m_pointLights[i];
+
+        // 1. 위치 랜덤 초기화
+        light.Position = light.InitialPosition = Vector3(
+            posXZDist(rng), // X 위치
+            posYDist(rng), // Y 위치 (또는 Z, Y가 위쪽 축인 경우)
+            posXZDist(rng)  // Z 위치
+        );
+
+        // 2. 색상 랜덤 초기화 (R, G, B)
+        light.Color = Vector3(
+            colorDist(rng),
+            colorDist(rng),
+            colorDist(rng)
+        );
+
+        // 3. 밝기 (Intensity: 1.0 ~ 15.0)
+        light.Intensity = intensityDist(rng);
+
+        // 4. 범위 (Range: 1.0 ~ 8.0)
+        light.Range = rangeDist(rng);
+
+        // 5. 애니메이션 오프셋 (반딧불이 애니메이션의 위상차)
+        light.AnimationTimeOffset = offsetDist(rng);
+    }
+
     return true;
 }
 
@@ -594,6 +658,28 @@ void MyEngine::MyD3DContext::Update()
             skinnedMesh->AnimationUpdate();
             skinnedMesh->MatrixUpdate();
         }
+    }
+
+    // 광원의 애니메이션 속도 및 범위 설정
+    const float MOVEMENT_SPEED = 2.0f; // 광원이 움직이는 속도
+    const float MOVEMENT_RADIUS = 0.5f; // 광원이 초기 위치 주변에서 움직이는 반경 (반딧불이 효과)
+
+    auto s_time = TimeManager::Get()->GetTime();
+
+    for (PointLight& light : m_pointLights)
+    {
+        // 각 광원에 대해 애니메이션을 적용
+        float timeX = s_time * MOVEMENT_SPEED + light.AnimationTimeOffset * 1.0f;
+        float timeY = s_time * MOVEMENT_SPEED + light.AnimationTimeOffset * 1.5f;
+        float timeZ = s_time * MOVEMENT_SPEED + light.AnimationTimeOffset * 2.0f;
+
+        float offsetX = MOVEMENT_RADIUS * std::sin(timeX);
+        float offsetY = MOVEMENT_RADIUS * std::cos(timeY * 0.7f); // Y축은 약간 다르게 움직이게
+        float offsetZ = MOVEMENT_RADIUS * std::sin(timeZ * 1.3f);
+
+        light.Position.x = light.InitialPosition.x + offsetX;
+        light.Position.y = light.InitialPosition.y + offsetY;
+        light.Position.z = light.InitialPosition.z + offsetZ;
     }
 }
 
@@ -1227,6 +1313,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pClockWiseRasterizerState = nullptr;
     m_pBlendState = nullptr;
     m_pGeometryBlendState = nullptr;
+    m_pAdditiveBlendState = nullptr;
     m_pOpaqueState = nullptr;
     m_pTransparentState = nullptr;
     m_pSamplerPoint = nullptr;
@@ -1800,14 +1887,12 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
     m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
     m_pContext->PSSetConstantBuffers(6, 1, m_pCameraBuffer.GetAddressOf());
-    m_pContext->PSSetConstantBuffers(7, 1, m_pDirectionalLightBuffer.GetAddressOf());
 
     // RTV -> SceneColor
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), nullptr);
 
-    // VS, PS (Quad vertices, LightPass pixel shader)
+    // VS
     ID3D11VertexShader* QuadVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
-    ID3D11PixelShader* LightPassPS = D3DCTX::ShaderManager::Get()->GetDefferedLightPixelShader();
 
     m_pContext->OMSetDepthStencilState(nullptr, 0);
     m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
@@ -1815,11 +1900,48 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
     m_pContext->VSSetShader(QuadVS, nullptr, 0);
-    m_pContext->PSSetShader(LightPassPS, nullptr, 0);
 
     m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
+    // LightPass 0 : GlobalLight
+    {
+        ID3D11PixelShader* GlobalLightPassPS = D3DCTX::ShaderManager::Get()->GetDefferedLightPixelShader();
+        m_pContext->PSSetShader(GlobalLightPassPS, nullptr, 0);
+        m_pContext->PSSetConstantBuffers(7, 1, m_pDirectionalLightBuffer.GetAddressOf());
 
-    m_pContext->Draw(3, 0);
+        m_pContext->Draw(3, 0);
+    }
+
+    // LightPass 1 : Additive Point Light
+    {
+        m_pContext->OMSetBlendState(m_pAdditiveBlendState.Get(), nullptr, 0xFFFFFFFF);
+
+        ID3D11PixelShader* AdditivePointLightPassPS = D3DCTX::ShaderManager::Get()->GetDefferedAdditivePointLightPixelShader();
+        m_pContext->PSSetShader(AdditivePointLightPassPS, nullptr, 0);
+        m_pContext->PSSetConstantBuffers(8, 1, m_pPointLightBuffer.GetAddressOf());
+
+        // for
+        for (size_t i = 0; i < m_pointLights.size(); ++i)
+        {
+            auto& pointLight = m_pointLights[i];
+            cb_pointLight.Color = pointLight.Color;
+            cb_pointLight.Intensity = pointLight.Intensity;
+            cb_pointLight.Range = pointLight.Range;
+            cb_pointLight.Position = pointLight.Position;
+
+            m_pContext->Map(
+                m_pPointLightBuffer.Get(),
+                0,
+                D3D11_MAP_WRITE_DISCARD,
+                0,
+                &mapped
+            );
+
+            memcpy(mapped.pData, &cb_pointLight, sizeof(PointLightCB));
+
+            m_pContext->Unmap(m_pPointLightBuffer.Get(), 0);
+            m_pContext->Draw(3, 0);
+        }
+    }
 
     // pass - 3 : SkyBox 
     m_currentRenderPassNum = 3;
@@ -1924,6 +2046,18 @@ void MyEngine::MyD3DContext::Render()
         frustum.Transform(frustum, m_pCamera->GetTransform()->GetWorldMatrix());
 
         DX::Draw(m_batch.get(), frustum, Colors::GhostWhite);
+
+        for (size_t i = 0; i < m_pointLights.size(); ++i)
+        {
+            auto pointLight = m_pointLights[i];
+            BoundingSphere sphr1{ pointLight.Position,0.05f };
+            BoundingSphere sphr2{ pointLight.Position,pointLight.Range };
+
+            auto debugLightCol = Color(pointLight.Color.x, pointLight.Color.y, pointLight.Color.z, 1.0f);
+
+            DX::Draw(m_batch.get(), sphr1, debugLightCol);
+            DX::Draw(m_batch.get(), sphr2, debugLightCol);
+        }
 
         m_batch->End();
 

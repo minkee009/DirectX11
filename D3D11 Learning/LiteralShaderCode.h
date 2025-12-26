@@ -35,6 +35,7 @@ namespace MyEngine::D3DCTX
 
     extern const char* g_pscode_deffered_Geometry;
     extern const char* g_pscode_deffered_Light;
+    extern const char* g_pscode_deffered_AdditivePointLight;
 }
 
 

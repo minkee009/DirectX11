@@ -40,7 +40,7 @@ namespace MyEngine::D3DCTX
 
 		ComPtr<ID3D11PixelShader> m_pDefferedGeometryPixelShader;
 		ComPtr<ID3D11PixelShader> m_pDefferedLightPixelShader;
-
+		ComPtr<ID3D11PixelShader> m_pDefferedAdditivePointLightPixelShader;
 
 
 		ComPtr<ID3D11PixelShader> m_pBRDFPixelShader;
@@ -85,6 +85,7 @@ namespace MyEngine::D3DCTX
 		inline ID3D11PixelShader* GetPostProcessingPixelShader() { return m_pPostProcessingPixelShader.Get(); }
 		inline ID3D11PixelShader* GetDefferedGeometryPixelShader() { return m_pDefferedGeometryPixelShader.Get(); }
 		inline ID3D11PixelShader* GetDefferedLightPixelShader() { return m_pDefferedLightPixelShader.Get(); }
+		inline ID3D11PixelShader* GetDefferedAdditivePointLightPixelShader() { return m_pDefferedAdditivePointLightPixelShader.Get(); }
 
 		inline ID3D11VertexShader* GetShadowCastVertexShader() { return m_pShadowCastVertexShader.Get(); }
 

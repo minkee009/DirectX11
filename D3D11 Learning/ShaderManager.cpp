@@ -139,6 +139,7 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedGeometryPixelShader.GetAddressOf(), g_pscode_deffered_Geometry);
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedLightPixelShader.GetAddressOf(), g_pscode_deffered_Light);
+	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedAdditivePointLightPixelShader.GetAddressOf(), g_pscode_deffered_AdditivePointLight);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
@@ -162,6 +163,10 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 
 	m_pPostProcessingVertexShader = nullptr;
 	m_pPostProcessingPixelShader = nullptr;
+
+	m_pDefferedGeometryPixelShader = nullptr;
+	m_pDefferedLightPixelShader = nullptr;
+	m_pDefferedAdditivePointLightPixelShader = nullptr;
 }
 
 void MyEngine::D3DCTX::ShaderManager::BindDefaultShaders(ID3D11DeviceContext* context)

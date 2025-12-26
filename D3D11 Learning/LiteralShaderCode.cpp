@@ -1741,6 +1741,132 @@ float4 PS(PSIn input) : SV_Target
 }
 )";
 
+    const char* g_pscode_deffered_AdditivePointLight = R"(
+Texture2D PositionMap  : register(t0);
+Texture2D NormalMap    : register(t1);
+Texture2D AlbedoMap    : register(t2);
+Texture2D MetallicMap  : register(t3);
+Texture2D RoughnessMap : register(t4);
+
+SamplerState samLinear : register(s0);
+SamplerState samPoint : register(s2);
+
+cbuffer CameraBuffer : register(b6)
+{
+    matrix View;
+    matrix Projection;
+    float3 CameraPos;
+};
+
+cbuffer PointLightBuffer : register(b8)
+{
+	float3 LightColor;
+	float LightIntensity;
+	float3 LightPos;
+	float LightRange;
+};
+
+
+static const float PI = 3.14159265359f;
+static const float EPS = 1e-6f;
+
+float3 fresnelSchlick(float cosTheta, float3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
+
+float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
+{
+    return F0 + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) 
+                * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float ndfGGX(float3 N, float3 H, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = max(denom, EPS);
+    denom = PI * denom * denom;
+    return a2 / denom;
+}
+
+float geometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+    denom = max(denom, EPS);
+	
+    return num / denom;
+}
+
+float geometrySmith(float3 N, float3 V, float3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = geometrySchlickGGX(NdotV, roughness);
+    float ggx1  = geometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
+
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+float4 PS(PSIn input) : SV_Target
+{
+    float3 worldPos = PositionMap.Sample(samPoint, input.uv).xyz;
+    float3 N = normalize(NormalMap.Sample(samPoint, input.uv).xyz);
+    float3 V = normalize(CameraPos - worldPos);
+
+    float3 L = LightPos - worldPos;
+    float dist = length(L);
+
+    if (dist > LightRange)
+            discard;
+
+    L /= dist;
+
+    float atten = saturate(1.0 - dist / LightRange);
+    float NdotL = saturate(dot(N, L));
+
+    float3 albedo = AlbedoMap.Sample(samPoint, input.uv).rgb;
+    float metallic = MetallicMap.Sample(samPoint, input.uv).r;
+    float roughness = RoughnessMap.Sample(samPoint, input.uv).r;
+
+    float3 F0 = lerp(float3(0.04,0.04,0.04), albedo, metallic);
+
+    float3 H = normalize(V + L);
+    float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    float NDF = ndfGGX(N, H, roughness);
+    float G   = geometrySmith(N, V, L, roughness);
+
+    float3 spec =
+        (NDF * G * F) /
+        max(4.0 * max(dot(N,V),0) * NdotL, 1e-4);
+
+    float3 kD = (1.0 - F) * (1.0 - metallic);
+    float3 diffuse = kD * albedo / PI;
+
+    float3 color =
+        (diffuse + spec) *
+        LightColor *
+        LightIntensity *
+        NdotL *
+        atten;
+
+    return float4(color, 1);
+}
+)";
+
     const char* g_postprocess_vscode_quad = R"(
 struct VS_Output
 {

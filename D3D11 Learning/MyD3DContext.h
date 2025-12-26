@@ -144,6 +144,7 @@ namespace MyEngine {
 		ComPtr<ID3D11SamplerState> m_pSamplerPoint = nullptr;
 		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
 		ComPtr<ID3D11BlendState> m_pGeometryBlendState = nullptr;
+		ComPtr<ID3D11BlendState> m_pAdditiveBlendState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
 
@@ -191,9 +192,11 @@ namespace MyEngine {
 		struct PointLight
 		{
 			Vector3 Position;
-			Color Color;
-			FLOAT LightRange;
-			FLOAT Intensity;
+			Vector3 Color;
+			float Range;
+			float Intensity;
+			Vector3 InitialPosition; // 초기 위치 (이동의 중심점)
+			float AnimationTimeOffset;         // 각 광원마다 다른 애니메이션 위상
 		};
 
 		ComPtr<ID3D11Buffer> m_pPointLightCB;
@@ -241,8 +244,8 @@ namespace MyEngine {
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
 		FLOAT m_diffuseGradientStrength = 0.3125f;
-		FLOAT m_specularStrength = 15.0f;
-		FLOAT m_rimLightStrength = 1.0f;
+		FLOAT m_specularStrength = 1.0f;
+		FLOAT m_rimLightStrength = 0.0f;
 		UINT m_shininess = 512;
 
 		FLOAT m_outlineThickness = 0.02f;
