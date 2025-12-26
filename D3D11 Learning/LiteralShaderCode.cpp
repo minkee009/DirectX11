@@ -1476,6 +1476,7 @@ struct GBufferOut
     float4 Albedo    : SV_Target2; // GBuffer #3
     float4 Metallic  : SV_Target3; // GBuffer #4 (R만 사용)
     float4 Roughness : SV_Target4; // GBuffer #5 (R만 사용)
+    float4 DebugNormal : SV_Target5;
 };
 
 struct PS_INPUT
@@ -1502,9 +1503,15 @@ GBufferOut PS(PS_INPUT input)
     normalTex = normalize(mul(normalTex, TBN)); // TBN 행렬을 곱해서 월드공간으로 변환
 
     output.Normal = float4(lerp(N, normalTex, (textureFlags & 4) != 0),0.0f);
+
+    output.DebugNormal = float4(N * 0.5 + 0.5, 1.0f);
     
     float4 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
     albedo = lerp(baseColor, albedo, (propertyFlags & 1) != 0);
+    if(useMaterialOverride)
+    {
+        albedo = float4(1.0,1.0,1.0,1.0);
+    }
 
     //알파 컷
     const float alphaCutoff = 0.5f;
@@ -1522,8 +1529,13 @@ GBufferOut PS(PS_INPUT input)
 
     float _roughness = lerp(roughness, RoughnessMap.Sample(samLinear, input.Tex).r, (textureFlags & 64) != 0);
     //_roughness = lerp(_roughness,roughness, (propertyFlags & 64) != 0);
+
     if(useMaterialOverride)
-        _roughness = roughnessOverride;
+    {
+        float roughnessClamp = lerp(0.025f, 1.0f, roughnessOverride);
+        _roughness = roughnessClamp;
+    }    
+    _roughness = max(_roughness, 0.025f);
     output.Roughness = float4(_roughness, 0, 0, 0);
 
     return output;
@@ -1683,7 +1695,6 @@ float4 PS(PSIn input) : SV_Target
     float4 albedo = AlbedoMap.Sample(samPoint, input.uv);
     float _metallic = MetallicMap.Sample(samPoint, input.uv).r;
     float _roughness = RoughnessMap.Sample(samPoint, input.uv).r;
-    _roughness = max(_roughness, 0.025f);
 
     // BRDF 계산
     // Cook-Torrance 모델

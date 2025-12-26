@@ -431,6 +431,8 @@ void MyEngine::MyImGui::Update()
         ImGui::Separator();
         ImGui::Checkbox(u8"재질 덮어씌우기", &m_d3dContext->m_useMatOverride);
 
+        ImGui::BeginDisabled(!m_d3dContext->m_useMatOverride);
+
         ImGui::Text(u8"거칠기(Roughness) : 강도");
         ImGui::SliderFloat("##AmbientStrength", &m_d3dContext->m_ambientStrength, 0.0f, 1.0f);
         ImGui::SameLine();
@@ -445,7 +447,7 @@ void MyEngine::MyImGui::Update()
             m_d3dContext->m_diffuseStrength = 1.0f;
         }
 
-
+        ImGui::EndDisabled();
 
         //ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
         //ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
@@ -588,19 +590,30 @@ void MyEngine::MyImGui::Update()
         ImGui::Text(u8"Shadow Map이 초기화되지 않음");
     }
     ImGui::End();
-    ImGui::Begin(u8"G-Buffer 디버그");
+
+    auto gbuf_windowScale = (float)m_d3dContext->m_width / 1600.0f;
+
+    auto texWidth = 400 * gbuf_windowScale;
+    auto texHeight = texWidth * ((float)m_d3dContext->m_height / (float)m_d3dContext->m_width);
+
+
+
+    ImGui::SetNextWindowSize(ImVec2(texWidth + 15, (int)(texHeight) + 65) );
+    ImGui::Begin(u8"G-Buffer 디버그", nullptr, ImGuiWindowFlags_NoResize);
 
 
     static int selected = 0;
     const char* items[] = { "Position", "Normal", "Albedo", "Metallic", "Roughness" };
 
-    auto texHeight = 256 * ((float)m_d3dContext->m_height / (float)m_d3dContext->m_width);
-
+   
     ImGui::Combo(u8"- G-텍스쳐", &selected, items, IM_ARRAYSIZE(items));
-    ImVec2 texSize(256, texHeight);
+    ImVec2 texSize(texWidth, texHeight);
+    auto selected_debug = selected;
+    if (selected_debug == 1)
+        selected_debug = 5;
     ImGui::Image(
-        (ImTextureID)m_d3dContext->m_pGBufferSRV[selected].Get(),  // SRV 포인터
-        ImVec2(256, texHeight)  // 이미지 크기
+        (ImTextureID)m_d3dContext->m_pGBufferSRV[selected_debug].Get(),  // SRV 포인터
+        ImVec2(texWidth, texHeight)  // 이미지 크기
     );
 
     ImGui::End();

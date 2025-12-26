@@ -157,7 +157,7 @@ namespace MyEngine {
 		// post processing
 		FLOAT m_exposure = 1.0f;
 
-#define GBUFFER_TEX_SIZE 5
+#define GBUFFER_TEX_SIZE 6
 
 		// Deffered Rendering
 		//
@@ -178,7 +178,8 @@ namespace MyEngine {
 			DXGI_FORMAT_R8G8B8A8_SNORM,     // #2 Normal (R8G8B8A8_SNORM: 법선 벡터를 위한 메모리 효율적인 형식)
 			DXGI_FORMAT_R8G8B8A8_UNORM,     // #3 Albedo (R8G8B8A8_UNORM: 표준 색상)
 			DXGI_FORMAT_R8_UNORM,           // #4 Metallic (R8_UNORM: 단일 채널)
-			DXGI_FORMAT_R8_UNORM            // #5 Roughness (R8_UNORM: 단일 채널)
+			DXGI_FORMAT_R8_UNORM,           // #5 Roughness (R8_UNORM: 단일 채널)
+			DXGI_FORMAT_R8G8B8A8_UNORM			// #6 debug normal
 		};
 
 		ComPtr<ID3D11Texture2D> m_pGBufferTextures[GBUFFER_TEX_SIZE] = { nullptr, };
