@@ -144,6 +144,7 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
 {
+	m_pShadowCastVertexShader = nullptr;
 	m_pDefaultVertexShader = nullptr;
 	m_pDefaultPixelShader = nullptr;
 	m_pOutlineVertexShader = nullptr;
