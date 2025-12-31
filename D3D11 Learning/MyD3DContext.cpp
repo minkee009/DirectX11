@@ -606,11 +606,11 @@ bool MyEngine::MyD3DContext::InitializeScene()
     std::uniform_real_distribution<float> posXZDist(-8.2f, 8.2f); // 광원의 초기 위치 범위
     std::uniform_real_distribution<float> posYDist(3.0f, 6.2f); // 광원의 초기 위치 범위
     std::uniform_real_distribution<float> colorDist(0.3f, 1.0f); // 색상 (어두운 색상 방지)
-    std::uniform_real_distribution<float> intensityDist(15.0f, 45.0f); // 밝기 (15.0 ~ 45.0)
-    std::uniform_real_distribution<float> rangeDist(1.0f, 6.0f); // 범위 (1.0 ~ 6.0)
+    std::uniform_real_distribution<float> intensityDist(15.0f, 20.0f); // 밝기 (15.0 ~ 20.0)
+    std::uniform_real_distribution<float> rangeDist(1.0f, 7.5f); // 범위 (1.0 ~ 7.5)
     std::uniform_real_distribution<float> offsetDist(0.0f, 100.0f); // 애니메이션 오프셋
 
-    const size_t NUM_POINT_LIGHTS = 12;
+    const size_t NUM_POINT_LIGHTS = 25;
     m_pointLights.resize(NUM_POINT_LIGHTS);
 
     for (size_t i = 0; i < NUM_POINT_LIGHTS; ++i)

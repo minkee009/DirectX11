@@ -1,16 +1,5 @@
 #include "Texture.h"
 
-bool MyEngine::Texture::SetSamplerState(ID3D11SamplerState* pSampler)
-{
-    if (pSampler)
-    {
-        m_pSampler = pSampler;
-        return true;
-    }
-
-    return false;
-}
-
 bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const std::string& name, const std::wstring& path, bool use_sRGB)
 {
 	//dds인지 아닌지 확인
@@ -69,6 +58,8 @@ bool MyEngine::Texture::LoadTextureFromFile(ID3D11DeviceContext* context, const 
 	m_pSRV = pSRV;
 	m_name = name;
 
+	m_samplerBinding = TextureSamplerBinding::GlobalSetup;
+
 	return true;
 }
 
@@ -123,6 +114,8 @@ bool MyEngine::Texture::LoadTextureFromMemory(ID3D11DeviceContext* context, cons
 	// 엔진 구조에 저장
 	m_name = name;
 	m_pSRV = pSRV;
+
+	m_samplerBinding = TextureSamplerBinding::GlobalSetup;
 
 	return true;
 }
