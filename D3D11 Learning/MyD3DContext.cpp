@@ -2028,61 +2028,61 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
 
     // pass - 4 : Bloom 
-	//m_currentRenderPassNum = 4;
+	m_currentRenderPassNum = 4;
 
-	//// SceneColor SRV -> PostProcess SRV Bind
-	//ID3D11RenderTargetView* nullRTV[1] = { nullptr };
-	//m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
- //   m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+	// SceneColor SRV -> PostProcess SRV Bind
+	ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+	m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
 
-	//ID3D11VertexShader* BloomVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
-	//ID3D11PixelShader* BloomPS = D3DCTX::ShaderManager::Get()->GetBrightnessContrastPixelShader();
+	ID3D11VertexShader* BloomVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+	ID3D11PixelShader* BloomPS = D3DCTX::ShaderManager::Get()->GetBrightnessContrastPixelShader();
 
-	//m_pContext->OMSetDepthStencilState(nullptr, 0);
-	//m_pContext->IASetInputLayout(nullptr);
-	//m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
-	//m_pContext->VSSetShader(BloomVS, nullptr, 0);
-	//m_pContext->PSSetShader(BloomPS, nullptr, 0);
-	//m_pContext->RSSetViewports(1, &m_vp);
-	//m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
-	//m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
-	//m_pContext->Draw(3, 0);
+	m_pContext->OMSetDepthStencilState(nullptr, 0);
+	m_pContext->IASetInputLayout(nullptr);
+	m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	m_pContext->VSSetShader(BloomVS, nullptr, 0);
+	m_pContext->PSSetShader(BloomPS, nullptr, 0);
+	m_pContext->RSSetViewports(1, &m_vp);
+	m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
+	m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+	m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+	m_pContext->Draw(3, 0);
 
- //   ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-	//m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 초기화
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+	m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 초기화
 
- //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
 
-	//BloomPS = D3DCTX::ShaderManager::Get()->GetGaussianBlurPixelShader();
-	//m_pContext->PSSetShader(BloomPS, nullptr, 0);
-	//m_pContext->PSSetShaderResources(0, 1, m_pBrightSRV.GetAddressOf());
+	BloomPS = D3DCTX::ShaderManager::Get()->GetGaussianBlurPixelShader();
+	m_pContext->PSSetShader(BloomPS, nullptr, 0);
+	m_pContext->PSSetShaderResources(0, 1, m_pBrightSRV.GetAddressOf());
 
-	//m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
-	//m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
-	//m_pContext->Draw(3, 0);
+	m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
+	m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+	m_pContext->Draw(3, 0);
 
- //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
- //   m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
-	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
- //   cb_blur.horizontal = 1.0f;
-	//m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
-	//m_pContext->Draw(3, 0);
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+    m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
+	m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+    cb_blur.horizontal = 1.0f;
+	m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
+	m_pContext->Draw(3, 0);
 
- //   ID3D11ShaderResourceView* nullSRVs2[1] = { nullptr };
-	//m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 초기화
+    ID3D11ShaderResourceView* nullSRVs2[1] = { nullptr };
+	m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 초기화
 
- //   // Bloom Add
- //   m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
- //   ID3D11PixelShader* BloomAddPS = D3DCTX::ShaderManager::Get()->GetBloomCombinePixelShader();
- //   m_pContext->PSSetShader(BloomAddPS, nullptr, 0);
- //   m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
- //   m_pContext->PSSetShaderResources(1, 1, m_pBrightSRV.GetAddressOf());
- //   m_pContext->Draw(3, 0);
- //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
- //   m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 초기화
-	//m_pContext->PSSetShaderResources(1, 1, nullSRVs2);  // slot 1 초기화
+    // Bloom Add
+    m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+    ID3D11PixelShader* BloomAddPS = D3DCTX::ShaderManager::Get()->GetBloomCombinePixelShader();
+    m_pContext->PSSetShader(BloomAddPS, nullptr, 0);
+    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+    m_pContext->PSSetShaderResources(1, 1, m_pBrightSRV.GetAddressOf());
+    m_pContext->Draw(3, 0);
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+    m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 초기화
+	m_pContext->PSSetShaderResources(1, 1, nullSRVs2);  // slot 1 초기화
 
 	// gaussian blur end
  //   ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -2139,7 +2139,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
     m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
 
-    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+    m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
 
     PostProcessCB pp_cb = {};
     pp_cb.exposure = m_exposure;
