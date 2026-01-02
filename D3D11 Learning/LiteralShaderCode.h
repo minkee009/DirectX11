@@ -43,4 +43,7 @@ namespace MyEngine::D3DCTX
 {
     extern const char* g_postprocess_vscode_quad;
     extern const char* g_postprocess_pscode_ACES_toneMapping;
+    extern const char* g_postprocess_pscode_Brightness;
+    extern const char* g_postprocess_pscode_GaussianBlur;
+    extern const char* g_postprocess_pscode_BloomCombine;
 }

@@ -270,6 +270,54 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 	if (FAILED(hr))
 		return false;
 
+    bd = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(BlurCB);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    hr = m_pd3dDevice->CreateBuffer(&bd, NULL, m_pBlurCB.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
+    // Bright 
+    hr = m_pd3dDevice->CreateTexture2D(&descTex, nullptr, m_pBrightTex.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("Bloom Bright 텍스쳐를 생성하는 데 실패했습니다.\n");
+        return false;
+    }
+    hr = m_pd3dDevice->CreateRenderTargetView(m_pBrightTex.Get(), nullptr, m_pBrightRTV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("Bloom Bright 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
+        return false;
+    }
+    // 리소스 뷰 재생성
+    m_pBrightSRV = nullptr;
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pBrightTex.Get(), nullptr, m_pBrightSRV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("Bloom Bright 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+        return false;
+    }
+
+	// Blur Temp 텍스쳐 생성
+	hr = m_pd3dDevice->CreateTexture2D(&descTex, nullptr, m_pBlurTempTex.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Blur Temp 텍스쳐를 생성하는 데 실패했습니다.\n");
+		return false;
+	}
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pBlurTempTex.Get(), nullptr, m_pBlurTempRTV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Blur Temp 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
+		return false;
+	}
+	// 리소스 뷰 재생성
+	m_pBlurTempSRV = nullptr;
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pBlurTempTex.Get(), nullptr, m_pBlurTempSRV.GetAddressOf());
+	if (FAILED(hr)) {  
+		OutputDebugStringA("Bloom Blur Temp 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+		return false;
+	}
+
+
+
     // 뎁스 스텐실 텍스쳐 생성
     D3D11_TEXTURE2D_DESC descDepth;
     ZeroMemory(&descDepth, sizeof(descDepth));
@@ -610,7 +658,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     std::uniform_real_distribution<float> rangeDist(1.0f, 7.5f); // 범위 (1.0 ~ 7.5)
     std::uniform_real_distribution<float> offsetDist(0.0f, 100.0f); // 애니메이션 오프셋
 
-    const size_t NUM_POINT_LIGHTS = 25;
+   
     m_pointLights.resize(NUM_POINT_LIGHTS);
 
     for (size_t i = 0; i < NUM_POINT_LIGHTS; ++i)
@@ -1019,7 +1067,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     ScratchImage image;
 
     DirectX::TexMetadata metadata;
-    hr = LoadFromDDSFile(L"Resources/Textures/cubemapBrdf.dds", DDS_FLAGS_NONE, &metadata, image);
+    hr = LoadFromDDSFile(L"Resources/Textures/cubemap2Brdf.dds", DDS_FLAGS_NONE, &metadata, image);
     if (FAILED(hr))
         return false;
 
@@ -1027,7 +1075,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (FAILED(hr))
         return false;
 
-    hr = LoadFromDDSFile(L"Resources/Textures/cubemapEnvHDR.dds", DDS_FLAGS_NONE, &metadata, image);
+    hr = LoadFromDDSFile(L"Resources/Textures/cubemap2EnvHDR.dds", DDS_FLAGS_NONE, &metadata, image);
     if (FAILED(hr))
         return false;
     if (!metadata.IsCubemap())
@@ -1040,7 +1088,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (FAILED(hr))
         return false;
 
-	hr = LoadFromDDSFile(L"Resources/Textures/cubemapDiffuseHDR.dds", DDS_FLAGS_NONE, &metadata, image);
+	hr = LoadFromDDSFile(L"Resources/Textures/cubemap2DiffuseHDR.dds", DDS_FLAGS_NONE, &metadata, image);
 	if (FAILED(hr))
 		return false;
     if (!metadata.IsCubemap())
@@ -1053,7 +1101,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (FAILED(hr))
         return false;
 
-	hr = LoadFromDDSFile(L"Resources/Textures/cubemapSpecularHDR.dds", DDS_FLAGS_NONE, &metadata, image);
+	hr = LoadFromDDSFile(L"Resources/Textures/cubemap2SpecularHDR.dds", DDS_FLAGS_NONE, &metadata, image);
     if (FAILED(hr))
 		return false;
     if (!metadata.IsCubemap())
@@ -1071,6 +1119,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
 	m_pContext->PSSetShaderResources(20, 1, m_pBRDFLUTSRV.GetAddressOf()); 
 	m_pContext->PSSetShaderResources(21, 1, m_pIrradianceSRV.GetAddressOf());
 	m_pContext->PSSetShaderResources(22, 1, m_pPrefilteredEnvSRV.GetAddressOf());
+	m_pContext->PSSetShaderResources(23, 1, m_pEnvSRV.GetAddressOf());
 
     return true;
 }
@@ -1236,10 +1285,10 @@ void MyEngine::MyD3DContext::Clear()
 
         m_pContext->ClearRenderTargetView(m_pGBufferRTV[i].Get(), selectClearCol);
     }
+
+	m_pContext->ClearRenderTargetView(m_pBrightRTV.Get(), ClearColorZero);
+	m_pContext->ClearRenderTargetView(m_pBlurTempRTV.Get(), ClearColorZero);    
 }
-
-
-
 
 void MyEngine::MyD3DContext::Present()
 {
@@ -1255,6 +1304,14 @@ void MyEngine::MyD3DContext::UninitializeScene()
 	m_pPrefilteredEnvSRV = nullptr;
 	m_pBRDFLUTSRV = nullptr;
     m_pEnvSRV = nullptr;
+
+    m_pBrightTex = nullptr;
+    m_pBrightRTV = nullptr;
+    m_pBrightSRV = nullptr;
+
+    m_pBlurTempTex = nullptr;
+	m_pBlurTempRTV = nullptr;
+	m_pBlurTempSRV = nullptr;
 
     UninitDefferedRenderpassBuffer();
 
@@ -1727,6 +1784,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     DirectionalLightCB cb_dirLight = {};
     PointLightCB cb_pointLight = {};         // fast update
     PBRDebugCB cb_pbr_debug = {};
+	BlurCB cb_blur = {};
 
     D3D11_MAPPED_SUBRESOURCE mapped;
 
@@ -1754,6 +1812,11 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     cb_pbr_debug.RoughnessOverride = m_ambientStrength;
     cb_pbr_debug.AmbeintIntensity = m_rimLightStrength;
     m_pContext->UpdateSubresource(m_pPBRDebugBuffer.Get(), 0, nullptr, &cb_pbr_debug, 0, 0);
+
+	// blur cb set-up
+	cb_blur.texelSize = XMFLOAT2(1.0f / static_cast<float>(m_width), 1.0f / static_cast<float>(m_height));
+    cb_blur.horizontal = 0.0f;
+	m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
 
     // pass - 0 : Shadow Cast
     m_currentRenderPassNum = 0;
@@ -1920,7 +1983,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         m_pContext->PSSetConstantBuffers(8, 1, m_pPointLightBuffer.GetAddressOf());
 
         // for
-        for (size_t i = 0; i < m_pointLights.size(); ++i)
+        for (size_t i = 0; i < m_drawPointLightCount; ++i)
         {
             auto& pointLight = m_pointLights[i];
             cb_pointLight.Color = pointLight.Color;
@@ -1963,6 +2026,96 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
     m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
+    // pass - 4 : Bloom 
+	//m_currentRenderPassNum = 4;
+
+	//// SceneColor SRV -> PostProcess SRV Bind
+	//ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+	//m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+
+	//ID3D11VertexShader* BloomVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+	//ID3D11PixelShader* BloomPS = D3DCTX::ShaderManager::Get()->GetBrightnessContrastPixelShader();
+
+	//m_pContext->OMSetDepthStencilState(nullptr, 0);
+	//m_pContext->IASetInputLayout(nullptr);
+	//m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	//m_pContext->VSSetShader(BloomVS, nullptr, 0);
+	//m_pContext->PSSetShader(BloomPS, nullptr, 0);
+	//m_pContext->RSSetViewports(1, &m_vp);
+	//m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
+	//m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+	//m_pContext->Draw(3, 0);
+
+ //   ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+	//m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 초기화
+
+ //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+
+	//BloomPS = D3DCTX::ShaderManager::Get()->GetGaussianBlurPixelShader();
+	//m_pContext->PSSetShader(BloomPS, nullptr, 0);
+	//m_pContext->PSSetShaderResources(0, 1, m_pBrightSRV.GetAddressOf());
+
+	//m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
+	//m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+	//m_pContext->Draw(3, 0);
+
+ //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
+	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+ //   cb_blur.horizontal = 1.0f;
+	//m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
+	//m_pContext->Draw(3, 0);
+
+ //   ID3D11ShaderResourceView* nullSRVs2[1] = { nullptr };
+	//m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 초기화
+
+ //   // Bloom Add
+ //   m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+ //   ID3D11PixelShader* BloomAddPS = D3DCTX::ShaderManager::Get()->GetBloomCombinePixelShader();
+ //   m_pContext->PSSetShader(BloomAddPS, nullptr, 0);
+ //   m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+ //   m_pContext->PSSetShaderResources(1, 1, m_pBrightSRV.GetAddressOf());
+ //   m_pContext->Draw(3, 0);
+ //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 초기화
+	//m_pContext->PSSetShaderResources(1, 1, nullSRVs2);  // slot 1 초기화
+
+	// gaussian blur end
+ //   ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+	//m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+
+	//auto BlurVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+	//auto BlurPS = D3DCTX::ShaderManager::Get()->GetGaussianBlurPixelShader();
+
+	//m_pContext->OMSetDepthStencilState(nullptr, 0);
+	//m_pContext->IASetInputLayout(nullptr);
+	//m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	//m_pContext->VSSetShader(BlurVS, nullptr, 0);
+	//m_pContext->PSSetShader(BlurPS, nullptr, 0);
+	//m_pContext->RSSetViewports(1, &m_vp);
+	//m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
+	//m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+	//m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
+	//// horizontal blur
+	//cb_blur.horizontal = 1.0f;
+	//m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
+	//m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+	//m_pContext->Draw(3, 0);
+	//// vertical blur
+	//cb_blur.horizontal = 0.0f;
+	//m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
+	//m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+	//m_pContext->PSSetShaderResources(0, 1, m_pBrightSRV.GetAddressOf());
+	//m_pContext->Draw(3, 0);
+
+ //   ID3D11ShaderResourceView* nullSRV2[1] = { nullptr };
+	//m_pContext->PSSetShaderResources(0, 1, nullSRV2);  // slot 0 초기화
 }
 
 void MyEngine::MyD3DContext::Render()
@@ -2047,7 +2200,7 @@ void MyEngine::MyD3DContext::Render()
 
         DX::Draw(m_batch.get(), frustum, Colors::GhostWhite);
 
-        for (size_t i = 0; i < m_pointLights.size(); ++i)
+        for (size_t i = 0; i < m_drawPointLightCount; ++i)
         {
             auto pointLight = m_pointLights[i];
             BoundingSphere sphr1{ pointLight.Position,0.05f };
@@ -2163,6 +2316,49 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
         OutputDebugStringA("포스트 프로세스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
         return;
     }
+
+	// Bloom용 Bright 텍스쳐 및 뷰 재생성 -> post process와 동일한 설정 사용
+	m_pBrightTex = nullptr;
+	m_pBrightRTV = nullptr;
+
+	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pBrightTex.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Bright 텍스쳐를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pBrightTex.Get(), nullptr, m_pBrightRTV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Bright 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+	// 리소스 뷰 재생성
+	m_pBrightSRV = nullptr;
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pBrightTex.Get(), &postProcessSRVDesc, m_pBrightSRV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Bright 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+
+	m_pBlurTempTex = nullptr;
+	m_pBlurTempRTV = nullptr;
+	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pBlurTempTex.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Blur Temp 텍스쳐를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+	hr = m_pd3dDevice->CreateRenderTargetView(m_pBlurTempTex.Get(), nullptr, m_pBlurTempRTV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Blur Temp 렌더 타겟 뷰를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+	// 리소스 뷰 재생성
+	m_pBlurTempSRV = nullptr;
+	hr = m_pd3dDevice->CreateShaderResourceView(m_pBlurTempTex.Get(), &postProcessSRVDesc, m_pBlurTempSRV.GetAddressOf());
+	if (FAILED(hr)) {
+		OutputDebugStringA("Bloom Blur Temp 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+		return;
+	}
+
 
     // 새로운 뎁스 스텐실 버퍼 및 뷰 생성
     D3D11_TEXTURE2D_DESC descDepth = {};

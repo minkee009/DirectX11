@@ -6,7 +6,7 @@
 #include <DirectXTex.h>
 #include <wrl/client.h> // Microsoft::WRL::ComPtr
 
-#include "StaticBVH.h"
+#include "BVH.h"
 
 #include "Camera.h"
 #include "AssimpConverter.h"
@@ -112,6 +112,13 @@ namespace MyEngine {
 		XMFLOAT2 pad;
 	};
 
+	struct BlurCB
+	{
+		XMFLOAT2 texelSize;
+		FLOAT horizontal;
+		FLOAT pad;
+	};
+
 
 	class MyD3DContext {
 	private:
@@ -152,8 +159,17 @@ namespace MyEngine {
 		ComPtr<ID3D11RenderTargetView> m_pSceneColorRTV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pSceneColorSRV = nullptr;
 
+		ComPtr<ID3D11Texture2D> m_pBrightTex = nullptr;
+		ComPtr<ID3D11RenderTargetView> m_pBrightRTV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pBrightSRV = nullptr;
+
+		ComPtr<ID3D11Texture2D> m_pBlurTempTex = nullptr;
+		ComPtr<ID3D11RenderTargetView> m_pBlurTempRTV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pBlurTempSRV = nullptr;
+
 
 		ComPtr<ID3D11Buffer> m_pPostProcessCB = nullptr;
+		ComPtr<ID3D11Buffer> m_pBlurCB = nullptr;
 
 		// post processing
 		FLOAT m_exposure = 1.0f;
@@ -201,7 +217,10 @@ namespace MyEngine {
 
 		ComPtr<ID3D11Buffer> m_pPointLightCB;
 		
+		const size_t NUM_POINT_LIGHTS = 25;
+
 		std::vector<PointLight> m_pointLights;
+		int m_drawPointLightCount = NUM_POINT_LIGHTS;
 
 		//Scene 관련 변수
 		std::unique_ptr<StaticBVH> m_pBVHTree;

@@ -140,6 +140,10 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedGeometryPixelShader.GetAddressOf(), g_pscode_deffered_Geometry);
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedLightPixelShader.GetAddressOf(), g_pscode_deffered_Light);
 	CompileLiteralCodeToPixelShader(pDevice, m_pDefferedAdditivePointLightPixelShader.GetAddressOf(), g_pscode_deffered_AdditivePointLight);
+
+	CompileLiteralCodeToPixelShader(pDevice, m_pBrightnessContrastPixelShader.GetAddressOf(), g_postprocess_pscode_Brightness);
+	CompileLiteralCodeToPixelShader(pDevice, m_pGaussianBlurPixelShader.GetAddressOf(), g_postprocess_pscode_GaussianBlur);
+	CompileLiteralCodeToPixelShader(pDevice, m_pBloomCombinePixelShader.GetAddressOf(), g_postprocess_pscode_BloomCombine);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
@@ -168,6 +172,10 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 	m_pDefferedGeometryPixelShader = nullptr;
 	m_pDefferedLightPixelShader = nullptr;
 	m_pDefferedAdditivePointLightPixelShader = nullptr;
+
+	m_pBrightnessContrastPixelShader = nullptr;
+	m_pGaussianBlurPixelShader = nullptr;
+	m_pBloomCombinePixelShader = nullptr;
 }
 
 void MyEngine::D3DCTX::ShaderManager::BindDefaultShaders(ID3D11DeviceContext* context)

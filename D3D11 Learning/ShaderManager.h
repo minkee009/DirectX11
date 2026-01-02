@@ -38,6 +38,10 @@ namespace MyEngine::D3DCTX
 		ComPtr<ID3D11VertexShader> m_pPostProcessingVertexShader;
 		ComPtr<ID3D11PixelShader> m_pPostProcessingPixelShader;
 
+		ComPtr<ID3D11PixelShader> m_pBrightnessContrastPixelShader;
+		ComPtr<ID3D11PixelShader> m_pGaussianBlurPixelShader;
+		ComPtr<ID3D11PixelShader> m_pBloomCombinePixelShader;
+
 		ComPtr<ID3D11PixelShader> m_pDefferedGeometryPixelShader;
 		ComPtr<ID3D11PixelShader> m_pDefferedLightPixelShader;
 		ComPtr<ID3D11PixelShader> m_pDefferedAdditivePointLightPixelShader;
@@ -86,6 +90,10 @@ namespace MyEngine::D3DCTX
 		inline ID3D11PixelShader* GetDefferedGeometryPixelShader() { return m_pDefferedGeometryPixelShader.Get(); }
 		inline ID3D11PixelShader* GetDefferedLightPixelShader() { return m_pDefferedLightPixelShader.Get(); }
 		inline ID3D11PixelShader* GetDefferedAdditivePointLightPixelShader() { return m_pDefferedAdditivePointLightPixelShader.Get(); }
+
+		inline ID3D11PixelShader* GetBrightnessContrastPixelShader() { return m_pBrightnessContrastPixelShader.Get(); }
+		inline ID3D11PixelShader* GetGaussianBlurPixelShader() { return m_pGaussianBlurPixelShader.Get(); }
+		inline ID3D11PixelShader* GetBloomCombinePixelShader() { return m_pBloomCombinePixelShader.Get(); }
 
 		inline ID3D11VertexShader* GetShadowCastVertexShader() { return m_pShadowCastVertexShader.Get(); }
 

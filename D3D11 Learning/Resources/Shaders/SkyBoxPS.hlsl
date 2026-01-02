@@ -1,6 +1,6 @@
 #include "common_inc.fxh"
 
-TextureCube skyBoxTX : register(t0);
+TextureCube skyBoxTX : register(t23);
 SamplerState samLinear : register(s0);
 
 struct PS_INPUT

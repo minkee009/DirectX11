@@ -1883,6 +1883,100 @@ VS_Output VS(uint id : SV_VertexID)
 }
 )";
 
+    const char* g_postprocess_pscode_Brightness = R"(
+Texture2D txInput : register(t0);
+SamplerState samLinear : register(s0);
+
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+static const float3 LuminanceWeights = float3(0.2126, 0.7152, 0.0722);
+
+float4 PS(PSIn input) : SV_Target
+{
+    float3 outColor = txInput.Sample(samLinear, input.uv).rgb;
+    
+
+    float luminance = dot(outColor, LuminanceWeights);
+    if(luminance > 1.0f)
+    {
+        float threshold = 1.0f;
+        float knee = 0.5f;
+
+        float softness = saturate((luminance - threshold) / knee);
+        outColor *= softness;
+    }
+    else
+        outColor = float3(0,0,0);
+
+    return float4(outColor,1.0f);
+}
+)";
+
+	const char* g_postprocess_pscode_GaussianBlur = R"(
+Texture2D txInput : register(t0);
+SamplerState samLinear : register(s0);
+
+cbuffer PostProcessBuffer : register(b0)
+{
+    float2 texelSize;
+    float horizontal;
+}
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+float4 PS(PSIn input) : SV_Target
+{
+    float2 uv = input.uv;
+    float3 result = float3(0,0,0);
+    float kernel[5] =
+    {
+        0.125794,
+        0.117084,
+        0.101403,
+        0.080109,
+        0.055495
+    };
+    if (horizontal > 0.5f)
+    {
+        for (int i = -4; i <= 4; i++)
+        {
+            result += txInput.Sample(samLinear, uv + float2(i * texelSize.x, 0)).rgb * kernel[abs(i)];
+        }
+    }
+    else
+    {
+        for (int i = -4; i <= 4; i++)
+        {
+            result += txInput.Sample(samLinear, uv + float2(0, i * texelSize.y)).rgb * kernel[abs(i)];
+        }
+    }
+    return float4(result, 1.0f);
+}
+)";
+	const char* g_postprocess_pscode_BloomCombine = R"(
+Texture2D txScene : register(t0);
+Texture2D txBloom : register(t1);
+SamplerState samLinear : register(s0);
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+float4 PS(PSIn input) : SV_Target
+{
+    float3 sceneColor = txScene.Sample(samLinear, input.uv).rgb;
+    float3 bloomColor = txBloom.Sample(samLinear, input.uv).rgb;
+    float3 finalColor = sceneColor + bloomColor;
+    return float4(finalColor, 1.0f);
+}
+)";
+
     const char* g_postprocess_pscode_ACES_toneMapping = R"(
 cbuffer PostProcessBuffer : register(b0)
 {
@@ -1930,14 +2024,6 @@ struct PSIn
 
 float4 PS(PSIn input) : SV_Target
 {
-    //uint width, height;
-
-    //txInput.GetDimensions(width, height);
-
-    //float2 pixel = input.uv * float2(width, height);    
-    //float pixelScale = 4.0f;
-
-    //pixel = floor(pixel / pixelScale) * pixelScale;
 
     float4 color = float4(0,0,0,0);
 
@@ -1946,15 +2032,20 @@ float4 PS(PSIn input) : SV_Target
     // Linear HDR 밝기 조절 (nits 스케일)
     color *= exposure;
 
-    // PQ 인코딩
-    float3 pq = LinearToPQ(color);
-   
-    // ACES Filmic
-    float3 aces = ACESFilmic(color.rgb);
-    aces = saturate(aces);
-    aces = LinearToSRGB(aces);
+    float3 finalColor = float3(0,0,0);
 
-    float3 finalColor = lerp(aces,pq,supportHDR);
+    if(supportHDR)
+    {
+        // PQ 인코딩
+        finalColor = LinearToPQ(color);
+    }
+    else
+    {
+        // 감마 보정
+        finalColor = ACESFilmic(color.rgb);
+        finalColor = saturate(finalColor);
+        finalColor = LinearToSRGB(finalColor);
+    }
 
     return float4(finalColor, 1.0f);
 }

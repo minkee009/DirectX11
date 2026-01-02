@@ -449,6 +449,12 @@ void MyEngine::MyImGui::Update()
 
         ImGui::EndDisabled();
 
+        ImGui::Separator();
+        ImGui::Text(u8"포인트 라이트 상태");
+		ImGui::Text(u8"최대 포인트 라이트 수 : %zu", m_d3dContext->m_pointLights.size());
+		ImGui::DragInt(u8"활성 포인트 라이트 수 : %zu", &m_d3dContext->m_drawPointLightCount,1,0,m_d3dContext->m_pointLights.size());
+
+
         //ImGui::Text(u8"확산광 그라디언트(diffuse gradient) : 강도");
         //ImGui::SliderFloat("##DiffuseGradientStrength", &m_d3dContext->m_diffuseGradientStrength, 0.0f, 1.0f);
         //ImGui::SameLine();

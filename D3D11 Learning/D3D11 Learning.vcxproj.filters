@@ -66,9 +66,6 @@
     <ClCompile Include="DebugDraw.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="StaticBVH.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="MeshRenderer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -88,6 +85,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="ResourceManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="BVH.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -140,7 +140,7 @@
     <ClInclude Include="DebugDraw.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="StaticBVH.h">
+    <ClInclude Include="BVH.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="IRenderable.h">
