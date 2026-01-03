@@ -1469,6 +1469,11 @@ cbuffer PBRDebugBuffer : register(b9)
     float ambientIntensity;
 }
 
+cbuffer PickingBuffer : register(b13)
+{
+    uint renderID;
+}
+
 struct GBufferOut
 {
     float4 Position  : SV_Target0; // GBuffer #1
@@ -1477,6 +1482,7 @@ struct GBufferOut
     float4 Metallic  : SV_Target3; // GBuffer #4 (R만 사용)
     float4 Roughness : SV_Target4; // GBuffer #5 (R만 사용)
     float4 DebugNormal : SV_Target5;
+    uint   PickingID : SV_Target6;
 };
 
 struct PS_INPUT
@@ -1505,20 +1511,6 @@ GBufferOut PS(PS_INPUT input)
     output.Normal = float4(lerp(N, normalTex, (textureFlags & 4) != 0),0.0f);
 
     output.DebugNormal = float4(N * 0.5 + 0.5, 1.0f);
-    
-    float4 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
-    albedo = lerp(baseColor, albedo, (propertyFlags & 1) != 0);
-    if(useMaterialOverride)
-    {
-        albedo = float4(1.0,1.0,1.0,1.0);
-    }
-
-    //알파 컷
-    const float alphaCutoff = 0.5f;
-    clip(albedo.a - alphaCutoff);
-
-    output.Albedo = float4(albedo.rgb, 1.0f);
-
 
     float _metallic = lerp(metallic, MetallicMap.Sample(samLinear, input.Tex).r, (textureFlags & 128) != 0);
     _metallic = lerp(_metallic, metallic, (propertyFlags & 128) != 0);
@@ -1537,6 +1529,21 @@ GBufferOut PS(PS_INPUT input)
     }    
     _roughness = max(_roughness, 0.025f);
     output.Roughness = float4(_roughness, 0, 0, 0);
+
+    output.PickingID = renderID;
+    
+    float4 albedo = lerp(baseColor, AlbedoMap.Sample(samLinear, input.Tex), (textureFlags & 1) != 0);
+    albedo = lerp(baseColor, albedo, (propertyFlags & 1) != 0);
+    if(useMaterialOverride)
+    {
+        albedo = float4(1.0,1.0,1.0,1.0);
+    }
+
+    //알파 컷
+    const float alphaCutoff = 0.5f;
+    clip(albedo.a - alphaCutoff);
+
+    output.Albedo = float4(albedo.rgb, 1.0f);
 
     return output;
 }

@@ -119,6 +119,12 @@ namespace MyEngine {
 		FLOAT pad;
 	};
 
+	struct PickingCB
+	{
+		UINT RendererID;
+		UINT pad[3];
+	};
+
 
 	class MyD3DContext {
 	private:
@@ -167,14 +173,16 @@ namespace MyEngine {
 		ComPtr<ID3D11RenderTargetView> m_pBlurTempRTV = nullptr;
 		ComPtr<ID3D11ShaderResourceView> m_pBlurTempSRV = nullptr;
 
+		ComPtr<ID3D11Texture2D> m_pPickingStagingTex;
 
+		ComPtr<ID3D11Buffer> m_pPickingCB = nullptr;
 		ComPtr<ID3D11Buffer> m_pPostProcessCB = nullptr;
 		ComPtr<ID3D11Buffer> m_pBlurCB = nullptr;
 
 		// post processing
 		FLOAT m_exposure = 1.0f;
 
-#define GBUFFER_TEX_SIZE 6
+#define GBUFFER_TEX_SIZE 7
 
 		// Deffered Rendering
 		//
@@ -185,7 +193,9 @@ namespace MyEngine {
 		//  G-Buffer #3 -> Albedo
 		//  G-Buffer #4 -> Metallic
 		//  G-Buffer #5 -> Roughness
-		//
+		//  G-Buffer #6 -> NormalDebug
+		//  G-Buffer #5 -> PickingTexture
+		// 
 		// -------------------------
 
 		// G-Buffer 포맷 배열
@@ -196,7 +206,8 @@ namespace MyEngine {
 			DXGI_FORMAT_R8G8B8A8_UNORM,     // #3 Albedo (R8G8B8A8_UNORM: 표준 색상)
 			DXGI_FORMAT_R8_UNORM,           // #4 Metallic (R8_UNORM: 단일 채널)
 			DXGI_FORMAT_R8_UNORM,           // #5 Roughness (R8_UNORM: 단일 채널)
-			DXGI_FORMAT_R8G8B8A8_UNORM			// #6 debug normal
+			DXGI_FORMAT_R8G8B8A8_UNORM,			// #6 debug normal
+			DXGI_FORMAT_R32_UINT
 		};
 
 		ComPtr<ID3D11Texture2D> m_pGBufferTextures[GBUFFER_TEX_SIZE] = { nullptr, };
@@ -292,7 +303,9 @@ namespace MyEngine {
 		ComPtr<ID3D11VertexShader> m_pShadowMapVS;
 		ComPtr<ID3D11SamplerState> m_pShadowSampler;
 
-
+		bool m_mouseLeftClick = false;
+		XMINT2 m_mouseXY;
+		uint32_t m_currentPickedID = -1;
 
 		const float SHADOW_MAP_DEPTH = 25.0f;
 

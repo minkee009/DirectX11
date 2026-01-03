@@ -1,4 +1,4 @@
-#include "TimeManager.h"
+ï»¿#include "TimeManager.h"
 #include "TextureManager.h"
 #include "ShaderManager.h"
 #include "InputLayoutManager.h"
@@ -44,7 +44,7 @@ namespace MyEngine::GlobalLogic::ToonShader
         factory->CreateFormatConverter(&converter);
         converter->Initialize(frame, GUID_WICPixelFormat32bppRGBA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom);
 
-        // (0,0) ÇÈ¼¿¸¸ ÀĞ±â
+        // (0,0) í”½ì…€ë§Œ ì½ê¸°
         WICRect rect = { 0,0,1,1 };
         converter->CopyPixels(&rect, 4, 4, outRGBA);
 
@@ -76,7 +76,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     UINT createDeviceFlags = 0;
 #ifdef _DEBUG
-    // µğ¹ö±×¿ë µğ¹ÙÀÌ½º ÇÃ·¡±× ¼³Á¤
+    // ë””ë²„ê·¸ìš© ë””ë°”ì´ìŠ¤ í”Œë˜ê·¸ ì„¤ì •
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif //_DEBUG
 
@@ -105,7 +105,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
         if (hr == E_INVALIDARG)
         {
-            // DirectX 11.0 ÇÃ·§ÆûÀº D3D_FEATURE_LEVEL_11_1¸¦ ÀÎ½ÄÇÏÁö ¸øÇÏ±â ¶§¹®¿¡ ¾øÀÌ ÇÑ¹ø ´õ ½Ãµµ
+            // DirectX 11.0 í”Œë«í¼ì€ D3D_FEATURE_LEVEL_11_1ë¥¼ ì¸ì‹í•˜ì§€ ëª»í•˜ê¸° ë•Œë¬¸ì— ì—†ì´ í•œë²ˆ ë” ì‹œë„
             hr = D3D11CreateDevice(nullptr, m_driverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
                 D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &m_featureLevel, m_pContext.GetAddressOf());
         }
@@ -116,7 +116,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // DXGI ÆÑÅä¸®¸¦ µğ¹ÙÀÌ½º¿¡¼­ ºÎÅÍ ¾ò±â
+    // DXGI íŒ©í† ë¦¬ë¥¼ ë””ë°”ì´ìŠ¤ì—ì„œ ë¶€í„° ì–»ê¸°
     IDXGIFactory1* dxgiFactory = nullptr;
     {
         IDXGIDevice* dxgiDevice = nullptr;
@@ -138,12 +138,12 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_supportHDR = CheckHDRSupport();
 
-    // ½º¿ÒÃ¼ÀÎ »ı¼º
+    // ìŠ¤ì™‘ì²´ì¸ ìƒì„±
     IDXGIFactory2* dxgiFactory2 = nullptr;
     hr = dxgiFactory->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory2));
     if (dxgiFactory2)
     {
-        // DirectX 11.1 ÀÌ°Å³ª ÀÌÈÄ ¹öÀüÀÎ °æ¿ì
+        // DirectX 11.1 ì´ê±°ë‚˜ ì´í›„ ë²„ì „ì¸ ê²½ìš°
         hr = m_pd3dDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(m_pd3dDevice1.GetAddressOf()));
         if (SUCCEEDED(hr))
         {
@@ -175,7 +175,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     }
     else
     {
-        // DirectX 11.0 ½Ã½ºÅÛÀÎ °æ¿ì
+        // DirectX 11.0 ì‹œìŠ¤í…œì¸ ê²½ìš°
         DXGI_SWAP_CHAIN_DESC sd = {};
         sd.BufferCount = 2;
         sd.BufferDesc.Width = width;
@@ -195,7 +195,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     ComPtr<IDXGISwapChain3> spSwapChain3;
     m_pSwapChain.As<IDXGISwapChain3>(&spSwapChain3);
 
-    // hdr Áö¿øÀÎ °æ¿ì ¼³Á¤ÇÒ °Íµé
+    // hdr ì§€ì›ì¸ ê²½ìš° ì„¤ì •í•  ê²ƒë“¤
     if (m_supportHDR &&
         FAILED(spSwapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)))
     {
@@ -204,7 +204,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_exposure = m_supportHDR ? 45.0f : 0.53f;
 
-    // ÀÌ Æ©Åä¸®¾ó ÄÚµå´Â Ç®½ºÅ©¸° ½º¿ÒÃ¼ÀÎÀ» °ü¸®ÇÏÁö ¾ÊÀ½, µû¶ó¼­ ALT+ENTER ´ÜÃàÅ°¸¦ Á¦¿Ü½ÃÅ´
+    // ì´ íŠœí† ë¦¬ì–¼ ì½”ë“œëŠ” í’€ìŠ¤í¬ë¦° ìŠ¤ì™‘ì²´ì¸ì„ ê´€ë¦¬í•˜ì§€ ì•ŠìŒ, ë”°ë¼ì„œ ALT+ENTER ë‹¨ì¶•í‚¤ë¥¼ ì œì™¸ì‹œí‚´
     dxgiFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
 
     dxgiFactory->Release();
@@ -214,14 +214,14 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         ComPtr<IDXGIDevice> dxgiDevice;
         if (SUCCEEDED(m_pd3dDevice.As(&dxgiDevice)))
         {
-            dxgiDevice.As(&m_dxgiDevice); // IDXGIDevice3·Î ¾÷Ä³½ºÆ®
+            dxgiDevice.As(&m_dxgiDevice); // IDXGIDevice3ë¡œ ì—…ìºìŠ¤íŠ¸
         }
     }
 
     if (FAILED(hr))
         return false;
 
-    // ·»´õ Å¸°Ù ºä »ı¼º
+    // ë Œë” íƒ€ê²Ÿ ë·° ìƒì„±
     ID3D11Texture2D* pBackBuffer = nullptr;
     hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pBackBuffer));
     if (FAILED(hr))
@@ -232,7 +232,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // ¾À ÄÃ·¯ ÅØ½ºÃÄ »ı¼º
+    // ì”¬ ì»¬ëŸ¬ í…ìŠ¤ì³ ìƒì„±
 	D3D11_TEXTURE2D_DESC descTex;
 	ZeroMemory(&descTex, sizeof(descTex));
 	descTex.Width = width;
@@ -250,17 +250,17 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 	if (FAILED(hr))
 		return false;
 
-	// Æ÷½ºÆ® ÇÁ·Î¼¼½º ·»´õ Å¸°Ù ºä »ı¼º
+	// í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ ë Œë” íƒ€ê²Ÿ ë·° ìƒì„±
 	hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColorTex.Get(), NULL, m_pSceneColorRTV.GetAddressOf());
 	if (FAILED(hr))
 		return false;
 
-	// Æ÷½ºÆ® ÇÁ·Î¼¼½º ½¦ÀÌ´õ ¸®¼Ò½º ºä »ı¼º
+	// í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ ì‰ì´ë” ë¦¬ì†ŒìŠ¤ ë·° ìƒì„±
 	hr = m_pd3dDevice->CreateShaderResourceView(m_pSceneColorTex.Get(), NULL, m_pSceneColorSRV.GetAddressOf());
 	if (FAILED(hr))
 		return false;
 
-    // Æ÷½ºÆ® ÇÁ·Î¼¼½º »ó¼ö ¹öÆÛ »ı¼º
+    // í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ ìƒìˆ˜ ë²„í¼ ìƒì„±
 	D3D11_BUFFER_DESC bd = {};
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DEFAULT;
@@ -281,44 +281,44 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     // Bright 
     hr = m_pd3dDevice->CreateTexture2D(&descTex, nullptr, m_pBrightTex.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("Bloom Bright ÅØ½ºÃÄ¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("Bloom Bright í…ìŠ¤ì³ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return false;
     }
     hr = m_pd3dDevice->CreateRenderTargetView(m_pBrightTex.Get(), nullptr, m_pBrightRTV.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("Bloom Bright ·»´õ Å¸°Ù ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("Bloom Bright ë Œë” íƒ€ê²Ÿ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return false;
     }
-    // ¸®¼Ò½º ºä Àç»ı¼º
+    // ë¦¬ì†ŒìŠ¤ ë·° ì¬ìƒì„±
     m_pBrightSRV = nullptr;
     hr = m_pd3dDevice->CreateShaderResourceView(m_pBrightTex.Get(), nullptr, m_pBrightSRV.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("Bloom Bright ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("Bloom Bright ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return false;
     }
 
-	// Blur Temp ÅØ½ºÃÄ »ı¼º
+	// Blur Temp í…ìŠ¤ì³ ìƒì„±
 	hr = m_pd3dDevice->CreateTexture2D(&descTex, nullptr, m_pBlurTempTex.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Blur Temp ÅØ½ºÃÄ¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Blur Temp í…ìŠ¤ì³ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return false;
 	}
 	hr = m_pd3dDevice->CreateRenderTargetView(m_pBlurTempTex.Get(), nullptr, m_pBlurTempRTV.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Blur Temp ·»´õ Å¸°Ù ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Blur Temp ë Œë” íƒ€ê²Ÿ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return false;
 	}
-	// ¸®¼Ò½º ºä Àç»ı¼º
+	// ë¦¬ì†ŒìŠ¤ ë·° ì¬ìƒì„±
 	m_pBlurTempSRV = nullptr;
 	hr = m_pd3dDevice->CreateShaderResourceView(m_pBlurTempTex.Get(), nullptr, m_pBlurTempSRV.GetAddressOf());
 	if (FAILED(hr)) {  
-		OutputDebugStringA("Bloom Blur Temp ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Blur Temp ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return false;
 	}
 
 
 
-    // µª½º ½ºÅÙ½Ç ÅØ½ºÃÄ »ı¼º
+    // ëìŠ¤ ìŠ¤í…ì‹¤ í…ìŠ¤ì³ ìƒì„±
     D3D11_TEXTURE2D_DESC descDepth;
     ZeroMemory(&descDepth, sizeof(descDepth));
     descDepth.Width = width;
@@ -336,7 +336,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    // µª½º ½ºÅÙ½Ç ºä »ı¼º
+    // ëìŠ¤ ìŠ¤í…ì‹¤ ë·° ìƒì„±
     D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
     ZeroMemory(&descDSV, sizeof(descDSV));
     descDSV.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -347,18 +347,18 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
     D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
-    depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV·Î »ç¿ëÇÒ Æ÷¸Ë
+    depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRVë¡œ ì‚¬ìš©í•  í¬ë§·
     depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     depthSrvDesc.Texture2D.MipLevels = 1;
     hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthStencilSRV.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("µª½º ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("ëìŠ¤ ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return false;
     }
 
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
 
-    // ºäÆ÷Æ® ¼³Á¤
+    // ë·°í¬íŠ¸ ì„¤ì •
     m_vp.Width = (FLOAT)width;
     m_vp.Height = (FLOAT)height;
     m_vp.MinDepth = 0.0f;
@@ -367,11 +367,11 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     m_vp.TopLeftY = 0;
     m_pContext->RSSetViewports(1, &m_vp);
 
-    // ·¡½ºÅÍ¶óÀÌÀú »óÅÂ »ı¼º ¹× ¼³Á¤
+    // ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœ ìƒì„± ë° ì„¤ì •
     D3D11_RASTERIZER_DESC rastDesc = {};
     rastDesc.FillMode = D3D11_FILL_SOLID;
-    rastDesc.CullMode = D3D11_CULL_BACK; //¾ç¸é µå·Î¿ì Çã¿ë
-    rastDesc.FrontCounterClockwise = TRUE;  // RH ÁÂÇ¥°è¿ëÀ¸·Î º¯°æ
+    rastDesc.CullMode = D3D11_CULL_BACK; //ì–‘ë©´ ë“œë¡œìš° í—ˆìš©
+    rastDesc.FrontCounterClockwise = TRUE;  // RH ì¢Œí‘œê³„ìš©ìœ¼ë¡œ ë³€ê²½
     rastDesc.DepthBias = 0;
     rastDesc.DepthBiasClamp = 0.0f;
     rastDesc.SlopeScaledDepthBias = 0.0f;
@@ -386,7 +386,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     rastDesc.FillMode = D3D11_FILL_SOLID;
     rastDesc.CullMode = D3D11_CULL_BACK;
-    rastDesc.FrontCounterClockwise = FALSE;  // ½ºÄ«ÀÌ¹Ú½º¿ë
+    rastDesc.FrontCounterClockwise = FALSE;  // ìŠ¤ì¹´ì´ë°•ìŠ¤ìš©
     rastDesc.DepthBias = 0;
     rastDesc.DepthBiasClamp = 0.0f;
     rastDesc.SlopeScaledDepthBias = 0.0f;
@@ -399,10 +399,10 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    //·¡½ºÅÍ¶óÀÌÀú »óÅÂ ¼³Á¤
+    //ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœ ì„¤ì •
     m_pContext->RSSetState(m_pDefRasterizerState.Get());
 
-    // »ùÇÃ·¯ »óÅÂ »ı¼º
+    // ìƒ˜í”ŒëŸ¬ ìƒíƒœ ìƒì„±
     D3D11_SAMPLER_DESC sampDesc;
     ZeroMemory(&sampDesc, sizeof(sampDesc));
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -429,7 +429,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
-    //¾ËÆÄ ºí·»µå »óÅÂ ¼³Á¤
+    //ì•ŒíŒŒ ë¸”ë Œë“œ ìƒíƒœ ì„¤ì •
     D3D11_BLEND_DESC blendDesc = {};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
@@ -442,14 +442,14 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateBlendState(&blendDesc, &m_pBlendState);
 
-    // Geometry Pass¿ë Blend State ¼³Á¤
+    // Geometry Passìš© Blend State ì„¤ì •
     D3D11_BLEND_DESC deferredBlendDesc = {};
     deferredBlendDesc.AlphaToCoverageEnable = FALSE;
-    // ¸ğµç RTV¿¡ ´ëÇØ µ¶¸³ÀûÀÎ ¼³Á¤À» Àû¿ëÇÏ°Ú´Ù°í ¸í½Ã
+    // ëª¨ë“  RTVì— ëŒ€í•´ ë…ë¦½ì ì¸ ì„¤ì •ì„ ì ìš©í•˜ê² ë‹¤ê³  ëª…ì‹œ
     deferredBlendDesc.IndependentBlendEnable = FALSE;
 
-    // ´ÜÀÏ Target ¼³Á¤
-    deferredBlendDesc.RenderTarget[0].BlendEnable = FALSE; // ºí·»µù ºñÈ°¼ºÈ­
+    // ë‹¨ì¼ Target ì„¤ì •
+    deferredBlendDesc.RenderTarget[0].BlendEnable = FALSE; // ë¸”ë Œë”© ë¹„í™œì„±í™”
     deferredBlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
     deferredBlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
     deferredBlendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
@@ -472,7 +472,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     rt.DestBlend = D3D11_BLEND_ONE;
     rt.BlendOp = D3D11_BLEND_OP_ADD;
 
-    // Alpha (º¸Åë »ç¿ë ¾È ÇÔ)
+    // Alpha (ë³´í†µ ì‚¬ìš© ì•ˆ í•¨)
     rt.SrcBlendAlpha = D3D11_BLEND_ONE;
     rt.DestBlendAlpha = D3D11_BLEND_ONE;
     rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
@@ -481,20 +481,20 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     m_pd3dDevice->CreateBlendState(&desc, &m_pAdditiveBlendState);
 
-    //µª½º ½ºÅÙ½Ç »óÅÂ ¼³Á¤
+    //ëìŠ¤ ìŠ¤í…ì‹¤ ìƒíƒœ ì„¤ì •
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
-    depthStencilDesc.DepthEnable = TRUE;                     // ±íÀÌ Å×½ºÆ® È°¼ºÈ­
-    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; // ±íÀÌ ¹öÆÛ ¾²±â È°¼ºÈ­
-    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;      // ±íÀÌ°¡ ÀÛÀ»¼ö·Ï ¾Õ¿¡ ÀÖÀ½
-    depthStencilDesc.StencilEnable = FALSE;                  // ½ºÅÙ½ÇÀº ºñÈ°¼ºÈ­
+    depthStencilDesc.DepthEnable = TRUE;                     // ê¹Šì´ í…ŒìŠ¤íŠ¸ í™œì„±í™”
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; // ê¹Šì´ ë²„í¼ ì“°ê¸° í™œì„±í™”
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;      // ê¹Šì´ê°€ ì‘ì„ìˆ˜ë¡ ì•ì— ìˆìŒ
+    depthStencilDesc.StencilEnable = FALSE;                  // ìŠ¤í…ì‹¤ì€ ë¹„í™œì„±í™”
 
     m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pOpaqueState);
 
     depthStencilDesc = D3D11_DEPTH_STENCIL_DESC{};
-    depthStencilDesc.DepthEnable = TRUE;                     // ±íÀÌ Å×½ºÆ® È°¼ºÈ­
-    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // ±íÀÌ ¹öÆÛ ¾²±â ºñÈ°¼º
-    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;      // ±íÀÌ°¡ ÀÛÀ»¼ö·Ï ¾Õ¿¡ ÀÖÀ½
-    depthStencilDesc.StencilEnable = FALSE;                  // ½ºÅÙ½ÇÀº ºñÈ°¼ºÈ­
+    depthStencilDesc.DepthEnable = TRUE;                     // ê¹Šì´ í…ŒìŠ¤íŠ¸ í™œì„±í™”
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // ê¹Šì´ ë²„í¼ ì“°ê¸° ë¹„í™œì„±
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;      // ê¹Šì´ê°€ ì‘ì„ìˆ˜ë¡ ì•ì— ìˆìŒ
+    depthStencilDesc.StencilEnable = FALSE;                  // ìŠ¤í…ì‹¤ì€ ë¹„í™œì„±í™”
 
     m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
 
@@ -505,7 +505,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     D3DCTX::InputLayoutManager::Get()->StartUp(m_pd3dDevice.Get(), m_pContext.Get());
 
 //#ifdef _DEBUG
-    // ImGui ÃÊ±âÈ­
+    // ImGui ì´ˆê¸°í™”
     if (!m_imgui.Initialize(this))
         return false;
 //#endif //_DEBUG
@@ -527,7 +527,31 @@ bool MyEngine::MyD3DContext::InitializeScene()
     if (!m_pBVHTree)
         m_pBVHTree = std::make_unique<StaticBVH>();
 
-    //»ó¼ö ¹öÆÛ »ı¼º
+    D3D11_BUFFER_DESC pickCBDesc;
+    ZeroMemory(&pickCBDesc, sizeof(D3D11_BUFFER_DESC));
+    pickCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+    pickCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    pickCBDesc.ByteWidth = sizeof(PickingCB);
+    pickCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    hr = m_pd3dDevice->CreateBuffer(&pickCBDesc, nullptr, m_pPickingCB.GetAddressOf());
+
+    D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = m_width;
+    desc.Height = m_height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R32_UINT;
+    desc.SampleDesc.Count = 1;          // 
+    desc.SampleDesc.Quality = 0;
+    desc.Usage = D3D11_USAGE_STAGING;
+    desc.BindFlags = 0;          // 
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    desc.MiscFlags = 0;
+
+    hr = m_pd3dDevice->CreateTexture2D(&desc, nullptr, m_pPickingStagingTex.GetAddressOf());
+
+    //ìƒìˆ˜ ë²„í¼ ìƒì„±
     //D3D11_BUFFER_DESC cbDesc;
     //ZeroMemory(&cbDesc, sizeof(cbDesc));
     //cbDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -559,10 +583,10 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //if (FAILED(hr))
     //    return false;
 
-    //LUT ÅØ½ºÃÄ »ı¼º (Todo: Texture Manager¿¡°Ô À§ÀÓ½ÃÅ°±â)
+    //LUT í…ìŠ¤ì³ ìƒì„± (Todo: Texture Managerì—ê²Œ ìœ„ì„ì‹œí‚¤ê¸°)
     ScratchImage image;
 
-    //ÅØ½ºÃÄ ·Îµå
+    //í…ìŠ¤ì³ ë¡œë“œ
     //hr = LoadFromDDSFile(L"Resources/Textures/seafloor.dds", DDS_FLAGS_NONE, nullptr, image);
     //hr = LoadFromWICFile(L"Resources/Textures/Lut.png", WIC_FLAGS_NONE, nullptr, image);
     //if (FAILED(hr))
@@ -572,7 +596,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //if (FAILED(hr))
     //    return false;
 
-    //Ä«¸Ş¶ó »ı¼º
+    //ì¹´ë©”ë¼ ìƒì„±
     m_pCamera = std::make_unique<Camera>();
     m_pCamera->GetTransform()->SetWorldPosition(8.69f, 11.2f, 19.9f);
     m_pCamera->GetTransform()->SetWorldEulerRotation(-16.1f, 11.4f, 0.0f);
@@ -582,7 +606,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     m_pDirectionalLightT->SetLocalEulerRotation({ -42.8f,74.5f,0 });
     m_pDirectionalLightT->SetLocalScale({ 1,1,1 });
 
-    //¿ÀºêÁ§Æ® »ı¼º
+    //ì˜¤ë¸Œì íŠ¸ ìƒì„±
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
     m_sceneObjects.push_back(std::make_unique<Transform>());
@@ -647,16 +671,16 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     m_pBVHTree->Build(m_bboxRegistry);
 
-    // ½Ãµå ¼³Á¤
+    // ì‹œë“œ ì„¤ì •
     std::mt19937 rng(static_cast<unsigned int>(std::time(0)));
 
-    // ºĞÆ÷ Á¤ÀÇ
-    std::uniform_real_distribution<float> posXZDist(-8.2f, 8.2f); // ±¤¿øÀÇ ÃÊ±â À§Ä¡ ¹üÀ§
-    std::uniform_real_distribution<float> posYDist(3.0f, 6.2f); // ±¤¿øÀÇ ÃÊ±â À§Ä¡ ¹üÀ§
-    std::uniform_real_distribution<float> colorDist(0.3f, 1.0f); // »ö»ó (¾îµÎ¿î »ö»ó ¹æÁö)
-    std::uniform_real_distribution<float> intensityDist(15.0f, 20.0f); // ¹à±â (15.0 ~ 20.0)
-    std::uniform_real_distribution<float> rangeDist(1.0f, 7.5f); // ¹üÀ§ (1.0 ~ 7.5)
-    std::uniform_real_distribution<float> offsetDist(0.0f, 100.0f); // ¾Ö´Ï¸ŞÀÌ¼Ç ¿ÀÇÁ¼Â
+    // ë¶„í¬ ì •ì˜
+    std::uniform_real_distribution<float> posXZDist(-8.2f, 8.2f); // ê´‘ì›ì˜ ì´ˆê¸° ìœ„ì¹˜ ë²”ìœ„
+    std::uniform_real_distribution<float> posYDist(3.0f, 6.2f); // ê´‘ì›ì˜ ì´ˆê¸° ìœ„ì¹˜ ë²”ìœ„
+    std::uniform_real_distribution<float> colorDist(0.3f, 1.0f); // ìƒ‰ìƒ (ì–´ë‘ìš´ ìƒ‰ìƒ ë°©ì§€)
+    std::uniform_real_distribution<float> intensityDist(15.0f, 20.0f); // ë°ê¸° (15.0 ~ 20.0)
+    std::uniform_real_distribution<float> rangeDist(1.0f, 7.5f); // ë²”ìœ„ (1.0 ~ 7.5)
+    std::uniform_real_distribution<float> offsetDist(0.0f, 100.0f); // ì• ë‹ˆë©”ì´ì…˜ ì˜¤í”„ì…‹
 
    
     m_pointLights.resize(NUM_POINT_LIGHTS);
@@ -665,27 +689,27 @@ bool MyEngine::MyD3DContext::InitializeScene()
     {
         PointLight& light = m_pointLights[i];
 
-        // 1. À§Ä¡ ·£´ı ÃÊ±âÈ­
+        // 1. ìœ„ì¹˜ ëœë¤ ì´ˆê¸°í™”
         light.Position = light.InitialPosition = Vector3(
-            posXZDist(rng), // X À§Ä¡
-            posYDist(rng), // Y À§Ä¡ (¶Ç´Â Z, Y°¡ À§ÂÊ ÃàÀÎ °æ¿ì)
-            posXZDist(rng)  // Z À§Ä¡
+            posXZDist(rng), // X ìœ„ì¹˜
+            posYDist(rng), // Y ìœ„ì¹˜ (ë˜ëŠ” Z, Yê°€ ìœ„ìª½ ì¶•ì¸ ê²½ìš°)
+            posXZDist(rng)  // Z ìœ„ì¹˜
         );
 
-        // 2. »ö»ó ·£´ı ÃÊ±âÈ­ (R, G, B)
+        // 2. ìƒ‰ìƒ ëœë¤ ì´ˆê¸°í™” (R, G, B)
         light.Color = Vector3(
             colorDist(rng),
             colorDist(rng),
             colorDist(rng)
         );
 
-        // 3. ¹à±â (Intensity: 1.0 ~ 15.0)
+        // 3. ë°ê¸° (Intensity: 1.0 ~ 15.0)
         light.Intensity = intensityDist(rng);
 
-        // 4. ¹üÀ§ (Range: 1.0 ~ 8.0)
+        // 4. ë²”ìœ„ (Range: 1.0 ~ 8.0)
         light.Range = rangeDist(rng);
 
-        // 5. ¾Ö´Ï¸ŞÀÌ¼Ç ¿ÀÇÁ¼Â (¹İµ÷ºÒÀÌ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ À§»óÂ÷)
+        // 5. ì• ë‹ˆë©”ì´ì…˜ ì˜¤í”„ì…‹ (ë°˜ë”§ë¶ˆì´ ì• ë‹ˆë©”ì´ì…˜ì˜ ìœ„ìƒì°¨)
         light.AnimationTimeOffset = offsetDist(rng);
     }
 
@@ -707,22 +731,48 @@ void MyEngine::MyD3DContext::Update()
             skinnedMesh->MatrixUpdate();
         }
     }
+    m_mouseLeftClick = false;
+    auto mouse = DirectX::Mouse::Get().GetState();
+    static bool lastMouseLeft = false;
 
-    // ±¤¿øÀÇ ¾Ö´Ï¸ŞÀÌ¼Ç ¼Óµµ ¹× ¹üÀ§ ¼³Á¤
-    const float MOVEMENT_SPEED = 2.0f; // ±¤¿øÀÌ ¿òÁ÷ÀÌ´Â ¼Óµµ
-    const float MOVEMENT_RADIUS = 0.5f; // ±¤¿øÀÌ ÃÊ±â À§Ä¡ ÁÖº¯¿¡¼­ ¿òÁ÷ÀÌ´Â ¹İ°æ (¹İµ÷ºÒÀÌ È¿°ú)
+    bool currMouseLeft = mouse.leftButton; // ë§¤ í”„ë ˆì„ ê°±ì‹ 
+
+    m_mouseLeftClick = (!lastMouseLeft && currMouseLeft);
+
+    lastMouseLeft = currMouseLeft;
+
+    m_mouseXY = { mouse.x, mouse.y };
+
+    if (m_mouseLeftClick && !m_imgui.GetIsHovered())
+    {
+        m_pContext->CopyResource(m_pPickingStagingTex.Get(), m_pGBufferTextures[6].Get());
+
+        D3D11_MAPPED_SUBRESOURCE mapped;
+        m_pContext->Map(m_pPickingStagingTex.Get(), 0, D3D11_MAP_READ, 0, &mapped);
+
+        uint32_t* row = (uint32_t*)((uint8_t*)mapped.pData + m_mouseXY.y * mapped.RowPitch);
+        m_currentPickedID = row[m_mouseXY.x] - 1;
+
+        m_pContext->Unmap(m_pPickingStagingTex.Get(), 0);
+    }
+
+
+
+    // ê´‘ì›ì˜ ì• ë‹ˆë©”ì´ì…˜ ì†ë„ ë° ë²”ìœ„ ì„¤ì •
+    const float MOVEMENT_SPEED = 2.0f; // ê´‘ì›ì´ ì›€ì§ì´ëŠ” ì†ë„
+    const float MOVEMENT_RADIUS = 0.5f; // ê´‘ì›ì´ ì´ˆê¸° ìœ„ì¹˜ ì£¼ë³€ì—ì„œ ì›€ì§ì´ëŠ” ë°˜ê²½ (ë°˜ë”§ë¶ˆì´ íš¨ê³¼)
 
     auto s_time = TimeManager::Get()->GetTime();
 
     for (PointLight& light : m_pointLights)
     {
-        // °¢ ±¤¿ø¿¡ ´ëÇØ ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àû¿ë
+        // ê° ê´‘ì›ì— ëŒ€í•´ ì• ë‹ˆë©”ì´ì…˜ì„ ì ìš©
         float timeX = s_time * MOVEMENT_SPEED + light.AnimationTimeOffset * 1.0f;
         float timeY = s_time * MOVEMENT_SPEED + light.AnimationTimeOffset * 1.5f;
         float timeZ = s_time * MOVEMENT_SPEED + light.AnimationTimeOffset * 2.0f;
 
         float offsetX = MOVEMENT_RADIUS * std::sin(timeX);
-        float offsetY = MOVEMENT_RADIUS * std::cos(timeY * 0.7f); // YÃàÀº ¾à°£ ´Ù¸£°Ô ¿òÁ÷ÀÌ°Ô
+        float offsetY = MOVEMENT_RADIUS * std::cos(timeY * 0.7f); // Yì¶•ì€ ì•½ê°„ ë‹¤ë¥´ê²Œ ì›€ì§ì´ê²Œ
         float offsetZ = MOVEMENT_RADIUS * std::sin(timeZ * 1.3f);
 
         light.Position.x = light.InitialPosition.x + offsetX;
@@ -802,12 +852,12 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     ID3DBlob* pVSBlob = nullptr;
     ID3DBlob* pPSBlob = nullptr;
 
-    // === ½ºÄ«ÀÌ¹Ú½º ¼ÎÀÌ´õ ·Îµå ===
+    // === ìŠ¤ì¹´ì´ë°•ìŠ¤ ì…°ì´ë” ë¡œë“œ ===
     hr = CompileShaderFromFile(L"Resources/Shaders/SkyBoxVS.hlsl", "VS", "vs_4_0", &pVSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-            L"½ºÄ«ÀÌ¹Ú½º Á¤Á¡ ¼ÎÀÌ´õ°¡ ÄÄÆÄÀÏµÇÁö ¾Ê¾Ò½À´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"ìŠ¤ì¹´ì´ë°•ìŠ¤ ì •ì  ì…°ì´ë”ê°€ ì»´íŒŒì¼ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
     }
 
@@ -818,14 +868,14 @@ bool MyEngine::MyD3DContext::InitSkyBox()
         return false;
     }
 
-    //ÀÎÇ² ·¹ÀÌ¾Æ¿ô (¼ÎÀÌ´õ ÄÚµå ¹ÙÀÎµù) ¼³Á¤
+    //ì¸í’‹ ë ˆì´ì•„ì›ƒ (ì…°ì´ë” ì½”ë“œ ë°”ì¸ë”©) ì„¤ì •
     D3D11_INPUT_ELEMENT_DESC skyBoxlayout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     UINT numElements = ARRAYSIZE(skyBoxlayout);
 
-    //ÀÎÇ² ·¹ÀÌ¾Æ¿ô »ı¼º
+    //ì¸í’‹ ë ˆì´ì•„ì›ƒ ìƒì„±
     hr = m_pd3dDevice->CreateInputLayout(skyBoxlayout, numElements, pVSBlob->GetBufferPointer(),
         pVSBlob->GetBufferSize(), m_pSkyBoxInputLayout.GetAddressOf());
     pVSBlob->Release();
@@ -837,7 +887,7 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-            L"½ºÄ«ÀÌ¹Ú½º ÇÈ¼¿ ¼ÎÀÌ´õ°¡ ÄÄÆÄÀÏµÇÁö ¾Ê¾Ò½À´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"ìŠ¤ì¹´ì´ë°•ìŠ¤ í”½ì…€ ì…°ì´ë”ê°€ ì»´íŒŒì¼ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
     }
 
@@ -848,23 +898,23 @@ bool MyEngine::MyD3DContext::InitSkyBox()
 
 
 
-    //½ºÄ«ÀÌ¹Ú½º Á¤Á¡ Á¤ÀÇ
+    //ìŠ¤ì¹´ì´ë°•ìŠ¤ ì •ì  ì •ì˜
     SkyBoxVertex skyboxVertices[] =
     {
-        // »ó´Ü (+Y)
+        // ìƒë‹¨ (+Y)
         { XMFLOAT3(-1.0f,  1.0f, -1.0f) }, // 0
         { XMFLOAT3(1.0f,  1.0f, -1.0f) }, // 1
         { XMFLOAT3(1.0f,  1.0f,  1.0f) }, // 2
         { XMFLOAT3(-1.0f,  1.0f,  1.0f) }, // 3
 
-        // ÇÏ´Ü (-Y)
+        // í•˜ë‹¨ (-Y)
         { XMFLOAT3(-1.0f, -1.0f, -1.0f) }, // 4
         { XMFLOAT3(1.0f, -1.0f, -1.0f) }, // 5
         { XMFLOAT3(1.0f, -1.0f,  1.0f) }, // 6
         { XMFLOAT3(-1.0f, -1.0f,  1.0f) }, // 7
     };
 
-    //½ºÄ«ÀÌ¹Ú½º Á¤Á¡ ¹öÆÛ Á¤ÀÇ
+    //ìŠ¤ì¹´ì´ë°•ìŠ¤ ì •ì  ë²„í¼ ì •ì˜
     D3D11_BUFFER_DESC vbDesc = {};
     m_skyBoxVertexCount = ARRAYSIZE(skyboxVertices);
     vbDesc.ByteWidth = sizeof(SkyBoxVertex) * m_skyBoxVertexCount;
@@ -873,9 +923,9 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     vbDesc.MiscFlags = 0;
     vbDesc.Usage = D3D11_USAGE_DEFAULT;
 
-    //½ºÄ«ÀÌ¹Ú½º Á¤Á¡ ¹öÆÛ »ı¼º
+    //ìŠ¤ì¹´ì´ë°•ìŠ¤ ì •ì  ë²„í¼ ìƒì„±
     D3D11_SUBRESOURCE_DATA vbData = {};
-    vbData.pSysMem = skyboxVertices;	// ¹öÆÛ¸¦ »ı¼ºÇÒ¶§ º¹»çÇÒ µ¥ÀÌÅÍÀÇ ÁÖ¼Ò ¼³Á¤ 
+    vbData.pSysMem = skyboxVertices;	// ë²„í¼ë¥¼ ìƒì„±í• ë•Œ ë³µì‚¬í•  ë°ì´í„°ì˜ ì£¼ì†Œ ì„¤ì • 
     hr = m_pd3dDevice->CreateBuffer(&vbDesc, &vbData, m_pSkyBoxVertexBuffer.GetAddressOf());
 
     if (FAILED(hr))
@@ -884,35 +934,35 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     m_skyBoxVertexBufferStride = sizeof(SkyBoxVertex);
     m_skyBoxVertexBufferOffset = 0;
 
-    //ÀÎµ¦½º Á¤ÀÇ
+    //ì¸ë±ìŠ¤ ì •ì˜
     UINT skyboxIndices[] =
     {
-        // »ó´Ü (+Y) - RH ±âÁØ CCW
+        // ìƒë‹¨ (+Y) - RH ê¸°ì¤€ CCW
         0, 2, 1,
         0, 3, 2,
 
-        // ÇÏ´Ü (-Y)
+        // í•˜ë‹¨ (-Y)
         4, 5, 6,
         4, 6, 7,
 
-        // ¿ŞÂÊ (-X)
+        // ì™¼ìª½ (-X)
         4, 7, 3,
         4, 3, 0,
 
-        // ¿À¸¥ÂÊ (+X)
+        // ì˜¤ë¥¸ìª½ (+X)
         1, 2, 6,
         1, 6, 5,
 
-        // ¾Õ¸é (+Z)
+        // ì•ë©´ (+Z)
         3, 6, 2,
         3, 7, 6,
 
-        // µŞ¸é (-Z)
+        // ë’·ë©´ (-Z)
         4, 0, 1,
         4, 1, 5
     };
 
-    //½ºÄ«ÀÌ¹Ú½º ÀÎµ¦½º ¹öÆÛ Á¤ÀÇ
+    //ìŠ¤ì¹´ì´ë°•ìŠ¤ ì¸ë±ìŠ¤ ë²„í¼ ì •ì˜
     D3D11_BUFFER_DESC ibDesc;
     m_skyBoxIndexCount = ARRAYSIZE(skyboxIndices);
     ibDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -921,7 +971,7 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     ibDesc.CPUAccessFlags = 0;
     ibDesc.MiscFlags = 0;
 
-    //½ºÄ«ÀÌ¹Ú½º ÀÎµ¦½º ¹öÆÛ »ı¼º
+    //ìŠ¤ì¹´ì´ë°•ìŠ¤ ì¸ë±ìŠ¤ ë²„í¼ ìƒì„±
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = skyboxIndices;
     InitData.SysMemPitch = 0;
@@ -931,7 +981,7 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     if (FAILED(hr))
         return false;
 
-    //ÅØ½ºÃÄ ·Îµå
+    //í…ìŠ¤ì³ ë¡œë“œ
 
     ScratchImage image;
 
@@ -942,7 +992,7 @@ bool MyEngine::MyD3DContext::InitSkyBox()
     if (!metadata.IsCubemap())
     {
         MessageBox(nullptr,
-            L"½ºÄ«ÀÌ¹Ú½º ÅØ½ºÃÄ°¡ Å¥ºê¸ÊÀÌ ¾Æ´Õ´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"ìŠ¤ì¹´ì´ë°•ìŠ¤ í…ìŠ¤ì³ê°€ íë¸Œë§µì´ ì•„ë‹™ë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
     }
 
@@ -957,13 +1007,13 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
 {
     HRESULT hr = S_OK;
 
-    // ±íÀÌ ÅØ½ºÃ³ »ı¼º
+    // ê¹Šì´ í…ìŠ¤ì²˜ ìƒì„±
     D3D11_TEXTURE2D_DESC texDesc = {};
     texDesc.Width = SHADOW_MAP_SIZE;
     texDesc.Height = SHADOW_MAP_SIZE;
     texDesc.MipLevels = 1;
     texDesc.ArraySize = 1;
-    texDesc.Format = DXGI_FORMAT_R32_TYPELESS;  // ±íÀÌ+SRV °â¿ë
+    texDesc.Format = DXGI_FORMAT_R32_TYPELESS;  // ê¹Šì´+SRV ê²¸ìš©
     texDesc.SampleDesc.Count = 1;
     texDesc.Usage = D3D11_USAGE_DEFAULT;
     texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
@@ -972,7 +1022,7 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     if (FAILED(hr))
         return false;
 
-    // ±íÀÌ ½ºÅÙ½Ç ºä (DSV)
+    // ê¹Šì´ ìŠ¤í…ì‹¤ ë·° (DSV)
     D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
     dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
     dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
@@ -980,7 +1030,7 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     if (FAILED(hr))
         return false;
 
-    // ¸®¼Ò½ººä (RSV)
+    // ë¦¬ì†ŒìŠ¤ë·° (RSV)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -991,15 +1041,15 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
     if (FAILED(hr))
         return false;
 
-    //ÄÄÆÄÀÏ Á¤º¸ ÀúÀå¿ë °´Ã¼
+    //ì»´íŒŒì¼ ì •ë³´ ì €ì¥ìš© ê°ì²´
     ID3DBlob* pVSBlob = nullptr;
 
-    // === Á¤Á¡ ¼ÎÀÌ´õ ·Îµå ===
+    // === ì •ì  ì…°ì´ë” ë¡œë“œ ===
     hr = CompileShaderFromFile(L"Resources/Shaders/ShadowMapVS.hlsl", "main", "vs_4_0", &pVSBlob);
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-            L"Á¤Á¡ ¼ÎÀÌ´õ°¡ ÄÄÆÄÀÏµÇÁö ¾Ê¾Ò½À´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"ì •ì  ì…°ì´ë”ê°€ ì»´íŒŒì¼ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
     }
 
@@ -1062,7 +1112,7 @@ bool MyEngine::MyD3DContext::InitShadowMapTex()
 
 bool MyEngine::MyD3DContext::InitBRDFEnvironment()
 {
-    //ÅØ½ºÃÄ ·Îµå
+    //í…ìŠ¤ì³ ë¡œë“œ
 	HRESULT hr = S_OK;
     ScratchImage image;
 
@@ -1081,7 +1131,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (!metadata.IsCubemap())
     {
         MessageBox(nullptr,
-            L"BRDF Diffuse ÅØ½ºÃÄ°¡ Å¥ºê¸ÊÀÌ ¾Æ´Õ´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"BRDF Diffuse í…ìŠ¤ì³ê°€ íë¸Œë§µì´ ì•„ë‹™ë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
     }
     hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pEnvSRV.GetAddressOf());
@@ -1094,7 +1144,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (!metadata.IsCubemap())
     {
         MessageBox(nullptr,
-            L"BRDF Diffuse ÅØ½ºÃÄ°¡ Å¥ºê¸ÊÀÌ ¾Æ´Õ´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"BRDF Diffuse í…ìŠ¤ì³ê°€ íë¸Œë§µì´ ì•„ë‹™ë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
     }
 	hr = CreateShaderResourceView(m_pd3dDevice.Get(), image.GetImages(), image.GetImageCount(), metadata, m_pIrradianceSRV.GetAddressOf());
@@ -1107,7 +1157,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (!metadata.IsCubemap())
     {
         MessageBox(nullptr,
-            L"BRDF Specular ÅØ½ºÃÄ°¡ Å¥ºê¸ÊÀÌ ¾Æ´Õ´Ï´Ù.", L"¿À·ù", MB_OK);
+            L"BRDF Specular í…ìŠ¤ì³ê°€ íë¸Œë§µì´ ì•„ë‹™ë‹ˆë‹¤.", L"ì˜¤ë¥˜", MB_OK);
         return false;
 	}
 
@@ -1115,7 +1165,7 @@ bool MyEngine::MyD3DContext::InitBRDFEnvironment()
     if (FAILED(hr))
 		return false;
 
-    // ¹ÙÀÎµù
+    // ë°”ì¸ë”©
 	m_pContext->PSSetShaderResources(20, 1, m_pBRDFLUTSRV.GetAddressOf()); 
 	m_pContext->PSSetShaderResources(21, 1, m_pIrradianceSRV.GetAddressOf());
 	m_pContext->PSSetShaderResources(22, 1, m_pPrefilteredEnvSRV.GetAddressOf());
@@ -1133,7 +1183,7 @@ bool MyEngine::MyD3DContext::InitGBufferTex()
 
     for (size_t i = 0; i < GBUFFER_TEX_SIZE; i++)
     {
-        // ÅØ½ºÃ³ 2D µğ½ºÅ©¸³¼Ç ¼³Á¤
+        // í…ìŠ¤ì²˜ 2D ë””ìŠ¤í¬ë¦½ì…˜ ì„¤ì •
         D3D11_TEXTURE2D_DESC texDesc = {};
         texDesc.Width = width;
         texDesc.Height = height;
@@ -1143,23 +1193,23 @@ bool MyEngine::MyD3DContext::InitGBufferTex()
         texDesc.SampleDesc.Count = 1;
         texDesc.SampleDesc.Quality = 0;
         texDesc.Usage = D3D11_USAGE_DEFAULT;
-        // Geometry PassÀÇ Ãâ·Â(RTV)°ú Lighting PassÀÇ ÀÔ·Â(SRV)À¸·Î »ç¿ë
+        // Geometry Passì˜ ì¶œë ¥(RTV)ê³¼ Lighting Passì˜ ì…ë ¥(SRV)ìœ¼ë¡œ ì‚¬ìš©
         texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
         texDesc.CPUAccessFlags = 0;
         texDesc.MiscFlags = 0;
 
-        // ÅØ½ºÃ³ »ı¼º
+        // í…ìŠ¤ì²˜ ìƒì„±
         hr = m_pd3dDevice->CreateTexture2D(&texDesc, nullptr, m_pGBufferTextures[i].GetAddressOf());
         if (FAILED(hr)) return false;
 
-        // ·»´õ Å¸°Ù ºä (RTV) »ı¼º
+        // ë Œë” íƒ€ê²Ÿ ë·° (RTV) ìƒì„±
         D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
         rtvDesc.Format = texDesc.Format;
         rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
         hr = m_pd3dDevice->CreateRenderTargetView(m_pGBufferTextures[i].Get(), &rtvDesc, m_pGBufferRTV[i].GetAddressOf());
         if (FAILED(hr)) return false;
 
-        // ¼ÎÀÌ´õ ¸®¼Ò½º ºä (SRV) »ı¼º
+        // ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·° (SRV) ìƒì„±
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Format = texDesc.Format;
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -1196,7 +1246,7 @@ void MyEngine::MyD3DContext::DrawSkeleton(Transform& t, SkinningMeshRenderer& re
     auto& bones = renderer.GetMesh().GetBones();
     auto& currentBonePoses = renderer.GetBonePoses();
 
-    // º» µå·Î¿ì
+    // ë³¸ ë“œë¡œìš°
     for (auto& sbone : bones)
     {
         if (sbone.parentIndex == -1)
@@ -1220,7 +1270,7 @@ void MyEngine::MyD3DContext::DrawSkeleton(Transform& t, SkinningMeshRenderer& re
         DX::DrawRay(m_batch.get(), startPos, endPos - startPos, false, Colors::LightGreen);
     }
 
-    // º» °æ°è¹Ú½º µå·Î¿ì
+    // ë³¸ ê²½ê³„ë°•ìŠ¤ ë“œë¡œìš°
     for (auto& sbone : bones)
     {
         if (sbone.parentIndex == -1 || !sbone.hasVertex)
@@ -1279,7 +1329,7 @@ void MyEngine::MyD3DContext::Clear()
         }
         else
         {
-            // Position, Metallic, Roughness µî (´ëºÎºĞ 0.0 ¶Ç´Â Æ¯Á¤ ±âº»°ª)
+            // Position, Metallic, Roughness ë“± (ëŒ€ë¶€ë¶„ 0.0 ë˜ëŠ” íŠ¹ì • ê¸°ë³¸ê°’)
             selectClearCol = ClearColorZero;
         }
 
@@ -1313,6 +1363,11 @@ void MyEngine::MyD3DContext::UninitializeScene()
 	m_pBlurTempRTV = nullptr;
 	m_pBlurTempSRV = nullptr;
 
+    m_pBlurCB = nullptr;
+
+    m_pPickingStagingTex = nullptr;
+    m_pPickingCB = nullptr;
+
     UninitDefferedRenderpassBuffer();
 
     m_sceneObjects.clear();
@@ -1340,9 +1395,9 @@ void MyEngine::MyD3DContext::UninitializeScene()
         m_pContext->Flush();
     }
 
-    m_batch.reset();      // PrimitiveBatch ÇØÁ¦
-    m_effect.reset();     // BasicEffect ÇØÁ¦
-    m_states.reset();     // CommonStates ÇØÁ¦ (ÀÌ°Ô 2°³ÀÇ refcount ¿øÀÎ!)
+    m_batch.reset();      // PrimitiveBatch í•´ì œ
+    m_effect.reset();     // BasicEffect í•´ì œ
+    m_states.reset();     // CommonStates í•´ì œ (ì´ê²Œ 2ê°œì˜ refcount ì›ì¸!)
     m_pDebugDrawIL = nullptr;
 }
 
@@ -1479,7 +1534,7 @@ bool MyEngine::MyD3DContext::CheckHDRSupport()
             DXGI_OUTPUT_DESC1 desc = {};
             if (SUCCEEDED(output6->GetDesc1(&desc)))
             {
-                // HDR10-like color space Ã¼Å© ¿¹½Ã
+                // HDR10-like color space ì²´í¬ ì˜ˆì‹œ
                 if (desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)
                 {
                     //std::wcout << L"HDR10-capable output found\n";
@@ -1500,7 +1555,7 @@ void MyEngine::MyD3DContext::ResizeGBufferTex(UINT width, UINT height)
         m_pGBufferRTV[i] = nullptr;
         m_pGBufferSRV[i] = nullptr;
 
-        // ÅØ½ºÃ³ 2D µğ½ºÅ©¸³¼Ç ¼³Á¤
+        // í…ìŠ¤ì²˜ 2D ë””ìŠ¤í¬ë¦½ì…˜ ì„¤ì •
         D3D11_TEXTURE2D_DESC texDesc = {};
         texDesc.Width = width;
         texDesc.Height = height;
@@ -1510,21 +1565,21 @@ void MyEngine::MyD3DContext::ResizeGBufferTex(UINT width, UINT height)
         texDesc.SampleDesc.Count = 1;
         texDesc.SampleDesc.Quality = 0;
         texDesc.Usage = D3D11_USAGE_DEFAULT;
-        // Geometry PassÀÇ Ãâ·Â(RTV)°ú Lighting PassÀÇ ÀÔ·Â(SRV)À¸·Î »ç¿ë
+        // Geometry Passì˜ ì¶œë ¥(RTV)ê³¼ Lighting Passì˜ ì…ë ¥(SRV)ìœ¼ë¡œ ì‚¬ìš©
         texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
         texDesc.CPUAccessFlags = 0;
         texDesc.MiscFlags = 0;
 
-        // ÅØ½ºÃ³ »ı¼º
+        // í…ìŠ¤ì²˜ ìƒì„±
         m_pd3dDevice->CreateTexture2D(&texDesc, nullptr, m_pGBufferTextures[i].GetAddressOf());
 
-        // ·»´õ Å¸°Ù ºä (RTV) »ı¼º
+        // ë Œë” íƒ€ê²Ÿ ë·° (RTV) ìƒì„±
         D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
         rtvDesc.Format = texDesc.Format;
         rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
         m_pd3dDevice->CreateRenderTargetView(m_pGBufferTextures[i].Get(), &rtvDesc, m_pGBufferRTV[i].GetAddressOf());
 
-        // ¼ÎÀÌ´õ ¸®¼Ò½º ºä (SRV) »ı¼º
+        // ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·° (SRV) ìƒì„±
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Format = texDesc.Format;
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -1538,7 +1593,7 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->OMSetBlendState(m_pBlendState.Get(), nullptr, 0xffffffff);
 
-    //  <=============== Ã¹¹øÂ° ÆĞ½º(±×¸²ÀÚ ¸Ê)
+    //  <=============== ì²«ë²ˆì§¸ íŒ¨ìŠ¤(ê·¸ë¦¼ì ë§µ)
     m_currentRenderPassNum = 0;
 
     MyConstantBuffer cb;
@@ -1547,17 +1602,17 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     ID3D11ShaderResourceView* firstPassnullSRVs[12] = { nullptr };
     m_pContext->PSSetShaderResources(0, 12, firstPassnullSRVs);
 
-    // ÄÃ·¯ ·»´õÅ¸°ÙÀº »ç¿ë ¾È ÇÔ
+    // ì»¬ëŸ¬ ë Œë”íƒ€ê²Ÿì€ ì‚¬ìš© ì•ˆ í•¨
     m_pContext->PSSetShader(nullptr, nullptr, 0);
     m_pContext->OMSetRenderTargets(0, nullptr, m_pShadowDSV.Get());
-    // ±íÀÌ ÃÊ±âÈ­
+    // ê¹Šì´ ì´ˆê¸°í™”
     m_pContext->ClearDepthStencilView(m_pShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
 
     m_pContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-    m_pContext->RSSetState(m_pShadowMapRasterizerState.Get()); //±âº» ·¡½ºÅÍ¶óÀÌÀú »óÅÂ·Î º¹±Í
+    m_pContext->RSSetState(m_pShadowMapRasterizerState.Get()); //ê¸°ë³¸ ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœë¡œ ë³µê·€
 
-    // ºäÆ÷Æ® ¼¼ÆÃ(ÅØ½ºÃÄ »çÀÌÁî·Î)
+    // ë·°í¬íŠ¸ ì„¸íŒ…(í…ìŠ¤ì³ ì‚¬ì´ì¦ˆë¡œ)
     m_pContext->RSSetViewports(1, &m_shadowViewport);
     cb.vLightColor = m_lightColor;
     auto lightFwd = m_pDirectionalLightT->GetWorldMatrix().Forward();
@@ -1565,14 +1620,14 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     auto xmLightDir = XMFLOAT4{ lightFwd.x,lightFwd.y,lightFwd.z,1 };
     cb.vLightDir = xmLightDir;
 
-    // ºä, ÇÁ·ÎÁ§¼Ç Çà·Ä »ı¼º
+    // ë·°, í”„ë¡œì ì…˜ í–‰ë ¬ ìƒì„±
     Matrix lightViewMat = m_pDirectionalLightT->GetWorldMatrix().Invert();
     Matrix lightProj = Matrix::CreateOrthographic(50.0f, 50.0f, m_lightProjectNear, m_lightProjectFar);
 
-    // ÃÖÁ¾ LightViewProjection Çà·Ä
+    // ìµœì¢… LightViewProjection í–‰ë ¬
     Matrix lightViewProj = lightViewMat * lightProj;
 
-    // ½¦ÀÌ´õ »ó¼ö ¹öÆÛ¿¡ ¼¼ÆÃ
+    // ì‰ì´ë” ìƒìˆ˜ ë²„í¼ì— ì„¸íŒ…
     cb.mlightViewProj = lightViewProj.Transpose();
     cb.mView = lightViewMat.Transpose();
     cb.mProjection = lightProj.Transpose();
@@ -1580,7 +1635,7 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     cb.rimLightStr = m_rimLightStrength;
 
     static BYTE lowlutPixel = MyEngine::GlobalLogic::ToonShader::GetLutOnePixelR(L"Resources/Textures/Lut.png");
-    cb.lowLut = pow((float)lowlutPixel / 255.0f, 2.2f); // Á¤±ÔÈ­ ÈÄ °¨¸¶ »ö»óÇ¥·Î ÀüÈ¯ 
+    cb.lowLut = pow((float)lowlutPixel / 255.0f, 2.2f); // ì •ê·œí™” í›„ ê°ë§ˆ ìƒ‰ìƒí‘œë¡œ ì „í™˜ 
 
     float colorMapA = cb.lowLut - m_diffuseGradientStrength;
     float colorMapB = cb.lowLut;
@@ -1608,9 +1663,9 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     Clear();
 
     ID3D11ShaderResourceView* nullSRVs[2] = { nullptr, nullptr };
-    m_pContext->PSSetShaderResources(9, 1, nullSRVs);  // ±×¸²ÀÚ¸Ê ¾ğ¹ÙÀÎµù
+    m_pContext->PSSetShaderResources(9, 1, nullSRVs);  // ê·¸ë¦¼ìë§µ ì–¸ë°”ì¸ë”©
 
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //±âº» ·¡½ºÅÍ¶óÀÌÀú »óÅÂ·Î º¹±Í
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //ê¸°ë³¸ ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœë¡œ ë³µê·€
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
     m_pContext->RSSetViewports(1, &m_vp);
     m_pContext->PSSetSamplers(1, 1, m_pShadowSampler.GetAddressOf());
@@ -1632,7 +1687,7 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     cb.reflectionFactor = m_reflectionFactor;
 
 
-    //½ºÄ«ÀÌ¹Ú½º µå·Î¿ì
+    //ìŠ¤ì¹´ì´ë°•ìŠ¤ ë“œë¡œìš°
     m_pContext->PSSetShaderResources(1, 1, m_pSkyBoxTextureRV.GetAddressOf());
     m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
     m_pContext->PSSetSamplers(2, 1, m_pSamplerPoint.GetAddressOf());
@@ -1644,14 +1699,14 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     m_pContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
     m_pContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //½ºÄ«ÀÌ¹Ú½º´Â ½Ã°è¹æÇâÀ¸·Î ÄÃ¸µ
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //ìŠ¤ì¹´ì´ë°•ìŠ¤ëŠ” ì‹œê³„ë°©í–¥ìœ¼ë¡œ ì»¬ë§
     m_pContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
     m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
     m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //±âº» ·¡½ºÅÍ¶óÀÌÀú »óÅÂ·Î º¹±Í
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //ê¸°ë³¸ ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœë¡œ ë³µê·€
 
     ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-    m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 ÃÊ±âÈ­
+    m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 ì´ˆê¸°í™”
 
     int modelIdx = 0;
 
@@ -1660,9 +1715,9 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &olCB, 0, 0);
     m_pContext->VSSetConstantBuffers(4, 1, m_pOutlineCB.GetAddressOf());
 
-    // <<======= µÎ¹øÂ° ÆĞ½º(¾Æ¿ô¶óÀÎ)
+    // <<======= ë‘ë²ˆì§¸ íŒ¨ìŠ¤(ì•„ì›ƒë¼ì¸)
     m_currentRenderPassNum = 1;
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //½ºÄ«ÀÌ¹Ú½º´Â ½Ã°è¹æÇâÀ¸·Î ÄÃ¸µ
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //ìŠ¤ì¹´ì´ë°•ìŠ¤ëŠ” ì‹œê³„ë°©í–¥ìœ¼ë¡œ ì»¬ë§
     for (size_t i = 0; i < m_sceneObjects.size(); ++i)
     {
         auto& meshRenderer = m_meshRenderers[i];
@@ -1687,7 +1742,7 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
         meshRenderer->SetEnabledBindMaterials(false);
         meshRenderer->Draw(m_pContext.Get());
     }
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //±âº» ·¡½ºÅÍ¶óÀÌÀú »óÅÂ·Î º¹±Í
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //ê¸°ë³¸ ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœë¡œ ë³µê·€
 
     GradientCB gradientCB = {};
     gradientCB.intensity = m_gradientIntensity;
@@ -1696,7 +1751,7 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     m_pContext->UpdateSubresource(m_pGradientCB.Get(), 0, nullptr, &gradientCB, 0, 0);
     m_pContext->PSSetConstantBuffers(5, 1, m_pGradientCB.GetAddressOf());
 
-    // <<======= ¼¼¹øÂ° ·»´õÆĞ½º (¾À µå·Î¿ì)
+    // <<======= ì„¸ë²ˆì§¸ ë Œë”íŒ¨ìŠ¤ (ì”¬ ë“œë¡œìš°)
     m_currentRenderPassNum = 2;
 
     Vector3 debugPos1;
@@ -1785,6 +1840,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     PointLightCB cb_pointLight = {};         // fast update
     PBRDebugCB cb_pbr_debug = {};
 	BlurCB cb_blur = {};
+    PickingCB cb_pick = {};
 
     D3D11_MAPPED_SUBRESOURCE mapped;
 
@@ -1897,6 +1953,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 
     m_pContext->PSSetShader(D3DCTX::ShaderManager().Get()->GetDefferedGeometryPixelShader(), nullptr, 0);
     m_pContext->PSSetConstantBuffers(9, 1, m_pPBRDebugBuffer.GetAddressOf());
+    m_pContext->PSSetConstantBuffers(13, 1, m_pPickingCB.GetAddressOf());
     m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 
     for (size_t i = 0; i < m_sceneObjects.size(); ++i)
@@ -1905,6 +1962,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         auto& obj = m_sceneObjects[i];
 
         cb_objMat.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+        cb_pick.RendererID = static_cast<UINT>(i + 1);
 
         m_pContext->Map(
             m_pObjectMatBuffer.Get(),
@@ -1915,8 +1973,20 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         );
 
         memcpy(mapped.pData, &cb_objMat, sizeof(ObjectMatCB));
-
+      
         m_pContext->Unmap(m_pObjectMatBuffer.Get(), 0);
+
+        m_pContext->Map(
+            m_pPickingCB.Get(),
+            0,
+            D3D11_MAP_WRITE_DISCARD,
+            0,
+            &mapped
+        );
+
+        memcpy(mapped.pData, &cb_pick, sizeof(PickingCB));
+
+        m_pContext->Unmap(m_pPickingCB.Get(), 0);
 
         meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
         meshRenderer->SetEnabledBindMeshes(true);
@@ -1958,7 +2028,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     ID3D11VertexShader* QuadVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
 
     m_pContext->OMSetDepthStencilState(nullptr, 0);
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //½Ã°è·Î ÇØ¾ßÇÔ <- ¿Ş¼ÕÁÂÇ¥°è Äõµå
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //ì‹œê³„ë¡œ í•´ì•¼í•¨ <- ì™¼ì†ì¢Œí‘œê³„ ì¿¼ë“œ
     m_pContext->IASetInputLayout(nullptr);
     m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
@@ -2021,68 +2091,68 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->IASetIndexBuffer(m_pSkyBoxIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
     m_pContext->PSSetShaderResources(0, 1, m_pSkyBoxTextureRV.GetAddressOf());
-    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //½ºÄ«ÀÌ¹Ú½º´Â ½Ã°è¹æÇâÀ¸·Î ÄÃ¸µ
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //ìŠ¤ì¹´ì´ë°•ìŠ¤ëŠ” ì‹œê³„ë°©í–¥ìœ¼ë¡œ ì»¬ë§
     m_pContext->VSSetShader(m_pSkyBoxVShader.Get(), nullptr, 0);
     m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
     m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
-    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //±âº» ·¡½ºÅÍ¶óÀÌÀú »óÅÂ·Î º¹±Í
+    m_pContext->RSSetState(m_pDefRasterizerState.Get()); //ê¸°ë³¸ ë˜ìŠ¤í„°ë¼ì´ì € ìƒíƒœë¡œ ë³µê·€
 
     // pass - 4 : Bloom 
-	m_currentRenderPassNum = 4;
+	//m_currentRenderPassNum = 4;
 
-	// SceneColor SRV -> PostProcess SRV Bind
-	ID3D11RenderTargetView* nullRTV[1] = { nullptr };
-	m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
-    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+	//// SceneColor SRV -> PostProcess SRV Bind
+	//ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+	//m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
 
-	ID3D11VertexShader* BloomVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
-	ID3D11PixelShader* BloomPS = D3DCTX::ShaderManager::Get()->GetBrightnessContrastPixelShader();
+	//ID3D11VertexShader* BloomVS = D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader();
+	//ID3D11PixelShader* BloomPS = D3DCTX::ShaderManager::Get()->GetBrightnessContrastPixelShader();
 
-	m_pContext->OMSetDepthStencilState(nullptr, 0);
-	m_pContext->IASetInputLayout(nullptr);
-	m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
-	m_pContext->VSSetShader(BloomVS, nullptr, 0);
-	m_pContext->PSSetShader(BloomPS, nullptr, 0);
-	m_pContext->RSSetViewports(1, &m_vp);
-	m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //½Ã°è·Î ÇØ¾ßÇÔ <- ¿Ş¼ÕÁÂÇ¥°è Äõµå
-	m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
-	m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
-	m_pContext->Draw(3, 0);
+	//m_pContext->OMSetDepthStencilState(nullptr, 0);
+	//m_pContext->IASetInputLayout(nullptr);
+	//m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+	//m_pContext->VSSetShader(BloomVS, nullptr, 0);
+	//m_pContext->PSSetShader(BloomPS, nullptr, 0);
+	//m_pContext->RSSetViewports(1, &m_vp);
+	//m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //ì‹œê³„ë¡œ í•´ì•¼í•¨ <- ì™¼ì†ì¢Œí‘œê³„ ì¿¼ë“œ
+	//m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
+	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+	//m_pContext->Draw(3, 0);
 
-    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-	m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 ÃÊ±âÈ­
+ //   ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+	//m_pContext->PSSetShaderResources(0, 1, nullSRV);  // slot 0 ì´ˆê¸°í™”
 
-    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
 
-	BloomPS = D3DCTX::ShaderManager::Get()->GetGaussianBlurPixelShader();
-	m_pContext->PSSetShader(BloomPS, nullptr, 0);
-	m_pContext->PSSetShaderResources(0, 1, m_pBrightSRV.GetAddressOf());
+	//BloomPS = D3DCTX::ShaderManager::Get()->GetGaussianBlurPixelShader();
+	//m_pContext->PSSetShader(BloomPS, nullptr, 0);
+	//m_pContext->PSSetShaderResources(0, 1, m_pBrightSRV.GetAddressOf());
 
-	m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
-	m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
-	m_pContext->Draw(3, 0);
+	//m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
+	//m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+	//m_pContext->Draw(3, 0);
 
-    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
-    m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
-	m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
-    cb_blur.horizontal = 1.0f;
-	m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
-	m_pContext->Draw(3, 0);
+ //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
+	//m_pContext->OMSetRenderTargets(1, m_pBrightRTV.GetAddressOf(), nullptr);
+ //   cb_blur.horizontal = 1.0f;
+	//m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
+	//m_pContext->Draw(3, 0);
 
-    ID3D11ShaderResourceView* nullSRVs2[1] = { nullptr };
-	m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 ÃÊ±âÈ­
+ //   ID3D11ShaderResourceView* nullSRVs2[1] = { nullptr };
+	//m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 ì´ˆê¸°í™”
 
-    // Bloom Add
-    m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
-    ID3D11PixelShader* BloomAddPS = D3DCTX::ShaderManager::Get()->GetBloomCombinePixelShader();
-    m_pContext->PSSetShader(BloomAddPS, nullptr, 0);
-    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
-    m_pContext->PSSetShaderResources(1, 1, m_pBrightSRV.GetAddressOf());
-    m_pContext->Draw(3, 0);
-    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
-    m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 ÃÊ±âÈ­
-	m_pContext->PSSetShaderResources(1, 1, nullSRVs2);  // slot 1 ÃÊ±âÈ­
+ //   // Bloom Add
+ //   m_pContext->OMSetRenderTargets(1, m_pBlurTempRTV.GetAddressOf(), nullptr);
+ //   ID3D11PixelShader* BloomAddPS = D3DCTX::ShaderManager::Get()->GetBloomCombinePixelShader();
+ //   m_pContext->PSSetShader(BloomAddPS, nullptr, 0);
+ //   m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
+ //   m_pContext->PSSetShaderResources(1, 1, m_pBrightSRV.GetAddressOf());
+ //   m_pContext->Draw(3, 0);
+ //   m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+ //   m_pContext->PSSetShaderResources(0, 1, nullSRVs2);  // slot 0 ì´ˆê¸°í™”
+	//m_pContext->PSSetShaderResources(1, 1, nullSRVs2);  // slot 1 ì´ˆê¸°í™”
 
 	// gaussian blur end
  //   ID3D11RenderTargetView* nullRTV[1] = { nullptr };
@@ -2099,7 +2169,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 	//m_pContext->VSSetShader(BlurVS, nullptr, 0);
 	//m_pContext->PSSetShader(BlurPS, nullptr, 0);
 	//m_pContext->RSSetViewports(1, &m_vp);
-	//m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //½Ã°è·Î ÇØ¾ßÇÔ <- ¿Ş¼ÕÁÂÇ¥°è Äõµå
+	//m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //ì‹œê³„ë¡œ í•´ì•¼í•¨ <- ì™¼ì†ì¢Œí‘œê³„ ì¿¼ë“œ
 	//m_pContext->PSSetSamplers(0, 1, m_pSamplerLinear.GetAddressOf());
 	//m_pContext->PSSetConstantBuffers(0, 1, m_pBlurCB.GetAddressOf());
 	//// horizontal blur
@@ -2115,7 +2185,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
 	//m_pContext->Draw(3, 0);
 
  //   ID3D11ShaderResourceView* nullSRV2[1] = { nullptr };
-	//m_pContext->PSSetShaderResources(0, 1, nullSRV2);  // slot 0 ÃÊ±âÈ­
+	//m_pContext->PSSetShaderResources(0, 1, nullSRV2);  // slot 0 ì´ˆê¸°í™”
 }
 
 void MyEngine::MyD3DContext::Render()
@@ -2139,7 +2209,7 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->VSSetShader(postProcessingVS, nullptr, 0);
     m_pContext->PSSetShader(postProcessingPS, nullptr, 0);
 
-    m_pContext->PSSetShaderResources(0, 1, m_pBlurTempSRV.GetAddressOf());
+    m_pContext->PSSetShaderResources(0, 1, m_pSceneColorSRV.GetAddressOf());
 
     PostProcessCB pp_cb = {};
     pp_cb.exposure = m_exposure;
@@ -2234,51 +2304,51 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     if (!m_pSwapChain || !m_pd3dDevice || !m_pContext)
         return;
 
-    // ¸â¹ö º¯¼ö ¾÷µ¥ÀÌÆ®
+    // ë©¤ë²„ ë³€ìˆ˜ ì—…ë°ì´íŠ¸
     m_width = width;
     m_height = height;
 
     m_pCamera->SetAspectRatio((float)width / (float)height);
 
-    // ÇöÀç ·»´õ Å¸°ÙÀÌ ¼³Á¤µÇ¾î ÀÖ´Ù¸é ÇØÁ¦
+    // í˜„ì¬ ë Œë” íƒ€ê²Ÿì´ ì„¤ì •ë˜ì–´ ìˆë‹¤ë©´ í•´ì œ
     m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-    // ±âÁ¸ È­¸é ·»´õÅ¸°Ùºä¸¦ ¸ğµÎ ÇØÁ¦
+    // ê¸°ì¡´ í™”ë©´ ë Œë”íƒ€ê²Ÿë·°ë¥¼ ëª¨ë‘ í•´ì œ
     m_pBackBufferRTV = nullptr;
     m_pDepthStencilView = nullptr;
     m_pDepthStencilTex = nullptr;
 
-    // ½º¿Ò Ã¼ÀÎ ¹öÆÛ Å©±â ÀçÁ¶Á¤
+    // ìŠ¤ì™‘ ì²´ì¸ ë²„í¼ í¬ê¸° ì¬ì¡°ì •
     HRESULT hr = m_pSwapChain->ResizeBuffers(
-        0,                  // ¹öÆÛ °³¼ö
-        width,              // »õ·Î¿î ³Êºñ
-        height,             // »õ·Î¿î ³ôÀÌ
-        DXGI_FORMAT_UNKNOWN, // Æ÷¸Ë À¯Áö
-        0                   // ÇÃ·¡±×
+        0,                  // ë²„í¼ ê°œìˆ˜
+        width,              // ìƒˆë¡œìš´ ë„ˆë¹„
+        height,             // ìƒˆë¡œìš´ ë†’ì´
+        DXGI_FORMAT_UNKNOWN, // í¬ë§· ìœ ì§€
+        0                   // í”Œë˜ê·¸
     );
 
     if (FAILED(hr)) {
-        // ¿À·ù Ã³¸® ·ÎÁ÷ Ãß°¡
-        OutputDebugStringA("½º¿ÒÃ¼ÀÎÀÇ ¹öÆÛ »çÀÌÁî¸¦ ¹Ù²Ù´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        // ì˜¤ë¥˜ ì²˜ë¦¬ ë¡œì§ ì¶”ê°€
+        OutputDebugStringA("ìŠ¤ì™‘ì²´ì¸ì˜ ë²„í¼ ì‚¬ì´ì¦ˆë¥¼ ë°”ê¾¸ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
-    // »õ·Î¿î ·»´õ Å¸°Ù ºä »ı¼º
+    // ìƒˆë¡œìš´ ë Œë” íƒ€ê²Ÿ ë·° ìƒì„±
     ComPtr<ID3D11Texture2D> pBackBuffer;
     hr = m_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
     if (FAILED(hr)) {
-        OutputDebugStringA("¹é¹öÆÛ¸¦ ¾ò´Â °ÍÀ» ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("ë°±ë²„í¼ë¥¼ ì–»ëŠ” ê²ƒì„ ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
     hr = m_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_pBackBufferRTV.GetAddressOf());
     if (FAILED(hr)) {
         pBackBuffer = nullptr;
-        OutputDebugStringA("·»´õ Å¸°Ù ºä¸¦ »ı¼ºÀ» ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("ë Œë” íƒ€ê²Ÿ ë·°ë¥¼ ìƒì„±ì„ ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
-    // Æ÷½ºÆ® ÇÁ·Î¼¼½º ÅØ½ºÃÄ ¹× ºä Àç»ı¼º
+    // í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ í…ìŠ¤ì³ ë° ë·° ì¬ìƒì„±
     m_pSceneColorTex = nullptr;
     m_pSceneColorRTV = nullptr;
     D3D11_TEXTURE2D_DESC postProcessTexDesc = {};
@@ -2295,16 +2365,16 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     postProcessTexDesc.MiscFlags = 0;
     hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pSceneColorTex.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("Æ÷½ºÆ® ÇÁ·Î¼¼½º ÅØ½ºÃÄ¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ í…ìŠ¤ì³ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
     hr = m_pd3dDevice->CreateRenderTargetView(m_pSceneColorTex.Get(), nullptr, m_pSceneColorRTV.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("Æ÷½ºÆ® ÇÁ·Î¼¼½º ·»´õ Å¸°Ù ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ ë Œë” íƒ€ê²Ÿ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
-    // ¸®¼Ò½º ºä Àç»ı¼º
+    // ë¦¬ì†ŒìŠ¤ ë·° ì¬ìƒì„±
     m_pSceneColorSRV = nullptr;
     D3D11_SHADER_RESOURCE_VIEW_DESC postProcessSRVDesc = {};
     postProcessSRVDesc.Format = postProcessTexDesc.Format;
@@ -2313,29 +2383,29 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     postProcessSRVDesc.Texture2D.MipLevels = 1;
     hr = m_pd3dDevice->CreateShaderResourceView(m_pSceneColorTex.Get(), &postProcessSRVDesc, m_pSceneColorSRV.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("Æ÷½ºÆ® ÇÁ·Î¼¼½º ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("í¬ìŠ¤íŠ¸ í”„ë¡œì„¸ìŠ¤ ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
-	// Bloom¿ë Bright ÅØ½ºÃÄ ¹× ºä Àç»ı¼º -> post process¿Í µ¿ÀÏÇÑ ¼³Á¤ »ç¿ë
+	// Bloomìš© Bright í…ìŠ¤ì³ ë° ë·° ì¬ìƒì„± -> post processì™€ ë™ì¼í•œ ì„¤ì • ì‚¬ìš©
 	m_pBrightTex = nullptr;
 	m_pBrightRTV = nullptr;
 
 	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pBrightTex.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Bright ÅØ½ºÃÄ¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Bright í…ìŠ¤ì³ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return;
 	}
 	hr = m_pd3dDevice->CreateRenderTargetView(m_pBrightTex.Get(), nullptr, m_pBrightRTV.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Bright ·»´õ Å¸°Ù ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Bright ë Œë” íƒ€ê²Ÿ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return;
 	}
-	// ¸®¼Ò½º ºä Àç»ı¼º
+	// ë¦¬ì†ŒìŠ¤ ë·° ì¬ìƒì„±
 	m_pBrightSRV = nullptr;
 	hr = m_pd3dDevice->CreateShaderResourceView(m_pBrightTex.Get(), &postProcessSRVDesc, m_pBrightSRV.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Bright ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Bright ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return;
 	}
 
@@ -2343,24 +2413,24 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 	m_pBlurTempRTV = nullptr;
 	hr = m_pd3dDevice->CreateTexture2D(&postProcessTexDesc, nullptr, m_pBlurTempTex.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Blur Temp ÅØ½ºÃÄ¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Blur Temp í…ìŠ¤ì³ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return;
 	}
 	hr = m_pd3dDevice->CreateRenderTargetView(m_pBlurTempTex.Get(), nullptr, m_pBlurTempRTV.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Blur Temp ·»´õ Å¸°Ù ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Blur Temp ë Œë” íƒ€ê²Ÿ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return;
 	}
-	// ¸®¼Ò½º ºä Àç»ı¼º
+	// ë¦¬ì†ŒìŠ¤ ë·° ì¬ìƒì„±
 	m_pBlurTempSRV = nullptr;
 	hr = m_pd3dDevice->CreateShaderResourceView(m_pBlurTempTex.Get(), &postProcessSRVDesc, m_pBlurTempSRV.GetAddressOf());
 	if (FAILED(hr)) {
-		OutputDebugStringA("Bloom Blur Temp ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+		OutputDebugStringA("Bloom Blur Temp ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
 		return;
 	}
 
 
-    // »õ·Î¿î µª½º ½ºÅÙ½Ç ¹öÆÛ ¹× ºä »ı¼º
+    // ìƒˆë¡œìš´ ëìŠ¤ ìŠ¤í…ì‹¤ ë²„í¼ ë° ë·° ìƒì„±
     D3D11_TEXTURE2D_DESC descDepth = {};
     descDepth.Width = width;
     descDepth.Height = height;
@@ -2375,7 +2445,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     descDepth.MiscFlags = 0;
     hr = m_pd3dDevice->CreateTexture2D(&descDepth, nullptr, m_pDepthStencilTex.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("µª½º ½ºÅÙ½Ç ¹öÆÛ¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("ëìŠ¤ ìŠ¤í…ì‹¤ ë²„í¼ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
@@ -2385,28 +2455,28 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
     descDSV.Texture2D.MipSlice = 0;
     hr = m_pd3dDevice->CreateDepthStencilView(m_pDepthStencilTex.Get(), &descDSV, m_pDepthStencilView.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("µª½º ½ºÅÙ½Ç ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("ëìŠ¤ ìŠ¤í…ì‹¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
-    m_pDepthStencilSRV = nullptr; // ¸â¹ö º¯¼ö ¼±¾ğ °¡Á¤
+    m_pDepthStencilSRV = nullptr; // ë©¤ë²„ ë³€ìˆ˜ ì„ ì–¸ ê°€ì •
     D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
-    depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV·Î »ç¿ëÇÒ Æ÷¸Ë
+    depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRVë¡œ ì‚¬ìš©í•  í¬ë§·
     depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     depthSrvDesc.Texture2D.MipLevels = 1;
     hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthStencilSRV.GetAddressOf());
     if (FAILED(hr)) {
-        OutputDebugStringA("µª½º ¼ÎÀÌ´õ ¸®¼Ò½º ºä¸¦ »ı¼ºÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.\n");
+        OutputDebugStringA("ëìŠ¤ ì…°ì´ë” ë¦¬ì†ŒìŠ¤ ë·°ë¥¼ ìƒì„±í•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.\n");
         return;
     }
 
-    // GBuffer ¸®»çÀÌÁî
+    // GBuffer ë¦¬ì‚¬ì´ì¦ˆ
     ResizeGBufferTex(width, height);
 
-    // ·»´õ Å¸°Ù ´Ù½Ã ¼³Á¤
+    // ë Œë” íƒ€ê²Ÿ ë‹¤ì‹œ ì„¤ì •
     m_pContext->OMSetRenderTargets(1, m_pSceneColorRTV.GetAddressOf(), m_pDepthStencilView.Get());
 
-    // ºäÆ÷Æ® ¾÷µ¥ÀÌÆ®
+    // ë·°í¬íŠ¸ ì—…ë°ì´íŠ¸
     m_vp.Width = (FLOAT)width;
     m_vp.Height = (FLOAT)height;
     m_vp.MinDepth = 0.0f;

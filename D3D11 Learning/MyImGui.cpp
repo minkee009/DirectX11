@@ -266,28 +266,25 @@ void MyEngine::MyImGui::Update()
     ImGui::SetNextWindowSize(ImVec2(260, 374), ImGuiCond_Once);
 
     ImGui::Begin(u8"오브젝트 상태", nullptr, ImGuiWindowFlags_NoResize);
-
-    static int objIdx = 0;
+    
+    static int lastObjIdx = -1;
+    static int objIdx = -1;
     static bool objIdxChanged = false;
 
     static size_t objCount = m_d3dContext->m_sceneObjects.size();
 
-    if (!m_d3dContext->m_sceneObjects.empty())
+    if (!m_d3dContext->m_sceneObjects.empty() && m_d3dContext->m_currentPickedID < m_d3dContext->m_sceneObjects.size())
     {
+        lastObjIdx = objIdx;
+        objIdx = m_d3dContext->m_currentPickedID;
         objCount = m_d3dContext->m_sceneObjects.size();
-        if (objIdx >= objCount)
+        if (lastObjIdx != objIdx)
         {
-            objIdx = objCount - 1;
             objIdxChanged = true;
         }
 
         ImGui::Text(u8"오브젝트 인덱스");
-        if (ImGui::SliderInt(u8"##오브젝트 인덱스", &objIdx, 0, m_d3dContext->m_sceneObjects.size() - 1))
-        {
-            objIdxChanged = true;
-        }
-
-
+        ImGui::SliderInt(u8"##ObjectIDX", &objIdx, objIdx - 1, objIdx + 1, "%d", ImGuiSliderFlags_ReadOnly);
         auto obj = m_d3dContext->m_sceneObjects[objIdx].get();
         auto obj_pos = obj->GetLocalPosition();
 
@@ -523,7 +520,7 @@ void MyEngine::MyImGui::Update()
 
     ImGui::Begin(u8"애니메이션 상태");
 
-    if (!m_d3dContext->m_sceneObjects.empty())
+    if (!m_d3dContext->m_sceneObjects.empty() && m_d3dContext->m_currentPickedID < m_d3dContext->m_sceneObjects.size())
     {
         auto animationMeshRenderer = dynamic_cast<SkinningMeshRenderer*>(m_d3dContext->m_meshRenderers[objIdx].get());
         if (animationMeshRenderer)
@@ -554,8 +551,12 @@ void MyEngine::MyImGui::Update()
         }
         else
         {
-            ImGui::Text(u8"올바른 오브젝트를 선택해주세요!\n스키닝 메쉬렌더러가 아닙니다.\n\n왼쪽 패널에서 오브젝트 \n인덱스를 설정해주세요.");
+            ImGui::Text(u8"올바른 오브젝트를 선택해주세요!\n스키닝 메쉬렌더러가 아닙니다.\n\n 애니메이션 있는 메쉬를 마우스로 클릭해주세요!");
         }
+    }
+    else
+    {
+        ImGui::Text(u8"올바른 오브젝트를 선택해주세요!\n");
     }
 
     ImGui::End();
@@ -609,14 +610,17 @@ void MyEngine::MyImGui::Update()
 
 
     static int selected = 0;
-    const char* items[] = { "Position", "Normal", "Albedo", "Metallic", "Roughness" };
+    const char* items[] = { "Position", "Normal", "Albedo", "Metallic", "Roughness" };// , "RenderID"};
 
-   
     ImGui::Combo(u8"- G-텍스쳐", &selected, items, IM_ARRAYSIZE(items));
     ImVec2 texSize(texWidth, texHeight);
     auto selected_debug = selected;
+
+    //if (selected_debug == 5)
+    //    selected_debug = 6;
     if (selected_debug == 1)
         selected_debug = 5;
+
     ImGui::Image(
         (ImTextureID)m_d3dContext->m_pGBufferSRV[selected_debug].Get(),  // SRV 포인터
         ImVec2(texWidth, texHeight)  // 이미지 크기
@@ -714,6 +718,7 @@ void MyEngine::MyImGui::Update()
     //
     //ImGui::End();
     
+    m_isHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 
     if(m_d3dContext->m_enableDebugDraw)
     for (size_t i = 0; i < m_d3dContext->m_sceneObjects.size(); i++)
@@ -766,6 +771,11 @@ void MyEngine::MyImGui::Uninitialize()
     m_isImGuiInit = false;
     m_isWin32BackendInit = false;
     m_isD3D11BackendInit = false;
+}
+
+bool MyEngine::MyImGui::GetIsHovered()
+{
+    return m_isHovered;
 }
 
 //#endif //_DEBUG

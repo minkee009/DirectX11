@@ -49,6 +49,7 @@ namespace MyEngine
 		bool m_isImGuiInit = false;
 		bool m_isWin32BackendInit = false;
 		bool m_isD3D11BackendInit = false;
+		bool m_isHovered = false;
 		void UpdateInfiniteDrag();
 
 		ImFont* m_bigFont;
@@ -59,6 +60,7 @@ namespace MyEngine
 		void Update();
 		void Render();
 		void Uninitialize();
+		bool GetIsHovered();
 	};
 }
 
