@@ -95,8 +95,10 @@ namespace MyEngine {
 
 	struct OutlineCB
 	{
-		FLOAT Thickness;
-		XMFLOAT3 pad;
+		XMFLOAT4 OutlineColor;
+		FLOAT OutlineThickness;
+		FLOAT OutlineThreshold;
+		XMFLOAT2 pad;
 	};
 
 	struct GradientCB
@@ -143,7 +145,8 @@ namespace MyEngine {
 		ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV = nullptr;
 		ComPtr<ID3D11Texture2D> m_pDepthStencilTex = nullptr;
 		ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr;
-		ComPtr<ID3D11ShaderResourceView> m_pDepthStencilSRV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pDepthSRV = nullptr;
+		ComPtr<ID3D11ShaderResourceView> m_pStencilSRV = nullptr;
 
 		D3D11_VIEWPORT m_vp;
 
@@ -158,8 +161,10 @@ namespace MyEngine {
 		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
 		ComPtr<ID3D11BlendState> m_pGeometryBlendState = nullptr;
 		ComPtr<ID3D11BlendState> m_pAdditiveBlendState = nullptr;
+		ComPtr<ID3D11BlendState> m_pOutlineBlendState = nullptr;
 		ComPtr<ID3D11DepthStencilState> m_pOpaqueState = nullptr;
-		ComPtr<ID3D11DepthStencilState> m_pTransparentState = nullptr;
+		ComPtr<ID3D11DepthStencilState> m_pPickMaskDSState = nullptr;
+		ComPtr<ID3D11DepthStencilState> m_pStencilMaskState = nullptr;
 
 		ComPtr<ID3D11Texture2D> m_pSceneColorTex = nullptr;
 		ComPtr<ID3D11RenderTargetView> m_pSceneColorRTV = nullptr;
@@ -174,6 +179,9 @@ namespace MyEngine {
 		ComPtr<ID3D11ShaderResourceView> m_pBlurTempSRV = nullptr;
 
 		ComPtr<ID3D11Texture2D> m_pPickingStagingTex;
+		ComPtr<ID3D11Texture2D> m_pPickingMaskTex;
+		ComPtr<ID3D11ShaderResourceView> m_pPickingMaskSRV;
+		ComPtr<ID3D11RenderTargetView> m_pPickingMaskRTV;
 
 		ComPtr<ID3D11Buffer> m_pPickingCB = nullptr;
 		ComPtr<ID3D11Buffer> m_pPostProcessCB = nullptr;
@@ -270,6 +278,7 @@ namespace MyEngine {
 		FLOAT m_lightProjectNear = 0.01f;
 		FLOAT m_lightProjectFar = 50.0f;
 
+		XMFLOAT4 m_pickOutlineColor = { 1.0f, 0.45f, 0.0f , 1.0f };
 		XMFLOAT4 m_ambientColor = { 0.9255f,0.5059f,0.7490f,1 };
 		FLOAT m_ambientStrength = 0.4f;
 		FLOAT m_diffuseStrength = 1.0f;
@@ -278,7 +287,8 @@ namespace MyEngine {
 		FLOAT m_rimLightStrength = 0.0f;
 		UINT m_shininess = 512;
 
-		FLOAT m_outlineThickness = 0.02f;
+		FLOAT m_outlineThickness = 2.0f;
+		FLOAT m_outlineThreshold = 0.5f;
 
 		FLOAT m_gradientIntensity = 0.846f;
 
@@ -374,6 +384,8 @@ namespace MyEngine {
 
 		void ForwardRenderPass();
 		void DefferedRenderPass();
+
+		HRESULT CreatePickingMaskTexture(UINT width, UINT height);
 
 	public:
 		bool Initialize(HWND hWnd, int width, int height);

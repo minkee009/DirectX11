@@ -317,6 +317,8 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 	}
 
 
+    CreatePickingMaskTexture(m_width, m_height);
+
 
     // 뎁스 스텐실 텍스쳐 생성
     D3D11_TEXTURE2D_DESC descDepth;
@@ -350,7 +352,18 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV로 사용할 포맷
     depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     depthSrvDesc.Texture2D.MipLevels = 1;
-    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthStencilSRV.GetAddressOf());
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthSRV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("뎁스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+        return false;
+    }
+
+    m_pStencilSRV = nullptr; // 멤버 변수 선언 가정
+    depthSrvDesc = {};
+    depthSrvDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT; // SRV로 사용할 포맷
+    depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    depthSrvDesc.Texture2D.MipLevels = 1;
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pStencilSRV.GetAddressOf());
     if (FAILED(hr)) {
         OutputDebugStringA("뎁스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
         return false;
@@ -440,7 +453,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
-    m_pd3dDevice->CreateBlendState(&blendDesc, &m_pBlendState);
+    m_pd3dDevice->CreateBlendState(&blendDesc, m_pBlendState.GetAddressOf());
 
     // Geometry Pass용 Blend State 설정
     D3D11_BLEND_DESC deferredBlendDesc = {};
@@ -458,7 +471,7 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     deferredBlendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
     deferredBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
-    m_pd3dDevice->CreateBlendState(&deferredBlendDesc, &m_pGeometryBlendState);
+    m_pd3dDevice->CreateBlendState(&deferredBlendDesc, m_pGeometryBlendState.GetAddressOf());
 
     D3D11_BLEND_DESC desc = {};
     desc.AlphaToCoverageEnable = FALSE;
@@ -479,7 +492,23 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
 
     rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
-    m_pd3dDevice->CreateBlendState(&desc, &m_pAdditiveBlendState);
+    m_pd3dDevice->CreateBlendState(&desc, m_pAdditiveBlendState.GetAddressOf());
+
+    blendDesc = {};
+    blendDesc.RenderTarget[0].BlendEnable = TRUE;
+
+    // 표준 알파 블렌딩: Dest = Src * SrcAlpha + Dest * (1 - SrcAlpha)
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+
+    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    m_pd3dDevice->CreateBlendState(&blendDesc, m_pOutlineBlendState.GetAddressOf());
 
     //뎁스 스텐실 상태 설정
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
@@ -488,15 +517,40 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;      // 깊이가 작을수록 앞에 있음
     depthStencilDesc.StencilEnable = FALSE;                  // 스텐실은 비활성화
 
-    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pOpaqueState);
+    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, m_pOpaqueState.GetAddressOf());
 
-    depthStencilDesc = D3D11_DEPTH_STENCIL_DESC{};
-    depthStencilDesc.DepthEnable = TRUE;                     // 깊이 테스트 활성화
-    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // 깊이 버퍼 쓰기 비활성
-    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;      // 깊이가 작을수록 앞에 있음
-    depthStencilDesc.StencilEnable = FALSE;                  // 스텐실은 비활성화
+    depthStencilDesc = D3D11_DEPTH_STENCIL_DESC{};                    
+    depthStencilDesc.DepthEnable = TRUE;               // Depth 테스트는 켠다
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO; // Depth write는 안함
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS; // 항상 통과 
 
-    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_pTransparentState);
+    depthStencilDesc.StencilEnable = TRUE;
+    depthStencilDesc.StencilReadMask = 0xFF;
+    depthStencilDesc.StencilWriteMask = 0xFF;
+
+    // Front-face 스텐실 설정
+    depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE; // 선택된 픽셀만
+    depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+    // Back-face는 Front-face와 동일
+    depthStencilDesc.BackFace = depthStencilDesc.FrontFace;
+
+    m_pd3dDevice->CreateDepthStencilState(&depthStencilDesc, m_pPickMaskDSState.GetAddressOf());
+
+    D3D11_DEPTH_STENCIL_DESC dssDesc = {};
+    dssDesc.DepthEnable = FALSE; // Depth 테스트 끔
+    dssDesc.StencilEnable = TRUE;
+    dssDesc.StencilReadMask = 0xFF;
+    dssDesc.StencilWriteMask = 0x00; // 스텐실 값 변경하지 않음
+    dssDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    dssDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    dssDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    dssDesc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL; // reference 값과 같은 픽셀만 PS 실행
+    dssDesc.BackFace = dssDesc.FrontFace;
+
+    m_pd3dDevice->CreateDepthStencilState(&dssDesc, m_pStencilMaskState.GetAddressOf());
 
     InitGBufferTex();
 
@@ -552,7 +606,7 @@ bool MyEngine::MyD3DContext::InitializeScene()
     hr = m_pd3dDevice->CreateTexture2D(&desc, nullptr, m_pPickingStagingTex.GetAddressOf());
 
     //상수 버퍼 생성
-    //D3D11_BUFFER_DESC cbDesc;
+    D3D11_BUFFER_DESC cbDesc;
     //ZeroMemory(&cbDesc, sizeof(cbDesc));
     //cbDesc.Usage = D3D11_USAGE_DEFAULT;
     //cbDesc.ByteWidth = sizeof(MyConstantBuffer);
@@ -563,15 +617,15 @@ bool MyEngine::MyD3DContext::InitializeScene()
     //if (FAILED(hr))
     //    return false;
 
-    //cbDesc = {};
-    //cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    //cbDesc.ByteWidth = sizeof(OutlineCB);
-    //cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    //cbDesc.CPUAccessFlags = 0;
+    cbDesc = {};
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.ByteWidth = sizeof(OutlineCB);
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = 0;
 
-    //hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pOutlineCB.GetAddressOf());
-    //if (FAILED(hr))
-    //    return false;
+    hr = m_pd3dDevice->CreateBuffer(&cbDesc, nullptr, m_pOutlineCB.GetAddressOf());
+    if (FAILED(hr))
+        return false;
 
     //cbDesc = {};
     //cbDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -715,6 +769,56 @@ bool MyEngine::MyD3DContext::InitializeScene()
 
     return true;
 }
+
+HRESULT MyEngine::MyD3DContext::CreatePickingMaskTexture(UINT width, UINT height)
+{
+    HRESULT hr;
+    m_pPickingMaskTex = nullptr;
+
+    // 1. Texture2D 생성 (R8_UNORM)
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = width;
+    texDesc.Height = height;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_R8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.SampleDesc.Quality = 0;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    texDesc.CPUAccessFlags = 0;
+    texDesc.MiscFlags = 0;
+
+    hr = m_pd3dDevice->CreateTexture2D(&texDesc, nullptr, m_pPickingMaskTex.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
+
+    // 2. Render Target View 생성
+    m_pPickingMaskRTV = nullptr;
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = DXGI_FORMAT_R8_UNORM;
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    rtvDesc.Texture2D.MipSlice = 0;
+
+    hr = m_pd3dDevice->CreateRenderTargetView(m_pPickingMaskTex.Get(), &rtvDesc, m_pPickingMaskRTV.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
+
+    // 3. Shader Resource View 생성
+    m_pPickingMaskSRV = nullptr;
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = DXGI_FORMAT_R8_UNORM;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture2D.MipLevels = 1;
+
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pPickingMaskTex.Get(), &srvDesc, m_pPickingMaskSRV.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
+}
+
 
 void MyEngine::MyD3DContext::Update()
 {
@@ -1313,7 +1417,7 @@ void MyEngine::MyD3DContext::Clear()
     float ClearColorNormal[4] = { 0.0f, 0.0f, 1.0f, 0.0f }; // (R, G, B, A)
 
     m_pContext->ClearRenderTargetView(m_pSceneColorRTV.Get(), ClearColorAlbedo);
-    m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    m_pContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     for (size_t i = 0; i < GBUFFER_TEX_SIZE; ++i)
     {
@@ -1338,6 +1442,7 @@ void MyEngine::MyD3DContext::Clear()
 
 	m_pContext->ClearRenderTargetView(m_pBrightRTV.Get(), ClearColorZero);
 	m_pContext->ClearRenderTargetView(m_pBlurTempRTV.Get(), ClearColorZero);    
+    m_pContext->ClearRenderTargetView(m_pPickingMaskRTV.Get(), ClearColorZero);
 }
 
 void MyEngine::MyD3DContext::Present()
@@ -1366,7 +1471,10 @@ void MyEngine::MyD3DContext::UninitializeScene()
     m_pBlurCB = nullptr;
 
     m_pPickingStagingTex = nullptr;
+    m_pPickingMaskSRV = nullptr;
     m_pPickingCB = nullptr;
+
+    m_pStencilMaskState = nullptr;
 
     UninitDefferedRenderpassBuffer();
 
@@ -1413,7 +1521,8 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pBackBufferRTV = nullptr;
     m_pDepthStencilTex = nullptr;
     m_pDepthStencilView = nullptr;
-    m_pDepthStencilSRV = nullptr;
+    m_pDepthSRV = nullptr;
+    m_pStencilSRV = nullptr;
     m_pSceneColorRTV = nullptr;
     m_pSceneColorSRV = nullptr;
     m_pSceneColorTex = nullptr;
@@ -1426,13 +1535,18 @@ MyEngine::MyD3DContext::~MyD3DContext()
     m_pBlendState = nullptr;
     m_pGeometryBlendState = nullptr;
     m_pAdditiveBlendState = nullptr;
+    m_pOutlineBlendState = nullptr;
     m_pOpaqueState = nullptr;
-    m_pTransparentState = nullptr;
+    m_pPickMaskDSState = nullptr;
     m_pSamplerPoint = nullptr;
     m_pSamplerLinear = nullptr;
 
     m_dxgiDevice = nullptr;
     m_pContext = nullptr;
+
+    m_pPickingMaskTex = nullptr;
+    m_pPickingMaskSRV = nullptr;
+    m_pPickingMaskRTV = nullptr;
 
     m_pSwapChain1 = nullptr;
     m_pSwapChain = nullptr;
@@ -1711,7 +1825,7 @@ void MyEngine::MyD3DContext::ForwardRenderPass()
     int modelIdx = 0;
 
     OutlineCB olCB = {};
-    olCB.Thickness = m_outlineThickness;
+    olCB.OutlineThickness = m_outlineThickness;
     m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &olCB, 0, 0);
     m_pContext->VSSetConstantBuffers(4, 1, m_pOutlineCB.GetAddressOf());
 
@@ -1839,7 +1953,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     DirectionalLightCB cb_dirLight = {};
     PointLightCB cb_pointLight = {};         // fast update
     PBRDebugCB cb_pbr_debug = {};
-	BlurCB cb_blur = {};
+    BlurCB cb_blur = {};
     PickingCB cb_pick = {};
 
     D3D11_MAPPED_SUBRESOURCE mapped;
@@ -1869,10 +1983,10 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     cb_pbr_debug.AmbeintIntensity = m_rimLightStrength;
     m_pContext->UpdateSubresource(m_pPBRDebugBuffer.Get(), 0, nullptr, &cb_pbr_debug, 0, 0);
 
-	// blur cb set-up
-	cb_blur.texelSize = XMFLOAT2(1.0f / static_cast<float>(m_width), 1.0f / static_cast<float>(m_height));
+    // blur cb set-up
+    cb_blur.texelSize = XMFLOAT2(1.0f / static_cast<float>(m_width), 1.0f / static_cast<float>(m_height));
     cb_blur.horizontal = 0.0f;
-	m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
+    m_pContext->UpdateSubresource(m_pBlurCB.Get(), 0, nullptr, &cb_blur, 0, 0);
 
     // pass - 0 : Shadow Cast
     m_currentRenderPassNum = 0;
@@ -1973,7 +2087,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         );
 
         memcpy(mapped.pData, &cb_objMat, sizeof(ObjectMatCB));
-      
+
         m_pContext->Unmap(m_pObjectMatBuffer.Get(), 0);
 
         m_pContext->Map(
@@ -1995,6 +2109,41 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         meshRenderer->Draw(m_pContext.Get());
         meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::None);
     }
+
+    // 스텐실 버퍼에만 기록
+    if (m_currentPickedID < m_sceneObjects.size())
+    {
+        m_pContext->PSSetShaderResources(0, 19, nullSRVs);
+        m_pContext->PSSetShader(nullptr, nullptr, 0);
+
+        m_pContext->OMSetDepthStencilState(m_pPickMaskDSState.Get(), 1);
+
+        auto& i = m_currentPickedID;
+        auto& meshRenderer = m_meshRenderers[i];
+        auto& obj = m_sceneObjects[i];
+
+        cb_objMat.mWorld = XMMatrixTranspose(obj->GetWorldMatrix());
+
+        m_pContext->Map(
+            m_pObjectMatBuffer.Get(),
+            0,
+            D3D11_MAP_WRITE_DISCARD,
+            0,
+            &mapped
+        );
+
+        memcpy(mapped.pData, &cb_objMat, sizeof(ObjectMatCB));
+        m_pContext->Unmap(m_pObjectMatBuffer.Get(), 0);
+
+        meshRenderer->SetRenderPassNum(m_currentRenderPassNum);
+        meshRenderer->SetEnabledBindMeshes(true);
+        meshRenderer->SetEnabledBindMaterials(true);
+        meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::PixelShader);
+        meshRenderer->Draw(m_pContext.Get());
+        meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::None);
+        m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
+    }
+   
 
     ID3D11RenderTargetView* nullRTVs[GBUFFER_TEX_SIZE] = { nullptr, };
     m_pContext->OMSetRenderTargets(
@@ -2096,6 +2245,23 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     m_pContext->PSSetShader(m_pSkyBoxPShader.Get(), nullptr, 0);
     m_pContext->DrawIndexed(m_skyBoxIndexCount, 0, 0);
     m_pContext->RSSetState(m_pDefRasterizerState.Get()); //기본 래스터라이저 상태로 복귀
+
+    // pass - 4 : PickingMask
+    m_currentRenderPassNum = 4;
+    ID3D11RenderTargetView* nullRTV[1] = { nullptr };
+    m_pContext->OMSetRenderTargets(1, nullRTV, nullptr);
+
+    m_pContext->OMSetDepthStencilState(m_pStencilMaskState.Get(), 1); // Reference = 1
+    m_pContext->IASetInputLayout(nullptr);
+    m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_pContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+
+    m_pContext->VSSetShader(D3DCTX::ShaderManager::Get()->GetPostProcessingVertexShader(), nullptr, 0);
+    m_pContext->PSSetShader(D3DCTX::ShaderManager::Get()->GetPickMaskPS(), nullptr, 0);
+
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get()); //시계로 해야함 <- 왼손좌표계 쿼드
+    m_pContext->OMSetRenderTargets(1, m_pPickingMaskRTV.GetAddressOf(), m_pDepthStencilView.Get());
+    m_pContext->Draw(3, 0);
 
     // pass - 4 : Bloom 
 	//m_currentRenderPassNum = 4;
@@ -2226,6 +2392,25 @@ void MyEngine::MyD3DContext::Render()
     m_pContext->Draw(3, 0);
     m_pContext->RSSetState(m_pDefRasterizerState.Get());
     ID3D11ShaderResourceView* nullSRV3[1] = { nullptr };
+    m_pContext->PSSetShaderResources(0, 1, nullSRV3);
+
+    OutlineCB cb_outline;
+    cb_outline.OutlineColor = m_pickOutlineColor;
+    cb_outline.OutlineThickness = m_outlineThickness;
+    cb_outline.OutlineThreshold = m_outlineThreshold;
+
+    m_pContext->UpdateSubresource(m_pOutlineCB.Get(), 0, nullptr, &cb_outline, 0, 0);
+    m_pContext->PSSetConstantBuffers(0, 1, m_pOutlineCB.GetAddressOf());
+
+    m_pContext->PSSetShaderResources(0, 1, m_pPickingMaskSRV.GetAddressOf());
+
+    m_pContext->PSSetShader(D3DCTX::ShaderManager::Get()->GetSobelOutlinePS(), nullptr, 0);
+    m_pContext->OMSetBlendState(m_pOutlineBlendState.Get(), nullptr, 0xffffffff);
+    m_pContext->PSSetSamplers(0, 1, m_pSamplerPoint.GetAddressOf());
+    m_pContext->RSSetState(m_pClockWiseRasterizerState.Get());
+    m_pContext->Draw(3, 0);
+    m_pContext->RSSetState(m_pDefRasterizerState.Get());
+
     m_pContext->PSSetShaderResources(0, 1, nullSRV3);
 
     // debug draw
@@ -2429,6 +2614,7 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 		return;
 	}
 
+    CreatePickingMaskTexture(width, height);
 
     // 새로운 뎁스 스텐실 버퍼 및 뷰 생성
     D3D11_TEXTURE2D_DESC descDepth = {};
@@ -2459,12 +2645,23 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
         return;
     }
 
-    m_pDepthStencilSRV = nullptr; // 멤버 변수 선언 가정
+    m_pDepthSRV = nullptr; // 멤버 변수 선언 가정
     D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
     depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV로 사용할 포맷
     depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     depthSrvDesc.Texture2D.MipLevels = 1;
-    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthStencilSRV.GetAddressOf());
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pDepthSRV.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("뎁스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
+        return;
+    }
+
+    m_pStencilSRV = nullptr; // 멤버 변수 선언 가정
+    depthSrvDesc = {};
+    depthSrvDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT; // SRV로 사용할 포맷
+    depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    depthSrvDesc.Texture2D.MipLevels = 1;
+    hr = m_pd3dDevice->CreateShaderResourceView(m_pDepthStencilTex.Get(), &depthSrvDesc, m_pStencilSRV.GetAddressOf());
     if (FAILED(hr)) {
         OutputDebugStringA("뎁스 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
         return;

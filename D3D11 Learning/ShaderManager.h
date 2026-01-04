@@ -45,6 +45,8 @@ namespace MyEngine::D3DCTX
 		ComPtr<ID3D11PixelShader> m_pDefferedGeometryPixelShader;
 		ComPtr<ID3D11PixelShader> m_pDefferedLightPixelShader;
 		ComPtr<ID3D11PixelShader> m_pDefferedAdditivePointLightPixelShader;
+		ComPtr<ID3D11PixelShader> m_pPickingMaskPixelShader;
+		ComPtr<ID3D11PixelShader> m_pSobelOutlinePS;
 
 
 		ComPtr<ID3D11PixelShader> m_pBRDFPixelShader;
@@ -94,6 +96,8 @@ namespace MyEngine::D3DCTX
 		inline ID3D11PixelShader* GetBrightnessContrastPixelShader() { return m_pBrightnessContrastPixelShader.Get(); }
 		inline ID3D11PixelShader* GetGaussianBlurPixelShader() { return m_pGaussianBlurPixelShader.Get(); }
 		inline ID3D11PixelShader* GetBloomCombinePixelShader() { return m_pBloomCombinePixelShader.Get(); }
+		inline ID3D11PixelShader* GetPickMaskPS() { return m_pPickingMaskPixelShader.Get(); }
+		inline ID3D11PixelShader* GetSobelOutlinePS() { return m_pSobelOutlinePS.Get(); }
 
 		inline ID3D11VertexShader* GetShadowCastVertexShader() { return m_pShadowCastVertexShader.Get(); }
 

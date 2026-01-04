@@ -46,4 +46,6 @@ namespace MyEngine::D3DCTX
     extern const char* g_postprocess_pscode_Brightness;
     extern const char* g_postprocess_pscode_GaussianBlur;
     extern const char* g_postprocess_pscode_BloomCombine;
+    extern const char* g_postprocess_pscode_PickingMask;
+    extern const char* g_postprocess_pscode_sobelOutline;
 }

@@ -1984,6 +1984,21 @@ float4 PS(PSIn input) : SV_Target
 }
 )";
 
+    const char* g_postprocess_pscode_PickingMask = R"(
+Texture2D<uint> StencilTexture : register(t0);
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float2 Tex : TEXCOORD0;
+};
+
+float4 PS(PS_INPUT input) : SV_Target
+{
+    return float4(1.0f,1.0f,1.0f,1.0f);
+}
+)";
+
     const char* g_postprocess_pscode_ACES_toneMapping = R"(
 cbuffer PostProcessBuffer : register(b0)
 {
@@ -2055,6 +2070,62 @@ float4 PS(PSIn input) : SV_Target
     }
 
     return float4(finalColor, 1.0f);
+}
+)";
+
+    const char* g_postprocess_pscode_sobelOutline = R"(
+cbuffer OutlineBuffer : register(b0)
+{
+    float4 outlineColor;
+    float outlineThickness;
+    float outlineThreshold;
+}
+
+Texture2D txInput : register(t0);
+SamplerState samPoint : register(s0);
+
+static float xFilter[9] = { -1,0,1,-2,0,2,-1,0,1 };
+static float yFilter[9] = { 1,2,1,0,0,0,-1,-2,-1 };
+
+struct PSIn
+{
+    float4 pos : SV_POSITION;
+    float2 uv  : TEXCOORD0;
+};
+
+float4 PS(PSIn input) : SV_Target
+{
+    float width, height;
+    txInput.GetDimensions(width, height);
+
+    float2 tx = float2(outlineThickness / width, 0.0);
+    float2 ty = float2(0.0,outlineThickness / height );
+
+    float grid[9];
+    float3 greyScale = float3(0.299, 0.587, 0.114);
+
+    grid[0] = length(dot(txInput.Sample(samPoint, input.uv -tx + ty).xyz, greyScale));
+    grid[1] = length(dot(txInput.Sample(samPoint, input.uv + ty).xyz, greyScale));
+    grid[2] = length(dot(txInput.Sample(samPoint, input.uv + tx + ty).xyz, greyScale));
+    grid[3] = length(dot(txInput.Sample(samPoint, input.uv - tx).xyz, greyScale));
+    grid[4] = length(dot(txInput.Sample(samPoint, input.uv).xyz, greyScale));
+    grid[5] = length(dot(txInput.Sample(samPoint, input.uv + tx).xyz, greyScale));
+    grid[6] = length(dot(txInput.Sample(samPoint, input.uv - tx - ty).xyz, greyScale));
+    grid[7] = length(dot(txInput.Sample(samPoint, input.uv -ty).xyz, greyScale));
+    grid[8] = length(dot(txInput.Sample(samPoint, input.uv + tx -ty).xyz, greyScale));
+    float sx=0.0f, sy=0.0f;
+    for (int i = 0; i < 9; ++i)
+    {
+        sx += grid[i] * xFilter[i];
+        sy += grid[i] * yFilter[i];
+    }
+    float dist = sqrt(sx * sx + sy * sy);
+    float edge = dist > outlineThreshold ? 1 : 0;
+ 
+    float4 result = outlineColor;
+    result.a = result.a * edge;
+ 
+    return result;
 }
 )";
 

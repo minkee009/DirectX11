@@ -144,6 +144,8 @@ void MyEngine::D3DCTX::ShaderManager::StartUp(ID3D11Device* pDevice, ID3D11Devic
 	CompileLiteralCodeToPixelShader(pDevice, m_pBrightnessContrastPixelShader.GetAddressOf(), g_postprocess_pscode_Brightness);
 	CompileLiteralCodeToPixelShader(pDevice, m_pGaussianBlurPixelShader.GetAddressOf(), g_postprocess_pscode_GaussianBlur);
 	CompileLiteralCodeToPixelShader(pDevice, m_pBloomCombinePixelShader.GetAddressOf(), g_postprocess_pscode_BloomCombine);
+	CompileLiteralCodeToPixelShader(pDevice, m_pPickingMaskPixelShader.GetAddressOf(), g_postprocess_pscode_PickingMask);
+	CompileLiteralCodeToPixelShader(pDevice, m_pSobelOutlinePS.GetAddressOf(), g_postprocess_pscode_sobelOutline);
 }
 
 void MyEngine::D3DCTX::ShaderManager::ShutDown()
@@ -156,6 +158,7 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 	m_pOutlineVertexShader_useSkinningBone = nullptr;
 	m_pOutlinePixelShader = nullptr;
 	m_pDefaultVSBlob = nullptr;
+	m_pSobelOutlinePS = nullptr;
 
 	m_pCommonVertexShader = nullptr;
 	m_pCommonVertexShader_useRigidBone = nullptr;
@@ -176,6 +179,7 @@ void MyEngine::D3DCTX::ShaderManager::ShutDown()
 	m_pBrightnessContrastPixelShader = nullptr;
 	m_pGaussianBlurPixelShader = nullptr;
 	m_pBloomCombinePixelShader = nullptr;
+	m_pPickingMaskPixelShader = nullptr;
 }
 
 void MyEngine::D3DCTX::ShaderManager::BindDefaultShaders(ID3D11DeviceContext* context)
