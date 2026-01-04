@@ -397,6 +397,23 @@ bool MyEngine::MyD3DContext::Initialize(HWND hWnd, int width, int height)
     if (FAILED(hr))
         return false;
 
+    // 래스터라이저 상태 생성 및 설정
+    rastDesc = {};
+    rastDesc.FillMode = D3D11_FILL_SOLID;
+    rastDesc.CullMode = D3D11_CULL_NONE; //양면 드로우 허용
+    rastDesc.FrontCounterClockwise = TRUE;  // RH 좌표계용으로 변경
+    rastDesc.DepthBias = 0;
+    rastDesc.DepthBiasClamp = 0.0f;
+    rastDesc.SlopeScaledDepthBias = 0.0f;
+    rastDesc.DepthClipEnable = TRUE;
+    rastDesc.ScissorEnable = FALSE;
+    rastDesc.MultisampleEnable = FALSE;
+    rastDesc.AntialiasedLineEnable = FALSE;
+
+    hr = m_pd3dDevice->CreateRasterizerState(&rastDesc, m_pNoCullRSState.GetAddressOf());
+    if (FAILED(hr))
+        return false;
+
     rastDesc.FillMode = D3D11_FILL_SOLID;
     rastDesc.CullMode = D3D11_CULL_BACK;
     rastDesc.FrontCounterClockwise = FALSE;  // 스카이박스용
@@ -1531,6 +1548,7 @@ MyEngine::MyD3DContext::~MyD3DContext()
     UninitGBufferTex();
 
     m_pDefRasterizerState = nullptr;
+    m_pNoCullRSState = nullptr;
     m_pClockWiseRasterizerState = nullptr;
     m_pBlendState = nullptr;
     m_pGeometryBlendState = nullptr;
@@ -2113,6 +2131,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
     // 스텐실 버퍼에만 기록
     if (m_currentPickedID < m_sceneObjects.size())
     {
+        m_pContext->RSSetState(m_pNoCullRSState.Get());
         m_pContext->PSSetShaderResources(0, 19, nullSRVs);
         m_pContext->PSSetShader(nullptr, nullptr, 0);
 
@@ -2142,6 +2161,7 @@ void MyEngine::MyD3DContext::DefferedRenderPass()
         meshRenderer->Draw(m_pContext.Get());
         meshRenderer->SetExcludeShaderFlag(ExcludeShaderFlag::None);
         m_pContext->OMSetDepthStencilState(m_pOpaqueState.Get(), 0);
+        m_pContext->RSSetState(m_pDefRasterizerState.Get());
     }
    
 
@@ -2613,6 +2633,26 @@ void MyEngine::MyD3DContext::Resize(UINT width, UINT height)
 		OutputDebugStringA("Bloom Blur Temp 셰이더 리소스 뷰를 생성하는 데 실패했습니다.\n");
 		return;
 	}
+
+    D3D11_TEXTURE2D_DESC stagingTexDesc = {};
+    stagingTexDesc.Width = m_width;
+    stagingTexDesc.Height = m_height;
+    stagingTexDesc.MipLevels = 1;
+    stagingTexDesc.ArraySize = 1;
+    stagingTexDesc.Format = DXGI_FORMAT_R32_UINT;
+    stagingTexDesc.SampleDesc.Count = 1;          // 
+    stagingTexDesc.SampleDesc.Quality = 0;
+    stagingTexDesc.Usage = D3D11_USAGE_STAGING;
+    stagingTexDesc.BindFlags = 0;          // 
+    stagingTexDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    stagingTexDesc.MiscFlags = 0;
+
+    m_pPickingStagingTex = nullptr;
+    hr = m_pd3dDevice->CreateTexture2D(&stagingTexDesc, nullptr, m_pPickingStagingTex.GetAddressOf());
+    if (FAILED(hr)) {
+        OutputDebugStringA("staging 텍스쳐를 생성하는 데 실패했습니다.\n");
+        return;
+    }
 
     CreatePickingMaskTexture(width, height);
 

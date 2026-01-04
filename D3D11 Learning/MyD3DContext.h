@@ -156,6 +156,7 @@ namespace MyEngine {
 		ComPtr<ID3D11RasterizerState> m_pDefRasterizerState = nullptr;			//시계방향 컬링 (기본)
 		ComPtr<ID3D11RasterizerState> m_pClockWiseRasterizerState = nullptr;		//반시계방향 컬링 (스카이 박스용)
 		ComPtr<ID3D11RasterizerState> m_pShadowMapRasterizerState = nullptr;
+		ComPtr<ID3D11RasterizerState> m_pNoCullRSState = nullptr;
 		ComPtr<ID3D11SamplerState> m_pSamplerLinear = nullptr;
 		ComPtr<ID3D11SamplerState> m_pSamplerPoint = nullptr;
 		ComPtr<ID3D11BlendState> m_pBlendState = nullptr;
