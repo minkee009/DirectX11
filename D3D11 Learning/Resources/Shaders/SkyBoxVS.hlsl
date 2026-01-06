@@ -26,7 +26,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = clipSpacePos;
     output.Pos.z = output.Pos.w * 0.999999f; // 깊이 버퍼의 최대값에 가깝게 설정 <-- 스카이박스가 뷰클립에 걸리지 않도록 함
     
-    output.Tex = float3(-input.Pos.x, input.Pos.y, input.Pos.z);
+    output.Tex = float3(input.Pos.x, input.Pos.y, input.Pos.z);
     
     return output;
 }

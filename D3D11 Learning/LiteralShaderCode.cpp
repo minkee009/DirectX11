@@ -1694,7 +1694,7 @@ float4 PS(PSIn input) : SV_Target
     float3 L = normalize(-DirectionalLightDir.xyz);
     float3 H = normalize(V + L);
     float3 R = reflect(-V, N);
-    R.x = -R.x;
+    R.x = R.x;
 
     float NdotL = saturate(dot(N, L));
     float NdotV = saturate(dot(N, V));
