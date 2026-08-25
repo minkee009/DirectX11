@@ -271,9 +271,6 @@
     <CopyFileToFolders Include="Resources\Textures\normal_mapping_normal_map.dds">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="..\..\D3D11_Tutorial\Documents\참고용\Resource\DB2X2_L01_Nor.png">
-      <Filter>텍스쳐 파일</Filter>
-    </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\Lut.png">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
@@ -323,6 +320,9 @@
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Resources\Textures\floor_tile_a.png">
+      <Filter>텍스쳐 파일</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Resources\Textures\DB2X2_L01_Nor.png">
       <Filter>텍스쳐 파일</Filter>
     </CopyFileToFolders>
   </ItemGroup>
