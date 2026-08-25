@@ -10,6 +10,10 @@
 
 - 내부 프로젝트
 
+
+> [!WARNING]
+> VCPKG 정적 링킹을 사용하였습니다.
+
 | Library      | License     | Link |
 |-------------|------------|------|
 | ImGui       | MIT        | [GitHub](https://github.com/ocornut/imgui) |
